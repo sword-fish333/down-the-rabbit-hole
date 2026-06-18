@@ -1,0 +1,25 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+/* Class-based dark mode (toggled on <html> via jQuery) instead of OS preference. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Brand palette (admin accent) */
+    --color-brand-50: oklch(0.97 0.014 296);
+    --color-brand-100: oklch(0.94 0.03 296);
+    --color-brand-200: oklch(0.89 0.06 295);
+    --color-brand-300: oklch(0.81 0.1 294);
+    --color-brand-400: oklch(0.71 0.16 293);
+    --color-brand-500: oklch(0.62 0.21 293);
+    --color-brand-600: oklch(0.55 0.24 292);
+    --color-brand-700: oklch(0.49 0.22 292);
+    --color-brand-800: oklch(0.42 0.18 292);
+    --color-brand-900: oklch(0.38 0.14 293);
+    --color-brand-950: oklch(0.27 0.1 293);
+}
