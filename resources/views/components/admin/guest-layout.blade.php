@@ -5,7 +5,7 @@
 <head>
     <x-admin.partials.head :title="$title" />
 </head>
-<body class="min-h-screen bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
+<body class="min-h-screen bg-background text-foreground antialiased">
     {{ $slot }}
 
     <x-admin.flash />

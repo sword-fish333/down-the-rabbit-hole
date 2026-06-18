@@ -20,6 +20,7 @@ return [
         'logout' => 'Sign out',
         'open-menu' => 'Open menu',
         'close-menu' => 'Close menu',
+        'toggle-sidebar' => 'Collapse sidebar',
         'toggle-theme' => 'Toggle dark mode',
     ],
 

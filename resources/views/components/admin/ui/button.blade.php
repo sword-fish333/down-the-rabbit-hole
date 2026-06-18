@@ -5,9 +5,9 @@
 
 @php
     $variants = [
-        'primary' => 'bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus:ring-brand-500/40',
-        'secondary' => 'bg-white text-zinc-700 ring-1 ring-zinc-200 hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700 dark:hover:bg-zinc-700',
-        'danger' => 'bg-rose-600 text-white shadow-sm hover:bg-rose-700 focus:ring-rose-500/40',
+        'primary' => 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 focus:ring-primary/40',
+        'secondary' => 'bg-surface text-foreground ring-1 ring-border hover:bg-muted focus:ring-primary/30',
+        'danger' => 'bg-danger text-danger-foreground shadow-sm hover:bg-danger/90 focus:ring-danger/40',
     ];
 @endphp
 

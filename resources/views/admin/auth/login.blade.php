@@ -3,16 +3,13 @@
 
         {{-- Brand panel (desktop only) --}}
         <div class="relative hidden w-1/2 flex-col justify-between overflow-hidden p-12 text-white lg:flex">
-            <div class="absolute inset-0 bg-gradient-to-br from-brand-600 via-brand-700 to-brand-950"></div>
-            <div class="absolute -top-24 -right-24 h-80 w-80 rounded-full bg-white/10 blur-3xl"></div>
-            <div class="absolute -bottom-24 -left-10 h-72 w-72 rounded-full bg-brand-400/20 blur-3xl"></div>
+            <div class="absolute inset-0 bg-gradient-to-br from-wave-700 via-wave-800 to-wave-950"></div>
+            <div class="absolute -top-24 -right-24 h-80 w-80 rounded-full bg-foam-400/20 blur-3xl"></div>
+            <div class="absolute -bottom-24 -left-10 h-72 w-72 rounded-full bg-sand-400/20 blur-3xl"></div>
 
-            <div class="relative flex items-center gap-3">
-                <span class="grid h-11 w-11 place-items-center rounded-2xl bg-white/15 backdrop-blur">
-                    <i class="fa-solid fa-comments text-xl"></i>
-                </span>
-                <span class="text-lg font-bold tracking-tight">{{ config('app.name') }}</span>
-            </div>
+            <x-admin.brand class="relative"
+                           logo-class="h-11 w-11"
+                           name-class="text-lg font-bold tracking-tight text-white" />
 
             <div class="relative max-w-md">
                 <h2 class="text-4xl leading-tight font-bold tracking-tight">
@@ -24,7 +21,7 @@
                     @foreach (['secure', 'realtime', 'control'] as $feature)
                         <li class="flex items-center gap-3 text-sm text-white/85">
                             <span class="grid h-8 w-8 place-items-center rounded-lg bg-white/10">
-                                <i class="fa-solid fa-check"></i>
+                                <x-admin.icon name="check" class="text-base" />
                             </span>
                             {{ __('admin/frontend.auth.feature-'.$feature) }}
                         </li>
@@ -41,17 +38,14 @@
         <div class="flex w-full flex-col justify-center px-6 py-12 sm:px-12 lg:w-1/2 lg:px-20">
             <div class="mx-auto w-full max-w-md">
 
-                <div class="mb-8 flex items-center gap-3 lg:hidden">
-                    <span class="grid h-11 w-11 place-items-center rounded-2xl bg-brand-600 text-white shadow-sm">
-                        <i class="fa-solid fa-comments text-xl"></i>
-                    </span>
-                    <span class="text-lg font-bold tracking-tight text-zinc-900 dark:text-white">{{ config('app.name') }}</span>
-                </div>
+                <x-admin.brand class="mb-8 lg:hidden"
+                               logo-class="h-11 w-11"
+                               name-class="text-lg font-bold tracking-tight text-foreground" />
 
-                <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                <h1 class="text-2xl font-bold tracking-tight text-foreground">
                     {{ __('admin/frontend.auth.welcome-back') }}
                 </h1>
-                <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+                <p class="mt-2 text-sm text-muted-foreground">
                     {{ __('admin/frontend.auth.sign-in-subtitle') }}
                 </p>
 
@@ -62,7 +56,7 @@
                         name="email"
                         type="email"
                         :label="__('admin/frontend.auth.email')"
-                        icon="fa-envelope"
+                        icon="mail"
                         :required="true"
                         autocomplete="email"
                         autofocus
@@ -72,37 +66,37 @@
                         name="password"
                         type="password"
                         :label="__('admin/frontend.auth.password')"
-                        icon="fa-lock"
+                        icon="lock"
                         :required="true"
                         autocomplete="current-password"
                         :placeholder="__('admin/frontend.auth.password-placeholder')">
                         <button type="button" data-password-toggle="#password"
-                                class="absolute top-1/2 right-3.5 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                                class="absolute top-1/2 right-3.5 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
                                 aria-label="{{ __('admin/frontend.auth.toggle-password') }}">
-                            <i class="fa-solid fa-eye"></i>
+                            <x-admin.icon name="visibility" class="text-xl" />
                         </button>
                     </x-admin.ui.input>
 
-                    <label class="flex cursor-pointer items-center gap-2.5 text-sm text-zinc-600 select-none dark:text-zinc-300">
+                    <label class="flex cursor-pointer items-center gap-2.5 text-sm text-muted-foreground select-none">
                         <input type="checkbox" name="remember_me" value="1"
-                               class="h-4 w-4 rounded border-zinc-300 text-brand-600 focus:ring-brand-500/40 dark:border-zinc-600 dark:bg-zinc-800">
+                               class="h-4 w-4 rounded border-border">
                         {{ __('admin/frontend.auth.remember-me') }}
                     </label>
 
                     <x-admin.ui.button type="submit" class="w-full">
-                        <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                        <x-admin.icon name="login" class="text-lg" />
                         {{ __('admin/frontend.auth.sign-in') }}
                     </x-admin.ui.button>
                 </form>
 
                 <div class="my-7 flex items-center gap-4">
-                    <span class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></span>
-                    <span class="text-xs font-medium tracking-wide text-zinc-400 uppercase">{{ __('admin/frontend.auth.or') }}</span>
-                    <span class="h-px flex-1 bg-zinc-200 dark:bg-zinc-800"></span>
+                    <span class="h-px flex-1 bg-border"></span>
+                    <span class="text-xs font-medium tracking-wide text-muted-foreground uppercase">{{ __('admin/frontend.auth.or') }}</span>
+                    <span class="h-px flex-1 bg-border"></span>
                 </div>
 
                 <a href="{{ route('admin.oauth-login', ['driver' => 'google']) }}"
-                   class="flex w-full items-center justify-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800">
+                   class="flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-muted">
                     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="" class="h-5 w-5">
                     {{ __('admin/frontend.auth.continue-with-google') }}
                 </a>
