@@ -3,7 +3,8 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
-/* Class-based dark mode (toggled on <html> via jQuery) instead of OS preference. */
+/* Class-based dark mode (toggled on <html> via jQuery) instead of OS preference.
+   The public frontend defaults to dark (the "noir" hero look); admin defaults light. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* Collapsed desktop sidebar — toggled on <html> by public/js/admin/app.js,
@@ -12,105 +13,118 @@
 @custom-variant nav-collapsed (&:where(.nav-collapsed, .nav-collapsed *));
 
 /* =============================================================================
-   "Great Wave" palette — sampled from Hokusai, Kanagawa-oki Nami-ura (c. 1831)
+   "Down the Rabbit Hole" palette — Blade Runner (1982) noir × Alice in Wonderland.
 
-     wave   Prussian / indigo of the wave        → bg-wave-600, text-wave-700 …
-     foam   pale sea-blue of the crests          → bg-foam-500 …   (supporting)
-     sand   aged paper + boat-wood ochre         → bg-sand-500 …   (warm accent)
-     clay   terracotta of the boat hulls         → bg-clay-500 …   (tertiary)
-     ink    blue-charcoal of the outlines        → bg-ink-900 …    (neutrals/text)
-     sea    harmonised sage-teal                 → bg-sea-500 …    (success; derived,
-                                                                    not in the print)
+   The grammar (Cronenweth's color logic): a single complementary tension held
+   over a desaturated blue-charcoal base. Cold cyan is the *air* of the city
+   (rain, haze, interface glow); warm tungsten amber is the human counterpoint;
+   hot magenta is the seductive/artificial neon (the Geisha billboard). Blacks
+   are inky but never crushed — they keep a prussian-blue texture. The Alice
+   layer is restrained on purpose (no purple-unicorn cliche): an uncanny
+   absinthe-green for "success", and a dream-violet that appears ONLY as a
+   low-alpha ambient bloom (--color-glow), never as a flat fill.
+
+   Scale names are legacy (kept to avoid a repo-wide rename); their identities:
+     wave   cyan / teal — the city's air            → primary action colour
+     foam   pale info-cyan                           → secondary / informational
+     sand   tungsten amber — the warm pole           → warm accent / highlight
+     clay   Geisha magenta-rose                       → the single bold "pop"
+     ink    blue-charcoal                             → neutrals / text / surfaces
+     sea    absinthe viridian (the DRINK ME green)    → success (deliberately uncanny)
    ============================================================================= */
 
 @theme {
-    /* Type system — webfonts loaded in components/admin/partials/head.blade.php.
+    /* Type system — webfonts loaded in the layout heads.
        Space Grotesk for display/headings, DM Sans for body, JetBrains Mono for code. */
     --font-sans:    'DM Sans', ui-sans-serif, system-ui, sans-serif;
     --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
     --font-mono:    'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
 
-    /* Wave — the deep blue of the print. Primary action colour. */
-    --color-wave-50:  oklch(0.970 0.012 250);
-    --color-wave-100: oklch(0.940 0.024 250);
-    --color-wave-200: oklch(0.880 0.045 249);
-    --color-wave-300: oklch(0.790 0.070 249);
-    --color-wave-400: oklch(0.670 0.095 250);
-    --color-wave-500: oklch(0.560 0.105 250);
-    --color-wave-600: oklch(0.470 0.100 250); /* ≈ the wave's body */
-    --color-wave-700: oklch(0.400 0.085 250); /* ≈ #1f3f5f, your old --main-color */
-    --color-wave-800: oklch(0.340 0.070 251);
-    --color-wave-900: oklch(0.290 0.055 252);
-    --color-wave-950: oklch(0.220 0.040 253);
+    /* Wave — cyan/teal. The air of the city. Primary action colour. (hue ~205) */
+    --color-wave-50:  oklch(0.975 0.018 205);
+    --color-wave-100: oklch(0.950 0.035 205);
+    --color-wave-200: oklch(0.905 0.060 205);
+    --color-wave-300: oklch(0.850 0.085 205);
+    --color-wave-400: oklch(0.800 0.110 205);
+    --color-wave-500: oklch(0.760 0.130 205); /* the cyan glow — dark-mode primary */
+    --color-wave-600: oklch(0.660 0.130 207);
+    --color-wave-700: oklch(0.560 0.120 210); /* light-mode primary (AA on light bg) */
+    --color-wave-800: oklch(0.470 0.100 213);
+    --color-wave-900: oklch(0.390 0.080 216);
+    --color-wave-950: oklch(0.280 0.058 220);
 
-    /* Foam — pale sea-blue of the crests. Secondary / informational. */
-    --color-foam-50:  oklch(0.980 0.010 230);
-    --color-foam-100: oklch(0.950 0.022 230);
-    --color-foam-200: oklch(0.900 0.040 231);
-    --color-foam-300: oklch(0.830 0.060 232);
-    --color-foam-400: oklch(0.750 0.080 233);
-    --color-foam-500: oklch(0.670 0.090 234);
-    --color-foam-600: oklch(0.570 0.085 236); /* ≈ #446e8a */
-    --color-foam-700: oklch(0.480 0.075 238);
-    --color-foam-800: oklch(0.400 0.060 240);
-    --color-foam-900: oklch(0.340 0.048 242);
-    --color-foam-950: oklch(0.250 0.035 244);
+    /* Foam — pale info-cyan. Secondary / informational. (hue ~215) */
+    --color-foam-50:  oklch(0.980 0.014 220);
+    --color-foam-100: oklch(0.955 0.028 220);
+    --color-foam-200: oklch(0.915 0.045 218);
+    --color-foam-300: oklch(0.860 0.065 216);
+    --color-foam-400: oklch(0.800 0.085 214);
+    --color-foam-500: oklch(0.730 0.100 212);
+    --color-foam-600: oklch(0.630 0.100 213);
+    --color-foam-700: oklch(0.530 0.090 215);
+    --color-foam-800: oklch(0.440 0.072 217);
+    --color-foam-900: oklch(0.370 0.058 219);
+    --color-foam-950: oklch(0.270 0.042 222);
 
-    /* Sand — aged paper & boat wood. Warm accent / ochre. */
-    --color-sand-50:  oklch(0.980 0.015 86);
-    --color-sand-100: oklch(0.960 0.030 85);
-    --color-sand-200: oklch(0.920 0.050 84); /* ≈ #f6e4c1 */
-    --color-sand-300: oklch(0.870 0.075 82); /* ≈ #dfccad */
-    --color-sand-400: oklch(0.810 0.095 80);
-    --color-sand-500: oklch(0.740 0.105 78);
-    --color-sand-600: oklch(0.660 0.100 76);
-    --color-sand-700: oklch(0.560 0.088 74);
-    --color-sand-800: oklch(0.460 0.072 73);
-    --color-sand-900: oklch(0.400 0.060 74);
-    --color-sand-950: oklch(0.290 0.045 76);
+    /* Sand — tungsten amber. The warm human pole / accent. (hue ~65) */
+    --color-sand-50:  oklch(0.980 0.016 80);
+    --color-sand-100: oklch(0.958 0.034 78);
+    --color-sand-200: oklch(0.915 0.058 75);
+    --color-sand-300: oklch(0.860 0.090 72);
+    --color-sand-400: oklch(0.810 0.120 69);
+    --color-sand-500: oklch(0.785 0.140 66); /* dark-mode accent — candlelight */
+    --color-sand-600: oklch(0.700 0.140 64);
+    --color-sand-700: oklch(0.600 0.130 62); /* light-mode accent (AA) */
+    --color-sand-800: oklch(0.500 0.108 61);
+    --color-sand-900: oklch(0.420 0.088 62);
+    --color-sand-950: oklch(0.300 0.062 64);
 
-    /* Clay — terracotta of the boat hulls. Tertiary warm pop. */
-    --color-clay-50:  oklch(0.970 0.015 48);
-    --color-clay-100: oklch(0.940 0.035 47);
-    --color-clay-200: oklch(0.890 0.060 46);
-    --color-clay-300: oklch(0.820 0.090 44);
-    --color-clay-400: oklch(0.740 0.110 42);
-    --color-clay-500: oklch(0.670 0.120 41);
-    --color-clay-600: oklch(0.600 0.115 40);
-    --color-clay-700: oklch(0.510 0.100 39);
-    --color-clay-800: oklch(0.430 0.082 39);
-    --color-clay-900: oklch(0.370 0.066 40);
-    --color-clay-950: oklch(0.270 0.050 42);
+    /* Clay — Geisha magenta-rose. The single bold pop. (hue ~350) */
+    --color-clay-50:  oklch(0.970 0.020 350);
+    --color-clay-100: oklch(0.945 0.040 350);
+    --color-clay-200: oklch(0.900 0.075 350);
+    --color-clay-300: oklch(0.835 0.120 350);
+    --color-clay-400: oklch(0.750 0.175 350);
+    --color-clay-500: oklch(0.680 0.210 350); /* the neon — dark-mode pop */
+    --color-clay-600: oklch(0.600 0.205 351); /* light-mode pop (AA) */
+    --color-clay-700: oklch(0.520 0.180 353);
+    --color-clay-800: oklch(0.440 0.150 355);
+    --color-clay-900: oklch(0.380 0.120 357);
+    --color-clay-950: oklch(0.290 0.085 358);
 
-    /* Ink — blue-charcoal of the outlines & mist. Neutral / text. */
-    --color-ink-50:  oklch(0.980 0.004 250);
-    --color-ink-100: oklch(0.960 0.006 250);
-    --color-ink-200: oklch(0.920 0.008 248);
-    --color-ink-300: oklch(0.860 0.010 246);
-    --color-ink-400: oklch(0.710 0.014 248);
-    --color-ink-500: oklch(0.580 0.016 250);
-    --color-ink-600: oklch(0.480 0.018 251);
-    --color-ink-700: oklch(0.400 0.020 252);
-    --color-ink-800: oklch(0.310 0.020 253);
-    --color-ink-900: oklch(0.240 0.018 254);
-    --color-ink-950: oklch(0.170 0.015 255);
+    /* Ink — blue-charcoal. Neutrals, text, surfaces. (hue ~248) */
+    --color-ink-50:  oklch(0.975 0.005 240);
+    --color-ink-100: oklch(0.950 0.007 242);
+    --color-ink-200: oklch(0.905 0.010 244);
+    --color-ink-300: oklch(0.840 0.012 246);
+    --color-ink-400: oklch(0.700 0.014 247);
+    --color-ink-500: oklch(0.560 0.016 248);
+    --color-ink-600: oklch(0.450 0.020 248);
+    --color-ink-700: oklch(0.360 0.022 248);
+    --color-ink-800: oklch(0.270 0.024 248);
+    --color-ink-900: oklch(0.210 0.024 248);
+    --color-ink-950: oklch(0.150 0.022 248);
 
-    /* Sea — harmonised sage-teal for success. Derived (no true green in the print). */
-    --color-sea-50:  oklch(0.970 0.018 165);
-    --color-sea-100: oklch(0.940 0.035 164);
-    --color-sea-200: oklch(0.890 0.055 163);
-    --color-sea-300: oklch(0.810 0.075 162);
-    --color-sea-400: oklch(0.720 0.090 161);
-    --color-sea-500: oklch(0.630 0.095 160);
-    --color-sea-600: oklch(0.540 0.088 161);
-    --color-sea-700: oklch(0.450 0.075 162);
-    --color-sea-800: oklch(0.380 0.060 163);
-    --color-sea-900: oklch(0.330 0.050 164);
-    --color-sea-950: oklch(0.240 0.038 166);
+    /* Sea — absinthe viridian. Success — the uncanny "DRINK ME" green. (hue ~158) */
+    --color-sea-50:  oklch(0.975 0.022 160);
+    --color-sea-100: oklch(0.950 0.045 159);
+    --color-sea-200: oklch(0.905 0.075 159);
+    --color-sea-300: oklch(0.845 0.110 158);
+    --color-sea-400: oklch(0.790 0.145 158);
+    --color-sea-500: oklch(0.745 0.165 158); /* dark-mode success — Cheshire glow */
+    --color-sea-600: oklch(0.640 0.150 159);
+    --color-sea-700: oklch(0.545 0.128 160); /* light-mode success (AA) */
+    --color-sea-800: oklch(0.460 0.105 161);
+    --color-sea-900: oklch(0.390 0.085 162);
+    --color-sea-950: oklch(0.285 0.062 164);
 
-    /* --- Aliases kept from your file, now pointing at the scale ---------------
-       These still emit utilities: bg-main-color, text-main-dark-color, bg-main-green. */
-    --color-main-color:      var(--color-wave-700);
+    /* Glow — dream-violet. DECORATIVE ONLY: radial blooms / box-shadows at low
+       alpha behind the hero, blending cyan→indigo like neon scattering in rain.
+       Never a flat fill — that's the purple-cyberpunk cliche we refuse. */
+    --color-glow: oklch(0.620 0.140 250);
+
+    /* --- Legacy aliases (still emit bg-main-color etc.), repointed to the scale. */
+    --color-main-color:      var(--color-wave-600);
     --color-main-dark-color: var(--color-wave-900);
     --color-main-green:      var(--color-sea-600);
 }
@@ -125,55 +139,58 @@
    Semantic tokens — role-based and mode-aware. Build components against THESE
    (bg-surface, text-foreground, border-border, bg-primary …) so a single `.dark`
    on <html> re-skins the entire app.
+
+   :root = light mode ("above ground": hazy, overcast LA daylight).
+   .dark = the hero ("down the hole": rain-night noir). The frontend defaults dark.
    ============================================================================= */
 :root {
-    --background:         oklch(0.985 0.010 92);  /* warm ivory paper */
-    --surface:            oklch(0.998 0.004 92);  /* near-white card  */
-    --surface-muted:      oklch(0.955 0.013 88);  /* muted cream      */
-    --foreground:         var(--color-ink-900);   /* deep ink-navy    */
-    --foreground-muted:   var(--color-ink-600);
-    --border:             var(--color-ink-200);
-    --border-strong:      var(--color-ink-300);
-    --ring:               var(--color-wave-500);
+    --background:         oklch(0.962 0.008 230);  /* cool hazy grey paper */
+    --surface:            oklch(0.992 0.004 230);  /* near-white, faint cool cast */
+    --surface-muted:      oklch(0.935 0.010 228);  /* muted cool grey */
+    --foreground:         oklch(0.235 0.020 248);  /* deep prussian ink */
+    --foreground-muted:   oklch(0.470 0.016 246);  /* ≥4.5:1 on surfaces — WCAG AA */
+    --border:             oklch(0.890 0.010 240);
+    --border-strong:      oklch(0.820 0.012 242);
+    --ring:               var(--color-wave-700);
 
-    --primary:            var(--color-wave-600);
-    --primary-foreground: oklch(0.990 0.008 92);
-    --accent:             var(--color-sand-600);  /* ochre highlight  */
-    --accent-foreground:  var(--color-ink-900);
-    --muted:              oklch(0.955 0.013 88);
-    --muted-foreground:   var(--color-ink-600);  /* ≥4.5:1 on surfaces — WCAG AA for small text */
+    --primary:            oklch(0.520 0.120 215);  /* cyan, AA for links/text on light */
+    --primary-foreground: oklch(0.992 0.004 230);
+    --accent:             var(--color-sand-700);   /* tungsten amber */
+    --accent-foreground:  oklch(0.235 0.020 248);
+    --muted:              oklch(0.935 0.010 228);
+    --muted-foreground:   oklch(0.470 0.016 246);
 
-    --success:            var(--color-sea-600);
-    --success-foreground: oklch(0.990 0.008 92);
-    --warning:            oklch(0.740 0.120 70);   /* amber, leans to the boats */
-    --warning-foreground: var(--color-ink-900);
-    --danger:             oklch(0.550 0.160 30);   /* clear red, kept warm       */
-    --danger-foreground:  oklch(0.990 0.008 92);
+    --success:            var(--color-sea-700);
+    --success-foreground: oklch(0.992 0.004 230);
+    --warning:            oklch(0.760 0.130 78);   /* sodium-vapour street-lamp */
+    --warning-foreground: oklch(0.235 0.020 248);
+    --danger:             oklch(0.545 0.205 25);   /* hot neon red */
+    --danger-foreground:  oklch(0.992 0.004 230);
 }
 
 .dark {
-    --background:         oklch(0.190 0.024 250);  /* deep prussian charcoal */
-    --surface:            oklch(0.235 0.026 250);
-    --surface-muted:      oklch(0.285 0.026 249);
-    --foreground:         oklch(0.950 0.012 92);   /* warm cream text */
-    --foreground-muted:   oklch(0.760 0.012 245);
-    --border:             oklch(0.330 0.024 250);
-    --border-strong:      oklch(0.420 0.026 250);
-    --ring:               var(--color-wave-400);
+    --background:         oklch(0.165 0.022 248);  /* rain-night sky — inky, textured */
+    --surface:            oklch(0.215 0.024 247);  /* wet asphalt / shadowed wall */
+    --surface-muted:      oklch(0.270 0.026 246);  /* smoke-lit mid-shadow */
+    --foreground:         oklch(0.945 0.010 90);   /* warm cream — tungsten on faces */
+    --foreground-muted:   oklch(0.740 0.013 235);  /* fogged cool grey */
+    --border:             oklch(0.330 0.026 247);
+    --border-strong:      oklch(0.420 0.028 247);
+    --ring:               oklch(0.800 0.130 200);  /* brightest cyan — "locking on" */
 
-    --primary:            var(--color-wave-400);   /* lifts so it reads on dark */
-    --primary-foreground: oklch(0.160 0.020 252);
-    --accent:             var(--color-sand-400);
-    --accent-foreground:  oklch(0.180 0.020 250);
-    --muted:              oklch(0.285 0.026 249);
-    --muted-foreground:   oklch(0.720 0.012 245);
+    --primary:            oklch(0.760 0.135 205);  /* the cyan glow */
+    --primary-foreground: oklch(0.155 0.024 235);  /* near-black on the bright fill */
+    --accent:             var(--color-sand-500);   /* candlelight amber */
+    --accent-foreground:  oklch(0.165 0.022 248);
+    --muted:              oklch(0.270 0.026 246);
+    --muted-foreground:   oklch(0.740 0.013 235);
 
-    --success:            var(--color-sea-400);
-    --success-foreground: oklch(0.160 0.020 252);
-    --warning:            oklch(0.800 0.110 70);
-    --warning-foreground: oklch(0.180 0.020 250);
-    --danger:             oklch(0.680 0.160 30);
-    --danger-foreground:  oklch(0.160 0.020 252);
+    --success:            var(--color-sea-500);
+    --success-foreground: oklch(0.155 0.024 235);
+    --warning:            oklch(0.820 0.130 80);
+    --warning-foreground: oklch(0.165 0.022 248);
+    --danger:             oklch(0.640 0.205 22);
+    --danger-foreground:  oklch(0.155 0.024 235);
 }
 
 /* Expose the semantic tokens as utilities. `inline` keeps the var() reference
@@ -229,7 +246,7 @@
     }
 
     ::selection {
-        background-color: color-mix(in oklch, var(--color-primary) 22%, transparent);
+        background-color: color-mix(in oklch, var(--color-primary) 26%, transparent);
     }
 
     /* Native checkbox / radio / range pick up the brand. */
@@ -242,7 +259,7 @@
         outline-offset: 2px;
     }
 
-    /* Google Material Symbols (loaded in the admin head). Size is driven by
+    /* Google Material Symbols (loaded in the layout heads). Size is driven by
        font-size, so any text-* utility controls it; default ~20px. Add the
        `is-filled` class (see <x-admin.icon :filled="true" />) for the solid weight. */
     .material-symbols-outlined {

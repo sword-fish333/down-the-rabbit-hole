@@ -1,0 +1,108 @@
+/* =============================================================================
+   Down the Rabbit Hole — frontend atmosphere & flourishes.
+
+   Loaded as a plain stylesheet (NOT processed by Tailwind/Vite), so this file
+   is pure CSS — no @apply. It references the design-token CSS variables that
+   resources/css/app.css emits on :root (--color-wave-500, --color-glow, etc.).
+   Use Tailwind utilities for everything structural; this file is only for the
+   bespoke noir atmosphere Tailwind can't express.
+
+   The signature mechanic: --depth (0 = surface, 1 = the deep). JS raises it as
+   the user descends a rabbit hole; the backdrop blooms warmer, closer, lower.
+   ============================================================================= */
+
+:root {
+    --depth: 0;                       /* set by JS as the user goes deeper (0..1) */
+}
+
+/* --- The atmosphere: a fixed, full-bleed rain-haze behind everything --------
+   Three light sources scattering in smog — cyan air (top), dream-violet bloom
+   (the rabbit hole, drifting up from below as depth grows), a single warm
+   tungsten glow. Low alpha only; in Blade Runner the dark stays wet and matte. */
+.dth-atmosphere {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(120% 80% at 50% calc(118% - var(--depth) * 40%),
+            color-mix(in oklch, var(--color-glow) calc(14% + var(--depth) * 22%), transparent) 0%,
+            transparent 60%),
+        radial-gradient(90% 60% at 12% 4%,
+            color-mix(in oklch, var(--color-wave-500) 12%, transparent) 0%,
+            transparent 55%),
+        radial-gradient(70% 50% at 88% 22%,
+            color-mix(in oklch, var(--color-sand-500) calc(7% + var(--depth) * 8%), transparent) 0%,
+            transparent 55%);
+    transition: background 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* A faint scanline veil — wet glass over a CRT. Cheap, sells the noir. */
+.dth-atmosphere::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 2px,
+        color-mix(in oklch, var(--color-ink-950) 14%, transparent) 3px
+    );
+    opacity: 0.25;
+    mix-blend-mode: overlay;
+}
+
+/* Light mode = "above ground": dial the bloom right back, it should read calm. */
+:root:not(.dark) .dth-atmosphere { opacity: 0.5; }
+
+/* --- Neon glow flourishes (use sparingly — one bold thing per screen) -------- */
+.dth-glow-cyan    { box-shadow: 0 0 0 1px color-mix(in oklch, var(--color-wave-500) 40%, transparent),
+                                0 0 28px -6px color-mix(in oklch, var(--color-wave-500) 55%, transparent); }
+.dth-glow-magenta { box-shadow: 0 0 0 1px color-mix(in oklch, var(--color-clay-500) 45%, transparent),
+                                0 0 32px -4px color-mix(in oklch, var(--color-clay-500) 55%, transparent); }
+.dth-text-glow    { text-shadow: 0 0 18px color-mix(in oklch, currentColor 45%, transparent); }
+
+/* --- Theme switch visuals (markup in components/frontend/theme-switch.blade.php) */
+.theme-switch {
+    position: relative;
+    display: inline-grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    width: 3.4rem;
+    height: 1.75rem;
+    padding: 0 0.35rem;
+    border-radius: 9999px;
+    background: var(--color-surface-muted);
+    border: 1px solid var(--color-border);
+    cursor: pointer;
+    transition: background 0.25s ease, border-color 0.25s ease;
+}
+.theme-switch .theme-switch-icon {
+    display: grid;
+    place-items: center;
+    z-index: 1;
+    font-size: 0.9rem;
+    color: var(--color-foreground-muted);
+    transition: color 0.25s ease;
+}
+.theme-switch .theme-switch-icon-sun  { color: var(--color-sand-600); }
+.dark .theme-switch .theme-switch-icon-moon { color: var(--color-wave-400); }
+.theme-switch .theme-switch-thumb {
+    position: absolute;
+    top: 50%;
+    left: 0.2rem;
+    width: 1.35rem;
+    height: 1.35rem;
+    border-radius: 9999px;
+    background: var(--color-surface);
+    box-shadow: 0 1px 3px color-mix(in oklch, var(--color-ink-950) 30%, transparent);
+    transform: translateY(-50%);
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.theme-switch[aria-checked='true'] .theme-switch-thumb { transform: translate(1.65rem, -50%); }
+
+/* Respect reduced motion — kill the depth transition for sensitive users. */
+@media (prefers-reduced-motion: reduce) {
+    .dth-atmosphere { transition: none; }
+    .theme-switch-thumb { transition: none; }
+}
