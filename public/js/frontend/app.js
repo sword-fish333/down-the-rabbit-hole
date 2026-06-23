@@ -30,6 +30,19 @@
             var ta = document.getElementById('dth-prompt');
             if (ta) { ta.value = chip.getAttribute('data-topic'); ta.focus(); }
         }
+
+        /* Password reveal toggle on auth forms. */
+        var pwToggle = e.target.closest('[data-password-toggle]');
+        if (pwToggle) {
+            var input = document.querySelector(pwToggle.getAttribute('data-password-toggle'));
+            if (input) {
+                var reveal = input.type === 'password';
+                input.type = reveal ? 'text' : 'password';
+                var icon = pwToggle.querySelector('.material-symbols-outlined');
+                if (icon) icon.textContent = reveal ? 'visibility_off' : 'visibility';
+                pwToggle.setAttribute('aria-pressed', String(reveal));
+            }
+        }
     });
 
     /* --- Depth: the rabbit-hole descent ------------------------------------

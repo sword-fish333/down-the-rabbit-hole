@@ -24,7 +24,7 @@
         '@type' => 'Organization',
         'name' => config('app.name'),
         'url' => config('app.url'),
-        'logo' => asset('images/logos/full-logo.png'),
+        'logo' => asset('images/logos/main_logo.png'),
         'sameAs' => array_values(array_filter(config('platform.social', []))),
         'contactPoint' => [
             '@type' => 'ContactPoint',

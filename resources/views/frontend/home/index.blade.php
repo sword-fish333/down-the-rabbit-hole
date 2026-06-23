@@ -22,7 +22,7 @@
         </p>
 
         {{-- The composer — the ungated entry point. --}}
-        <form action="#" method="POST" class="group mt-10 w-full" data-descend>
+        <form action="{{ route('descend') }}" method="POST" class="group mt-10 w-full" data-descend>
             @csrf
             <div class="relative rounded-2xl border border-border-strong bg-surface/70 p-2 shadow-xl backdrop-blur-md transition focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-ring/40 dth-glow-cyan">
                 <label for="dth-prompt" class="sr-only">{{ __('frontend.home.title') }}</label>

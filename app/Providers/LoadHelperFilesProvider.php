@@ -12,7 +12,7 @@ class LoadHelperFilesProvider extends ServiceProvider
     public function register(): void
     {
         foreach (glob(app_path().'/Helpers/*.php') as $filename) {
-            require_once($filename);
+            require_once $filename;
         }
     }
 

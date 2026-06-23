@@ -52,11 +52,11 @@ class ProfileController extends Controller
         $admin = auth('admin')->user();
 
         $check = (new ValidationService);
-        if (!Hash::check($validated['current_password'], $admin->password)) {
+        if (! Hash::check($validated['current_password'], $admin->password)) {
             $check->errorEncountered(__('admin/backend.auth.current-password-incorrect'));
         }
 
-        if (!$check->isSuccessfulCheck()) {
+        if (! $check->isSuccessfulCheck()) {
             return back()->with('error', $check->getFirstError());
         }
 

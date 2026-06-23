@@ -62,47 +62,99 @@
                                 0 0 32px -4px color-mix(in oklch, var(--color-clay-500) 55%, transparent); }
 .dth-text-glow    { text-shadow: 0 0 18px color-mix(in oklch, currentColor 45%, transparent); }
 
+/* --- Brand mark (navbar + footer logos) ------------------------------------
+   The circular rabbit-hole mark. On the navbar (inside .group) it leans in on
+   hover — a faint cyan bloom, like the tunnel pulling you down. Footer mark has
+   no .group ancestor, so it stays calm. */
+.dth-logo {
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), filter 0.3s ease, box-shadow 0.3s ease;
+}
+.group:hover .dth-logo {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 1px color-mix(in oklch, var(--color-wave-500) 45%, transparent);
+    filter: drop-shadow(0 0 10px color-mix(in oklch, var(--color-wave-500) 50%, transparent));
+}
+
+/* --- Auth split-panel showcase: a warren of light blooming up from below ---- */
+.dth-auth-aside::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 55%;
+    width: 130%;
+    aspect-ratio: 1;
+    transform: translateX(-50%);
+    border-radius: 9999px;
+    pointer-events: none;
+    z-index: -1;
+    background: radial-gradient(circle,
+        color-mix(in oklch, var(--color-wave-500) 22%, transparent) 0%,
+        transparent 62%);
+}
+
 /* --- Theme switch visuals (markup in components/frontend/theme-switch.blade.php) */
 .theme-switch {
     position: relative;
     display: inline-grid;
     grid-template-columns: 1fr 1fr;
     align-items: center;
-    width: 3.4rem;
-    height: 1.75rem;
-    padding: 0 0.35rem;
+    justify-items: center;
+    width: 4rem;
+    height: 2.1rem;
+    padding: 0 0.5rem;
     border-radius: 9999px;
     background: var(--color-surface-muted);
     border: 1px solid var(--color-border);
+    box-shadow: inset 0 1px 2px color-mix(in oklch, var(--color-ink-950) 12%, transparent);
     cursor: pointer;
-    transition: background 0.25s ease, border-color 0.25s ease;
+    transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.theme-switch:hover {
+    border-color: var(--color-border-strong);
+    background: color-mix(in oklch, var(--color-surface-muted) 82%, var(--color-primary) 8%);
+}
+.theme-switch:focus-visible {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-ring) 35%, transparent);
 }
 .theme-switch .theme-switch-icon {
     display: grid;
     place-items: center;
     z-index: 1;
-    font-size: 0.9rem;
-    color: var(--color-foreground-muted);
+    font-size: 1rem;
+    color: color-mix(in oklch, var(--color-foreground-muted) 55%, transparent);
     transition: color 0.25s ease;
 }
-.theme-switch .theme-switch-icon-sun  { color: var(--color-sand-600); }
-.dark .theme-switch .theme-switch-icon-moon { color: var(--color-wave-400); }
+/* active icon brightens for the current theme; the other dims back */
+.theme-switch .theme-switch-icon-sun         { color: var(--color-sand-600); }
+.dark .theme-switch .theme-switch-icon-sun   { color: color-mix(in oklch, var(--color-foreground-muted) 45%, transparent); }
+.theme-switch .theme-switch-icon-moon        { color: color-mix(in oklch, var(--color-foreground-muted) 45%, transparent); }
+.dark .theme-switch .theme-switch-icon-moon  { color: var(--color-wave-400); }
 .theme-switch .theme-switch-thumb {
     position: absolute;
     top: 50%;
-    left: 0.2rem;
-    width: 1.35rem;
-    height: 1.35rem;
+    left: 0.3rem;
+    width: 1.5rem;
+    height: 1.5rem;
     border-radius: 9999px;
     background: var(--color-surface);
-    box-shadow: 0 1px 3px color-mix(in oklch, var(--color-ink-950) 30%, transparent);
+    box-shadow: 0 1px 3px color-mix(in oklch, var(--color-ink-950) 35%, transparent),
+                0 0 0 1px color-mix(in oklch, var(--color-border) 60%, transparent);
     transform: translateY(-50%);
-    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
 }
-.theme-switch[aria-checked='true'] .theme-switch-thumb { transform: translate(1.65rem, -50%); }
+/* dark = thumb on the right, lit with the "locking on" cyan glow */
+.theme-switch[aria-checked='true'] .theme-switch-thumb {
+    transform: translate(1.9rem, -50%);
+    box-shadow: 0 1px 3px color-mix(in oklch, var(--color-ink-950) 35%, transparent),
+                0 0 12px -2px color-mix(in oklch, var(--color-wave-500) 55%, transparent);
+}
 
 /* Respect reduced motion — kill the depth transition for sensitive users. */
 @media (prefers-reduced-motion: reduce) {
     .dth-atmosphere { transition: none; }
     .theme-switch-thumb { transition: none; }
+    .dth-logo { transition: none; }
+    .group:hover .dth-logo { transform: none; filter: none; }
 }

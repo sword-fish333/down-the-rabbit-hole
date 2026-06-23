@@ -47,7 +47,7 @@ class Admin extends Authenticatable
      */
     public function profileImageUrl(): ?string
     {
-        if (!$this->profile_image) {
+        if (! $this->profile_image) {
             return null;
         }
 

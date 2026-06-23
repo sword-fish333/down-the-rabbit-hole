@@ -4,6 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Laravel 13 app (PHP 8.3) with a separate admin panel and a public frontend. SQLite by default, Tailwind v4 + Vite for assets.
 
+**Product spec, status & roadmap:** see [`docs/PRODUCT.md`](docs/PRODUCT.md) — what the product is, what's built vs. TODO, and the staged plan (chat MVP → gamification → monetization).
+
 ## Commands
 
 ```bash

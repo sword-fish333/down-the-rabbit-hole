@@ -19,11 +19,11 @@ class AuthService
 
         $admin = Admin::where('email', $email)->first();
 
-        if ($admin && !$admin->isEnabled()) {
+        if ($admin && ! $admin->isEnabled()) {
             return $validation->errorEncountered(__('admin/backend.auth.account-blocked'));
         }
 
-        if (!Auth::guard('admin')->attempt(compact('email', 'password'), $remember)) {
+        if (! Auth::guard('admin')->attempt(compact('email', 'password'), $remember)) {
             return $validation->errorEncountered(__('admin/backend.auth.invalid-credentials'));
         }
 
@@ -38,11 +38,11 @@ class AuthService
 
         $admin = Admin::where('email', $googleUser->getEmail())->first();
 
-        if (!$admin) {
+        if (! $admin) {
             return $validation->errorEncountered(__('admin/backend.auth.no-account-available'));
         }
 
-        if (!$admin->isEnabled()) {
+        if (! $admin->isEnabled()) {
             return $validation->errorEncountered(__('admin/backend.auth.account-blocked'));
         }
 

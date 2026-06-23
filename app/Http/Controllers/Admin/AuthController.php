@@ -36,7 +36,7 @@ class AuthController extends Controller
             $request->boolean('remember_me'),
         );
 
-        if (!$result->isSuccessfulCheck()) {
+        if (! $result->isSuccessfulCheck()) {
             return back()->with('error', $result->getFirstError())->withInput($request->except('password'));
         }
 
@@ -80,7 +80,7 @@ class AuthController extends Controller
 
         $result = $this->authService->handleGoogleLogin($googleUser);
 
-        if (!$result->isSuccessfulCheck()) {
+        if (! $result->isSuccessfulCheck()) {
             return redirect()->route('admin.login')->with('error', $result->getFirstError());
         }
 
