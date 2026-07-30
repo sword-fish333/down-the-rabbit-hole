@@ -2,6 +2,7 @@
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -72,5 +73,43 @@ if (! function_exists('deleteFile')) {
         }
 
         Storage::disk('public')->delete($directory.'/'.$filename);
+    }
+}
+
+/**
+ * The admin panel's CRUD route block, as a callback for Route::group().
+ *
+ *     Route::group(
+ *         ['prefix' => 'learning-mode', 'as' => 'learning-mode.'],
+ *         resourceRoutesCallback(LearningModeController::class, 'learning_mode'),
+ *     );
+ *
+ * Deliberately not Route::resource(): every admin resource here uses the same
+ * six actions with an explicit route-model-binding parameter name, and one
+ * helper keeps that shape identical across resources (DRY) without inheriting
+ * `show`, `.store`-on-collection naming, or the API-only variants we never use.
+ *
+ * @param  class-string  $controller
+ * @param  array<int, string>  $except  action names to skip, e.g. ['destroy']
+ */
+if (! function_exists('resourceRoutesCallback')) {
+    function resourceRoutesCallback(string $controller, string $parameter, array $except = []): Closure
+    {
+        return function () use ($controller, $parameter, $except) {
+            $routes = [
+                'index' => fn () => Route::get('/', [$controller, 'index'])->name('index'),
+                'create' => fn () => Route::get('create', [$controller, 'create'])->name('create'),
+                'store' => fn () => Route::post('/', [$controller, 'store'])->name('store'),
+                'edit' => fn () => Route::get('{'.$parameter.'}/edit', [$controller, 'edit'])->name('edit'),
+                'update' => fn () => Route::put('{'.$parameter.'}', [$controller, 'update'])->name('update'),
+                'destroy' => fn () => Route::delete('{'.$parameter.'}', [$controller, 'destroy'])->name('destroy'),
+            ];
+
+            foreach ($routes as $action => $register) {
+                if (! in_array($action, $except, true)) {
+                    $register();
+                }
+            }
+        };
     }
 }

@@ -2,127 +2,258 @@
 
 namespace Tests\Feature;
 
-use App\DTOs\LlmStreamResult;
+use App\Contracts\LlmClient;
+use App\Models\CheckpointAttempt;
+use App\Models\Concept;
 use App\Models\Conversation;
+use App\Models\LearningMode;
 use App\Models\Message;
 use App\Models\User;
 use App\Models\XpEvent;
 use App\Services\Chat\DescentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\FakeLlmClient;
 use Tests\TestCase;
 
 /**
- * Drives the descent state machine offline — assistant turns are fed in as
- * LlmStreamResult, so no API key or network is needed.
+ * Drives the descent state machine offline — the provider is a FakeLlmClient,
+ * so no API key or network is needed.
  */
 class DescentTest extends TestCase
 {
     use RefreshDatabase;
+
+    private FakeLlmClient $llm;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->llm = new FakeLlmClient;
+        $this->app->instance(LlmClient::class, $this->llm);
+    }
 
     private function descent(): DescentService
     {
         return app(DescentService::class);
     }
 
-    private function teachResult(): LlmStreamResult
+    /** The per-turn directive — the last message in the request the guide saw. */
+    private function lastDirective(): string
     {
-        return new LlmStreamResult("Here is the layer.\n\n```json\n{\"phase\":\"checkpoint\"}\n```", 'claude-haiku-4-5');
+        $messages = $this->llm->lastTeachingRequest->messages;
+
+        return end($messages)['content'];
     }
 
-    private function gradeResult(string $verdict): LlmStreamResult
+    /** Runs one full teaching turn through the service. */
+    private function teach(Conversation $conversation, ?string $reframe = null): void
     {
-        return new LlmStreamResult("Feedback.\n\n```json\n{\"phase\":\"grade\",\"verdict\":\"{$verdict}\"}\n```", 'claude-haiku-4-5');
+        $request = $this->descent()->teachingRequest($conversation, $reframe);
+        $stream = $this->llm->streamTeachingTurn($request);
+
+        foreach ($stream as $chunk) {
+            // Draining the stream is what makes text() and usage() available.
+        }
+
+        $this->descent()->applyTeachingTurn($conversation, $stream);
+        $conversation->refresh();
     }
 
     public function test_a_teaching_turn_opens_a_checkpoint(): void
     {
-        $descent = $this->descent();
-        $conversation = $descent->start(null, 'Quantum entanglement');
+        $conversation = $this->descent()->start(null, 'Quantum entanglement');
 
         $this->assertSame(Conversation::STATUS_EXPLORING, $conversation->status);
         $this->assertSame(1, $conversation->messages()->count());
 
-        $plan = $descent->buildTurnPlan($conversation);
-        $this->assertSame(Message::PHASE_TEACH, $plan->phase);
+        $this->teach($conversation);
 
-        $descent->applyAssistantTurn($conversation, $plan, $this->teachResult());
+        $this->assertSame(Conversation::STATUS_CHECKPOINT_PENDING, $conversation->status);
+        $this->assertStringContainsString('Checkpoint', $conversation->messages()->latest('id')->value('content'));
+    }
 
-        $this->assertSame(Conversation::STATUS_CHECKPOINT_PENDING, $conversation->fresh()->status);
+    public function test_the_teaching_turn_carries_no_control_block(): void
+    {
+        $conversation = $this->descent()->start(null, 'Pure functions');
+        $this->teach($conversation);
+
+        // The trailing ```json control block is gone: grading is a separate,
+        // schema-constrained call, so there is nothing to scrape out of prose.
+        $this->assertStringNotContainsString('```json', $conversation->messages()->latest('id')->value('content'));
     }
 
     public function test_passing_a_checkpoint_descends_a_layer(): void
     {
-        $descent = $this->descent();
-        $conversation = $descent->start(null, 'Stoicism');
-        $descent->applyAssistantTurn($conversation, $descent->buildTurnPlan($conversation), $this->teachResult());
+        $conversation = $this->descent()->start(null, 'Stoicism');
+        $this->teach($conversation);
 
-        $conversation->refresh();
-        $descent->recordUserProof($conversation, 'My explanation in my own words.');
+        $graded = $this->descent()->gradeCheckpoint($conversation, 'My explanation in my own words.');
 
-        $gradePlan = $descent->buildTurnPlan($conversation);
-        $this->assertSame(Message::PHASE_GRADE, $gradePlan->phase);
-
-        $descent->applyAssistantTurn($conversation, $gradePlan, $this->gradeResult('pass'));
-
-        $conversation->refresh();
-        $this->assertSame(1, $conversation->current_depth);
-        $this->assertSame(Conversation::STATUS_EXPLORING, $conversation->status);
+        $this->assertTrue($graded['result']->passed());
+        $this->assertSame(1, $conversation->fresh()->current_depth);
+        $this->assertSame(Conversation::STATUS_EXPLORING, $conversation->fresh()->status);
+        $this->assertTrue($graded['state']['passed']);
     }
 
     public function test_a_retry_keeps_the_learner_on_the_layer(): void
     {
-        $descent = $this->descent();
-        $conversation = $descent->start(null, 'The fall of Rome');
-        $descent->applyAssistantTurn($conversation, $descent->buildTurnPlan($conversation), $this->teachResult());
-        $conversation->refresh();
-        $descent->recordUserProof($conversation, 'A weak answer.');
-        $descent->applyAssistantTurn($conversation, $descent->buildTurnPlan($conversation), $this->gradeResult('retry'));
+        $this->llm->verdict = CheckpointAttempt::VERDICT_RETRY;
+
+        $conversation = $this->descent()->start(null, 'The fall of Rome');
+        $this->teach($conversation);
+
+        $this->descent()->gradeCheckpoint($conversation, 'A weak answer.');
 
         $conversation->refresh();
         $this->assertSame(0, $conversation->current_depth);
         $this->assertSame(Conversation::STATUS_CHECKPOINT_PENDING, $conversation->status);
     }
 
-    public function test_a_missing_control_block_fails_safe_to_retry(): void
+    public function test_a_failed_grading_call_never_costs_the_learner_their_layer(): void
     {
-        $descent = $this->descent();
-        $conversation = $descent->start(null, 'Chess');
-        $descent->applyAssistantTurn($conversation, $descent->buildTurnPlan($conversation), $this->teachResult());
-        $conversation->refresh();
-        $descent->recordUserProof($conversation, 'answer');
+        $this->llm->gradeThrows = true;
 
-        // Grade turn with no control block at all.
-        $descent->applyAssistantTurn(
-            $conversation,
-            $descent->buildTurnPlan($conversation),
-            new LlmStreamResult('I forgot the control block.', 'claude-haiku-4-5'),
-        );
+        $conversation = $this->descent()->start(null, 'Chess');
+        $this->teach($conversation);
 
+        $graded = $this->descent()->gradeCheckpoint($conversation, 'a good answer');
+
+        $this->assertFalse($graded['result']->passed());
+        $this->assertSame(0, $conversation->fresh()->current_depth);
         $this->assertSame(Conversation::STATUS_CHECKPOINT_PENDING, $conversation->fresh()->status);
+    }
+
+    public function test_a_graded_checkpoint_is_recorded_with_its_criteria(): void
+    {
+        $conversation = $this->descent()->start(null, 'Recursion');
+        $this->teach($conversation);
+
+        $this->descent()->gradeCheckpoint($conversation, 'Base case plus a smaller call.', selfRating: 90);
+
+        $attempt = CheckpointAttempt::firstOrFail();
+        $this->assertSame(CheckpointAttempt::VERDICT_PASS, $attempt->verdict);
+        $this->assertSame(86, $attempt->score);
+        $this->assertSame(90, $attempt->self_rating);
+        $this->assertCount(1, $attempt->criteria);
+        $this->assertSame(4, $attempt->calibrationGap());
+    }
+
+    public function test_the_grader_receives_the_checkpoint_and_the_answer(): void
+    {
+        $conversation = $this->descent()->start(null, 'Entropy');
+        $this->teach($conversation);
+
+        $this->descent()->gradeCheckpoint($conversation, 'Disorder increases.');
+
+        $this->assertSame('Explain it back.', $this->llm->lastGradingRequest->checkpoint);
+        $this->assertSame('Disorder increases.', $this->llm->lastGradingRequest->answer);
+        $this->assertSame('Entropy', $this->llm->lastGradingRequest->subject);
+    }
+
+    public function test_demonstrated_concepts_build_the_mastery_map(): void
+    {
+        config(['platform.mastery.demonstrations_to_master' => 2]);
+
+        $conversation = $this->descent()->start(null, 'Pure functions');
+
+        $this->teach($conversation);
+        $this->descent()->gradeCheckpoint($conversation, 'first proof');
+
+        $concept = Concept::firstOrFail();
+        $this->assertSame(Concept::STATE_DEVELOPING, $concept->state, 'One demonstration is not mastery.');
+
+        $this->teach($conversation);
+        $this->descent()->gradeCheckpoint($conversation, 'second proof');
+
+        $this->assertSame(Concept::STATE_MASTERED, $concept->fresh()->state);
+    }
+
+    public function test_a_misconception_is_recorded_and_resurfaces_in_the_next_layer(): void
+    {
+        $this->llm->misconceptions = [[
+            'concept' => 'Referential transparency',
+            'belief' => 'that logging counts as pure',
+            'correction' => 'Writing anywhere outside the function is a side effect.',
+        ]];
+
+        $conversation = $this->descent()->start(null, 'Pure functions');
+        $this->teach($conversation);
+        $this->descent()->gradeCheckpoint($conversation, 'an answer with a wrong belief');
+
+        $concept = Concept::where('slug', 'referential-transparency')->firstOrFail();
+        $this->assertSame(Concept::STATE_MISUNDERSTOOD, $concept->state);
+        $this->assertSame('that logging counts as pure', $concept->note);
+
+        // The next teaching turn is asked to weave a correction in.
+        $this->teach($conversation);
+        $directive = $this->lastDirective();
+        $this->assertStringContainsString('Referential transparency', $directive);
+    }
+
+    public function test_the_learning_mode_directive_reaches_the_teaching_turn(): void
+    {
+        $mode = LearningMode::create([
+            'slug' => 'socratic',
+            'name' => 'Socratic',
+            'prompt_directive' => 'Lead with a question that exposes the gap.',
+        ]);
+
+        $conversation = $this->descent()->start(null, 'Logic', $mode);
+        $this->teach($conversation);
+
+        $directive = $this->lastDirective();
+        $this->assertStringContainsString('Lead with a question', $directive);
+    }
+
+    public function test_a_reframe_re_teaches_the_same_layer(): void
+    {
+        $conversation = $this->descent()->start(null, 'Monads');
+        $this->teach($conversation);
+
+        $this->teach($conversation, DescentService::REFRAME_ANALOGY);
+
+        $directive = $this->lastDirective();
+        $this->assertStringContainsString('analogy', $directive);
+        $this->assertSame(0, $conversation->fresh()->current_depth, 'A reframe must not advance depth.');
+    }
+
+    public function test_surfacing_at_max_depth_closes_the_hole(): void
+    {
+        config(['platform.chat.max_depth' => 2]);
+
+        $conversation = $this->descent()->start(null, 'Go');
+
+        $this->teach($conversation);
+        $this->descent()->gradeCheckpoint($conversation, 'layer 0 proof');
+        $this->teach($conversation->fresh());
+        $this->descent()->gradeCheckpoint($conversation->fresh(), 'layer 1 proof');
+
+        $conversation->refresh();
+        $this->assertSame(Conversation::STATUS_SURFACED, $conversation->status);
+        $this->assertNotNull($conversation->surfaced_at);
     }
 
     public function test_model_routes_by_depth_and_phase(): void
     {
-        $descent = $this->descent();
         config(['platform.chat.deep_threshold' => 3]);
 
         $models = config('platform.chat.models.'.config('platform.chat.provider'));
+        $descent = $this->descent();
 
         $this->assertSame($models['mid'], $descent->pickModel(0, Message::PHASE_TEACH));
         $this->assertSame($models['cheap'], $descent->pickModel(0, Message::PHASE_GRADE));
+        $this->assertSame($models['cheap'], $descent->pickModel(6, Message::PHASE_GRADE), 'Grading always uses the cheap model.');
         $this->assertSame($models['deep'], $descent->pickModel(3, Message::PHASE_TEACH));
     }
 
     public function test_an_authenticated_pass_awards_xp_and_streak(): void
     {
-        $user = User::create(['name' => 'Alice', 'email' => 'alice@example.com', 'password' => 'secret-pass']);
+        $user = User::create(['first_name' => 'Alice', 'email' => 'alice@example.com', 'password' => 'secret-pass1']);
 
-        $descent = $this->descent();
-        $conversation = $descent->start($user, 'Neuroscience');
-        $descent->applyAssistantTurn($conversation, $descent->buildTurnPlan($conversation), $this->teachResult());
-        $conversation->refresh();
-        $descent->recordUserProof($conversation, 'A sound explanation.');
-        $descent->applyAssistantTurn($conversation, $descent->buildTurnPlan($conversation), $this->gradeResult('pass'));
+        $conversation = $this->descent()->start($user, 'Neuroscience');
+        $this->teach($conversation);
+        $this->descent()->gradeCheckpoint($conversation, 'A sound explanation.');
 
         $this->assertSame((int) config('platform.chat.layer_xp'), $user->fresh()->xp);
         $this->assertSame(1, XpEvent::where('user_id', $user->id)->count());
@@ -131,13 +262,24 @@ class DescentTest extends TestCase
 
     public function test_a_guest_pass_awards_nothing(): void
     {
-        $descent = $this->descent();
-        $conversation = $descent->start(null, 'Go');
-        $descent->applyAssistantTurn($conversation, $descent->buildTurnPlan($conversation), $this->teachResult());
-        $conversation->refresh();
-        $descent->recordUserProof($conversation, 'answer');
-        $descent->applyAssistantTurn($conversation, $descent->buildTurnPlan($conversation), $this->gradeResult('pass'));
+        $conversation = $this->descent()->start(null, 'Go');
+        $this->teach($conversation);
+        $this->descent()->gradeCheckpoint($conversation, 'answer');
 
         $this->assertSame(0, XpEvent::count());
+    }
+
+    public function test_the_daily_turn_limit_is_enforced_per_guest(): void
+    {
+        config(['platform.chat.guest_daily_limit' => 2]);
+
+        $descent = $this->descent();
+        $this->assertFalse($descent->dailyLimitReached(null, 'guest-key'));
+
+        $descent->recordTurn(null, 'guest-key');
+        $descent->recordTurn(null, 'guest-key');
+
+        $this->assertTrue($descent->dailyLimitReached(null, 'guest-key'));
+        $this->assertFalse($descent->dailyLimitReached(null, 'another-guest'));
     }
 }

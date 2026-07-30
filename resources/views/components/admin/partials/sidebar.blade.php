@@ -24,6 +24,29 @@
                           :active="request()->routeIs('admin.dashboard')">
             {{ __('admin/frontend.nav.dashboard') }}
         </x-admin.nav-link>
+        <x-admin.nav-link :href="route('admin.conversation.index')" icon="forum"
+                          :label="__('admin/frontend.nav.conversations')"
+                          :active="request()->routeIs('admin.conversation.*')">
+            {{ __('admin/frontend.nav.conversations') }}
+        </x-admin.nav-link>
+        <x-admin.nav-link :href="route('admin.user.index')" icon="group"
+                          :label="__('admin/frontend.nav.users')"
+                          :active="request()->routeIs('admin.user.*')">
+            {{ __('admin/frontend.nav.users') }}
+        </x-admin.nav-link>
+
+        <p class="px-3.5 pt-5 pb-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase nav-collapsed:lg:hidden">
+            {{ __('admin/frontend.nav.content') }}
+        </p>
+        <x-admin.nav-link :href="route('admin.learning-mode.index')" icon="tune"
+                          :label="__('admin/frontend.nav.learning-modes')"
+                          :active="request()->routeIs('admin.learning-mode.*')">
+            {{ __('admin/frontend.nav.learning-modes') }}
+        </x-admin.nav-link>
+
+        <p class="px-3.5 pt-5 pb-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase nav-collapsed:lg:hidden">
+            {{ __('admin/frontend.nav.account') }}
+        </p>
         <x-admin.nav-link :href="route('admin.profile.index')" icon="manage_accounts"
                           :label="__('admin/frontend.nav.profile')"
                           :active="request()->routeIs('admin.profile.*')">

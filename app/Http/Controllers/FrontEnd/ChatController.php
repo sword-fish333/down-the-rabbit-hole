@@ -4,17 +4,26 @@ namespace App\Http\Controllers\FrontEnd;
 
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
+use App\Models\LearningMode;
 use App\Services\Chat\ChatStreamingService;
 use App\Services\Chat\DescentService;
+use App\Services\Chat\MasteryService;
 use App\Services\ValidationService;
 use App\Traits\ValidationHelper;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * The descent: start a hole, view it, submit proof / go deeper, and stream the
- * guide's turn. Thin — every rule lives in DescentService / ChatStreamingService.
+ * The descent: start a hole, view it, stream a teaching turn, submit proof, and
+ * descend. Thin — every rule lives in DescentService / ChatStreamingService.
+ *
+ * Two transports on purpose: teaching streams over SSE (prose, rendered as it
+ * arrives) while grading answers as JSON (a structured verdict the UI unpacks
+ * into criterion-by-criterion feedback).
  */
 class ChatController extends Controller
 {
@@ -23,125 +32,169 @@ class ChatController extends Controller
     public function __construct(
         private readonly DescentService $descent,
         private readonly ChatStreamingService $streaming,
+        private readonly MasteryService $mastery,
     ) {
         $this->initializeValidator();
     }
 
+    /** The learner's library of holes — resume, review, or start another. */
+    public function index(): View
+    {
+        $holes = Conversation::query()
+            ->ownedBy(auth()->id())
+            ->with('learningMode:id,name,icon,accent')
+            ->withCount(['concepts as mastered_count' => fn ($query) => $query->where('state', 'mastered')])
+            ->latest('updated_at')
+            ->paginate(12);
+
+        return view('frontend.chat.index', [
+            'holes' => $holes,
+            'modes' => LearningMode::query()->enabled()->ordered()->get(),
+        ]);
+    }
+
     /** Start a new rabbit hole from the home composer. */
-    public function descend(): RedirectResponse
+    public function descend(Request $request): RedirectResponse
     {
-        $validated = $this->validateDescend();
+        $validated = $request->validate([
+            'prompt' => 'required|string|min:2|max:500',
+            'learning_mode_id' => ['nullable', Rule::exists('learning_modes', 'id')->where('enabled', true)],
+        ]);
 
-        $conversation = $this->descent->start(auth()->user(), $validated['prompt']);
-        $this->rememberGuestHole($conversation);
+        $mode = LearningMode::find($validated['learning_mode_id'] ?? null);
+        $conversation = $this->descent->start(auth()->user(), $validated['prompt'], $mode);
+
+        $this->rememberGuestHole($request, $conversation);
 
         return redirect()->route('hole.show', $conversation)->with('stream', true);
     }
 
-    public function show(Conversation $conversation): View|RedirectResponse
+    public function show(Request $request, Conversation $conversation): View|RedirectResponse
     {
-        if (! $this->canAccess($conversation)) {
+        if (! $this->canAccess($request, $conversation)) {
             return redirect()->route('home')->with('error', __('frontend.chat.no-access'));
         }
 
-        return view('frontend.chat.show', compact('conversation'));
+        $conversation->load('learningMode');
+
+        return view('frontend.chat.show', [
+            'conversation' => $conversation,
+            'messages' => $conversation->messages()->orderBy('id')->get(),
+            'attempts' => $conversation->checkpointAttempts()->orderBy('id')->get()->keyBy('message_id'),
+            'concepts' => $conversation->concepts()->orderBy('first_seen_depth')->orderBy('name')->get(),
+            'mastery' => $this->mastery->tally($conversation),
+        ]);
     }
 
-    /** Submit a checkpoint proof, or ask to go one layer deeper after a pass. */
-    public function continue(Conversation $conversation): RedirectResponse
+    /** SSE endpoint: streams the guide's teaching turn for the current layer. */
+    public function stream(Request $request, Conversation $conversation): StreamedResponse
     {
-        if (! $this->canAccess($conversation)) {
-            return redirect()->route('home')->with('error', __('frontend.chat.no-access'));
-        }
+        $validation = $this->validateTurn($request, $conversation);
 
-        $validated = $this->validateContinue($conversation);
-        $this->descent->recordUserProof($conversation, $validated['message'] ?? null);
-
-        return redirect()->route('hole.show', $conversation)->with('stream', true);
-    }
-
-    /** SSE endpoint: streams the guide's turn for the conversation's current state. */
-    public function stream(Conversation $conversation): StreamedResponse
-    {
-        $validation = $this->validateStream($conversation);
         if (! $validation->isSuccessfulCheck()) {
-            return $this->errorStream($validation->getFirstError());
+            return $this->streaming->error($validation->getFirstError());
         }
 
-        $this->descent->recordTurn(auth()->user(), $this->guestKey());
+        $reframe = $request->string('reframe')->value();
+        $reframe = in_array($reframe, DescentService::REFRAMES, true) ? $reframe : null;
 
-        return $this->streaming->stream($conversation);
+        $this->descent->recordTurn(auth()->user(), $this->guestKey($request));
+
+        return $this->streaming->stream($conversation, $reframe);
     }
 
-    private function validateDescend(): array
+    /**
+     * Submit the proof for the open checkpoint. Returns the structured verdict
+     * so the workspace can render criterion-by-criterion feedback in place.
+     */
+    public function checkpoint(Request $request, Conversation $conversation): JsonResponse
     {
-        return request()->validate(['prompt' => 'required|string|min:2|max:500']);
-    }
+        $validation = $this->validateCheckpoint($request, $conversation);
 
-    private function validateContinue(Conversation $conversation): array
-    {
-        $rules = ['message' => 'nullable|string|max:2000'];
-
-        if ($conversation->isCheckpointPending()) {
-            $rules['message'] = 'required|string|max:2000';
+        if (! $validation->isSuccessfulCheck()) {
+            return response()->json(['message' => $validation->getFirstError()], $validation->status());
         }
 
-        return request()->validate($rules);
+        $this->descent->recordTurn(auth()->user(), $this->guestKey($request));
+
+        $graded = $this->descent->gradeCheckpoint(
+            $conversation,
+            $request->string('message')->value(),
+            $request->filled('self_rating') ? $request->integer('self_rating') : null,
+        );
+
+        $attempt = $graded['attempt'];
+
+        return response()->json([
+            'state' => $graded['state'],
+            'attempt' => [
+                'verdict' => $attempt->verdict,
+                'score' => $attempt->score,
+                'feedback' => $attempt->feedback,
+                'criteria' => $attempt->criteria ?? [],
+                'demonstrated_concepts' => $attempt->demonstrated_concepts ?? [],
+                'missing_concepts' => $attempt->missing_concepts ?? [],
+                'misconceptions' => $attempt->misconceptions ?? [],
+                'recommended_action' => $attempt->recommended_action,
+                'calibration_gap' => $attempt->calibrationGap(),
+            ],
+        ]);
     }
 
-    private function validateStream(Conversation $conversation): ValidationService
+    private function validateTurn(Request $request, Conversation $conversation): ValidationService
     {
-        if (! $this->canAccess($conversation)) {
-            return $this->errorEncountered(__('frontend.chat.no-access'));
+        if (! $this->canAccess($request, $conversation)) {
+            return $this->errorEncountered(__('frontend.chat.no-access'), 403);
         }
 
         if ($conversation->isSurfaced()) {
             return $this->errorEncountered(__('frontend.chat.already-surfaced'));
         }
 
-        if ($this->descent->dailyLimitReached(auth()->user(), $this->guestKey())) {
-            return $this->errorEncountered(__('frontend.chat.daily-limit'));
+        if ($this->descent->dailyLimitReached(auth()->user(), $this->guestKey($request))) {
+            return $this->errorEncountered(__('frontend.chat.daily-limit'), 429);
         }
 
         return $this->successfulCheck();
     }
 
+    private function validateCheckpoint(Request $request, Conversation $conversation): ValidationService
+    {
+        $request->validate([
+            'message' => 'required|string|min:2|max:4000',
+            'self_rating' => 'nullable|integer|min:0|max:100',
+        ]);
+
+        if (! $conversation->isCheckpointPending()) {
+            return $this->errorEncountered(__('frontend.chat.no-checkpoint'), 409);
+        }
+
+        return $this->validateTurn($request, $conversation);
+    }
+
     /** Owned by the signed-in user, or a guest hole remembered in this session. */
-    private function canAccess(Conversation $conversation): bool
+    private function canAccess(Request $request, Conversation $conversation): bool
     {
         if ($conversation->user_id) {
             return $conversation->user_id === auth()->id();
         }
 
-        return in_array($conversation->id, session('dth_holes', []), true);
+        return in_array($conversation->id, $request->session()->get('dth_holes', []), true);
     }
 
-    private function rememberGuestHole(Conversation $conversation): void
+    private function rememberGuestHole(Request $request, Conversation $conversation): void
     {
         if ($conversation->user_id) {
             return;
         }
 
-        $holes = session('dth_holes', []);
+        $holes = $request->session()->get('dth_holes', []);
         $holes[] = $conversation->id;
-        session(['dth_holes' => $holes]);
+        $request->session()->put('dth_holes', $holes);
     }
 
-    private function guestKey(): string
+    private function guestKey(Request $request): string
     {
-        return session()->getId();
-    }
-
-    private function errorStream(string $message): StreamedResponse
-    {
-        return response()->stream(function () use ($message) {
-            echo 'event: error'."\n";
-            echo 'data: '.json_encode(['message' => $message])."\n\n";
-            flush();
-        }, 200, [
-            'Content-Type' => 'text/event-stream',
-            'Cache-Control' => 'no-cache',
-            'X-Accel-Buffering' => 'no',
-        ]);
+        return $request->session()->getId();
     }
 }

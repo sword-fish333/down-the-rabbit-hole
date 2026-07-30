@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -24,7 +25,7 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->enum('salutation', salutationEnum())->default('Not Set');
             $table->string('apple_id')->unique()->nullable();
-            $table->enum('login_method', \App\Models\User::LOGIN_METHODS)->nullable();
+            $table->enum('login_method', User::LOGIN_METHODS)->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

@@ -2,9 +2,13 @@
     'class' => '',
 ])
 {{--
-    Premium dark/light mode toggle.
-    State is mirrored via aria-checked + data-theme by public/js/actions.js -> ThemeManager.
-    Same markup serves desktop and mobile; CSS in public/css/custom.css handles the visuals.
+    Dark/light toggle. A real `role="switch"` with `aria-checked`, so screen
+    readers and keyboards get platform behaviour; public/js/frontend/app.js
+    mirrors the state and persists it, and the visuals live in
+    public/css/frontend/custom.css (.theme-switch).
+
+    The frontend defaults to dark — the noir hero is the intended first
+    impression — but the visitor's choice is remembered.
 --}}
 <button
     type="button"
@@ -13,7 +17,7 @@
     aria-label="{{ __('frontend.navbar.theme-toggle') }}"
     title="{{ __('frontend.navbar.theme-toggle') }}"
     data-theme-switch
-    {{ $attributes->merge(['class' => 'theme-switch ' . $class]) }}
+    {{ $attributes->merge(['class' => 'theme-switch '.$class]) }}
 >
     <span class="theme-switch-icon theme-switch-icon-sun" aria-hidden="true">
         <span class="material-symbols-outlined">light_mode</span>

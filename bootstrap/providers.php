@@ -1,6 +1,9 @@
 <?php
 
+use App\Providers\AppServiceProvider;
+use App\Providers\LoadHelperFilesProvider;
+
 return [
-    App\Providers\AppServiceProvider::class,
-    App\Providers\LoadHelperFilesProvider::class,
+    AppServiceProvider::class,
+    LoadHelperFilesProvider::class,
 ];

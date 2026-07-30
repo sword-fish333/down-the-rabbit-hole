@@ -8,9 +8,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 /**
- * Owns the SSE wire: it streams one assistant turn to the browser as Server-Sent
- * Events, then hands the assembled result to DescentService to persist and advance
- * state. Knows the transport; the descent logic lives in DescentService.
+ * Owns the SSE wire for a teaching turn: it streams the guide's prose to the
+ * browser, then hands the assembled turn to DescentService to persist and open
+ * the checkpoint. Knows the transport; the descent logic lives next door.
  *
  * Events sent: `token` (a text delta), `done` (final state payload), `error`.
  */
@@ -21,15 +21,17 @@ class ChatStreamingService
         private readonly DescentService $descent,
     ) {}
 
-    public function stream(Conversation $conversation): StreamedResponse
+    public function stream(Conversation $conversation, ?string $reframe = null): StreamedResponse
     {
-        $plan = $this->descent->buildTurnPlan($conversation);
+        $request = $this->descent->teachingRequest($conversation, $reframe);
 
-        return response()->stream(function () use ($conversation, $plan) {
+        return response()->stream(function () use ($conversation, $request) {
             try {
-                $result = $this->llm->streamTurn($plan, function (string $delta) {
+                $stream = $this->llm->streamTeachingTurn($request);
+
+                foreach ($stream as $delta) {
                     $this->send('token', ['text' => $delta]);
-                });
+                }
             } catch (Throwable $e) {
                 fullLog($e);
                 $this->send('error', ['message' => __('frontend.chat.llm-error')]);
@@ -37,13 +39,26 @@ class ChatStreamingService
                 return;
             }
 
-            // Persist + advance even if the learner disconnected mid-stream
-            // (streamTurn returns the partial result rather than throwing).
-            $payload = $this->descent->applyAssistantTurn($conversation, $plan, $result);
-            $this->send('done', $payload);
+            // Persist + advance even if the learner disconnected mid-stream: the
+            // stream stops early and hands back everything received so far.
+            $this->send('done', $this->descent->applyTeachingTurn($conversation, $stream));
         }, 200, $this->headers());
     }
 
+    /**
+     * A one-frame error stream, so the browser's reader sees a normal `error`
+     * event instead of a dropped connection it has to guess about.
+     */
+    public function error(string $message): StreamedResponse
+    {
+        return response()->stream(function () use ($message) {
+            $this->send('error', ['message' => $message]);
+        }, 200, $this->headers());
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
     private function send(string $event, array $data): void
     {
         echo 'event: '.$event."\n";
@@ -55,6 +70,9 @@ class ChatStreamingService
         flush();
     }
 
+    /**
+     * @return array<string, string>
+     */
     private function headers(): array
     {
         return [

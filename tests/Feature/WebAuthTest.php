@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\SendEmailVerificationEmail;
 use App\Models\Conversation;
 use App\Models\User;
 use App\Services\FrontEnd\AuthService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class WebAuthTest extends TestCase
@@ -73,16 +76,63 @@ class WebAuthTest extends TestCase
 
     public function test_register_endpoint_creates_account_and_signs_in(): void
     {
+        Queue::fake();
+
         $response = $this->post(route('register.submit'), [
-            'name' => 'Cy',
+            'first_name' => 'Cy',
+            'last_name' => 'Bergman',
             'email' => 'cy@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ]);
 
-        $response->assertRedirect(route('home'));
+        $response->assertRedirect(route('holes.index'));
         $this->assertAuthenticated();
-        $this->assertDatabaseHas('users', ['email' => 'cy@example.com']);
+
+        // `name` is a projection of the two parts, kept in sync on save.
+        $this->assertDatabaseHas('users', ['email' => 'cy@example.com', 'name' => 'Cy Bergman']);
+
+        // Verification mail is queued, never sent inline — a slow SMTP host must
+        // not stand between a new learner and their first layer.
+        Queue::assertPushed(SendEmailVerificationEmail::class);
+    }
+
+    public function test_registration_rejects_a_password_without_a_number(): void
+    {
+        $this->post(route('register.submit'), [
+            'first_name' => 'Cy',
+            'email' => 'cy@example.com',
+            'password' => 'passwordonly',
+            'password_confirmation' => 'passwordonly',
+        ])->assertSessionHasErrors('password');
+
+        $this->assertGuest();
+    }
+
+    public function test_the_verification_link_confirms_the_address(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $url = URL::temporarySignedRoute('verification.verify', now()->addHour(), [
+            'id' => $user->id,
+            'hash' => sha1($user->getEmailForVerification()),
+        ]);
+
+        $this->actingAs($user)->get($url)->assertRedirect(route('holes.index'));
+        $this->assertTrue($user->fresh()->hasVerifiedEmail());
+    }
+
+    public function test_a_link_issued_for_another_address_is_rejected(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $url = URL::temporarySignedRoute('verification.verify', now()->addHour(), [
+            'id' => $user->id,
+            'hash' => sha1('someone-else@example.com'),
+        ]);
+
+        $this->actingAs($user)->get($url)->assertRedirect(route('home'));
+        $this->assertFalse($user->fresh()->hasVerifiedEmail());
     }
 
     public function test_google_login_creates_the_user_and_claims_their_hole(): void

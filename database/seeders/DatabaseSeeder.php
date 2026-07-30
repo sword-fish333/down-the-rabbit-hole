@@ -16,8 +16,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Content first: a hole started before the modes exist has none to pick.
+        $this->call(LearningModeSeeder::class);
+
         User::factory()->create([
-            'name' => 'Test User',
+            'first_name' => 'Test',
+            'last_name' => 'User',
             'email' => 'test@example.com',
         ]);
 

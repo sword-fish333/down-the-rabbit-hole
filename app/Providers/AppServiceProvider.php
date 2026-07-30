@@ -19,9 +19,9 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         // The single seam over the LLM provider — CHAT_PROVIDER picks the client.
-        $this->app->bind(LlmClient::class, fn () => match (config('platform.chat.provider')) {
-            'anthropic' => new AnthropicClient,
-            default => new GeminiClient,
+        $this->app->bind(LlmClient::class, fn ($app) => match (config('platform.chat.provider')) {
+            'anthropic' => $app->make(AnthropicClient::class),
+            default => $app->make(GeminiClient::class),
         });
     }
 
@@ -48,5 +48,9 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('register', fn (Request $request) => Limit::perMinute(5)->by($request->ip()));
 
         RateLimiter::for('oauth', fn (Request $request) => Limit::perMinute(15)->by($request->ip()));
+
+        // Starting a hole is the one unauthenticated action that costs money.
+        RateLimiter::for('descend', fn (Request $request) => Limit::perMinute(10)
+            ->by($request->user()?->id ?: $request->ip()));
     }
 }

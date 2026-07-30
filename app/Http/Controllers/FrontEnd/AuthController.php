@@ -7,6 +7,7 @@ use App\Services\FrontEnd\AuthService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 use Laravel\Socialite\Facades\Socialite;
 
@@ -30,9 +31,10 @@ class AuthController extends Controller
     public function register(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'first_name' => 'required|string|min:2|max:60',
+            'last_name' => 'nullable|string|max:60',
             'email' => 'required|email|max:255|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
         ]);
 
         $this->authService->register($validated, $this->guestHoleIds($request));
@@ -40,7 +42,7 @@ class AuthController extends Controller
         $request->session()->forget('dth_holes');
         $request->session()->regenerate();
 
-        return redirect()->intended(route('home'))->with('success', __('frontend.auth.welcome'));
+        return redirect()->intended(route('holes.index'))->with('success', __('frontend.auth.welcome'));
     }
 
     public function showLogin(): View|RedirectResponse
@@ -73,7 +75,7 @@ class AuthController extends Controller
         $request->session()->forget('dth_holes');
         $request->session()->regenerate();
 
-        return redirect()->intended(route('home'))->with('success', __('frontend.auth.welcome-back'));
+        return redirect()->intended(route('holes.index'))->with('success', __('frontend.auth.welcome-back'));
     }
 
     public function oauthRedirect(Request $request): RedirectResponse
@@ -106,7 +108,7 @@ class AuthController extends Controller
         $request->session()->forget('dth_holes');
         $request->session()->regenerate();
 
-        return redirect()->intended(route('home'))->with('success', __('frontend.auth.welcome'));
+        return redirect()->intended(route('holes.index'))->with('success', __('frontend.auth.welcome'));
     }
 
     public function logout(Request $request): RedirectResponse
@@ -118,6 +120,9 @@ class AuthController extends Controller
         return redirect()->route('home')->with('success', __('frontend.auth.signed-out'));
     }
 
+    /**
+     * @return array<int, int>
+     */
     private function guestHoleIds(Request $request): array
     {
         return $request->session()->get('dth_holes', []);

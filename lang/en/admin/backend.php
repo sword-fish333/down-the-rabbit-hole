@@ -21,6 +21,23 @@ return [
         'an-error-occurred' => 'Something went wrong. Please try again.',
     ],
 
+    'learning-modes' => [
+        'created' => 'The learning mode has been created.',
+        'updated' => 'The learning mode has been saved.',
+        'deleted' => 'The learning mode has been deleted.',
+        'in-use' => 'This mode is used by existing rabbit holes. Disable it instead — that hides it from new descents without breaking the ones already running.',
+        'cannot-disable-default' => 'This is the default mode for new descents. Promote another mode to default first.',
+    ],
+
+    'users' => [
+        'updated' => 'The learner’s account has been saved.',
+        'deleted' => 'The learner and their descents have been deleted.',
+    ],
+
+    'conversations' => [
+        'deleted' => 'The rabbit hole has been deleted.',
+    ],
+
     'mail' => [
         'support-subject' => 'Support request: :title',
         'support-heading' => 'New support request',

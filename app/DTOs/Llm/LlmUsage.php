@@ -1,15 +1,14 @@
 <?php
 
-namespace App\DTOs;
+namespace App\DTOs\Llm;
 
 /**
- * The assembled outcome of a streamed LLM turn, returned once the stream closes.
+ * Token accounting for one provider call. Cache reads are tracked separately so
+ * a broken prompt cache shows up in the data instead of only on the invoice.
  */
-class LlmStreamResult
+final class LlmUsage
 {
     public function __construct(
-        public readonly string $text,
-        public readonly string $model,
         public readonly int $inputTokens = 0,
         public readonly int $outputTokens = 0,
         public readonly int $cacheReadTokens = 0,

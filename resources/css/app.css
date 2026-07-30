@@ -127,6 +127,31 @@
     --color-main-color:      var(--color-wave-600);
     --color-main-dark-color: var(--color-wave-900);
     --color-main-green:      var(--color-sea-600);
+
+    /* =========================================================================
+       Motion system.
+
+       Durations are named for the JOB, not the number, so a component can't
+       drift: if you're reaching for an arbitrary ms value, the interaction
+       probably belongs in one of these buckets. Every animation must answer at
+       least one of: what changed, where did it come from, what can I touch,
+       how deep am I, what was unlocked. If it answers none, it shouldn't exist.
+
+       Use as duration-(--motion-state) / ease-(--ease-out) in Tailwind, or as
+       plain var() in public/css/frontend/custom.css.
+       ========================================================================= */
+    --motion-instant:   100ms;  /* press / toggle — confirms the tap landed */
+    --motion-feedback:  160ms;  /* hover + focus — affordance, nothing more   */
+    --motion-state:     240ms;  /* a component changed state                  */
+    --motion-panel:     360ms;  /* a panel or learning state entered/left     */
+    --motion-milestone: 640ms;  /* one-shot: a layer unlocked. Never loops.   */
+    --motion-ambient:     18s;  /* atmosphere only, and never during study    */
+
+    /* Easings. Four, deliberately — more becomes noise. */
+    --ease-snap:   cubic-bezier(0.20, 0.00, 0.00, 1.00); /* precise UI feedback   */
+    --ease-out:    cubic-bezier(0.22, 1.00, 0.36, 1.00); /* natural deceleration  */
+    --ease-cinema: cubic-bezier(0.65, 0.00, 0.15, 1.00); /* emphasized transition */
+    --ease-linear: linear;                               /* progress only         */
 }
 
 /* Raw (non-utility) variables — use as var(--accent-color) or bg-[var(--accent-color)]. */
@@ -284,5 +309,140 @@
     .scrollbar-slim::-webkit-scrollbar-thumb {
         background-color: var(--color-border-strong);
         border-radius: 9999px;
+    }
+
+    /* Long-form reading column: ~68 characters at the body size. Wider is
+       measurably harder to track line-to-line; this is the single most
+       load-bearing decision on the learning workspace. */
+    .measure      { max-width: 68ch; }
+    .measure-wide { max-width: 78ch; }
+
+    /* Motion opt-outs. `motion-safe:` (Tailwind) covers utilities; these cover
+       the bespoke CSS in public/css/frontend/custom.css. */
+    .motion-only { }
+    @media (prefers-reduced-motion: reduce) {
+        .motion-only { display: none !important; }
+    }
+}
+
+/* =============================================================================
+   Reading surface — the rendered Markdown of a teaching turn.
+
+   Deliberately plain: no glow on body text, no gradients behind prose, no
+   decorative motion. Neon is reserved for interactive edges and state changes;
+   the thing you actually read stays calm and high-contrast.
+   ============================================================================= */
+@layer components {
+    .prose-dth {
+        color: var(--color-foreground);
+        font-size: 1rem;
+        line-height: 1.72;
+        text-wrap: pretty;
+    }
+    .prose-dth > * + * { margin-top: 1.1em; }
+
+    .prose-dth h1,
+    .prose-dth h2,
+    .prose-dth h3,
+    .prose-dth h4 {
+        margin-top: 1.9em;
+        margin-bottom: 0.55em;
+        font-family: var(--font-display);
+        font-weight: 600;
+        letter-spacing: -0.015em;
+        line-height: 1.25;
+        text-wrap: balance;
+    }
+    .prose-dth h1 { font-size: 1.5rem; }
+    .prose-dth h2 { font-size: 1.28rem; }
+    .prose-dth h3 { font-size: 1.1rem; }
+    .prose-dth h4 { font-size: 1rem; }
+    .prose-dth > :first-child { margin-top: 0; }
+
+    .prose-dth strong { font-weight: 650; color: var(--color-foreground); }
+    .prose-dth em     { font-style: italic; }
+
+    .prose-dth a {
+        color: var(--color-primary);
+        text-decoration: underline;
+        text-underline-offset: 0.2em;
+        text-decoration-thickness: 1px;
+        text-decoration-color: color-mix(in oklch, var(--color-primary) 45%, transparent);
+        transition: text-decoration-color var(--motion-feedback) var(--ease-snap);
+    }
+    .prose-dth a:hover { text-decoration-color: var(--color-primary); }
+
+    .prose-dth ul,
+    .prose-dth ol { padding-left: 1.35em; }
+    .prose-dth ul { list-style: disc; }
+    .prose-dth ol { list-style: decimal; }
+    .prose-dth li { margin-top: 0.4em; }
+    .prose-dth li::marker { color: color-mix(in oklch, var(--color-primary) 70%, transparent); }
+    .prose-dth ul ul, .prose-dth ol ol, .prose-dth ul ol, .prose-dth ol ul { margin-top: 0.4em; }
+
+    .prose-dth code {
+        font-family: var(--font-mono);
+        font-size: 0.875em;
+        padding: 0.15em 0.4em;
+        border-radius: 0.375rem;
+        background: color-mix(in oklch, var(--color-primary) 10%, transparent);
+        color: var(--color-foreground);
+    }
+
+    /* Code blocks scroll inside themselves — the page body never scrolls sideways. */
+    .prose-dth pre {
+        overflow-x: auto;
+        padding: 0.95rem 1.05rem;
+        border-radius: 0.85rem;
+        border: 1px solid var(--color-border);
+        background: color-mix(in oklch, var(--color-surface-muted) 70%, transparent);
+        font-size: 0.85rem;
+        line-height: 1.6;
+        tab-size: 2;
+    }
+    .prose-dth pre code {
+        padding: 0;
+        background: none;
+        font-size: inherit;
+    }
+
+    .prose-dth blockquote {
+        padding-left: 1rem;
+        border-left: 2px solid color-mix(in oklch, var(--color-accent) 60%, transparent);
+        color: var(--color-foreground-muted);
+    }
+
+    .prose-dth hr {
+        border: 0;
+        border-top: 1px solid var(--color-border);
+        margin: 1.9em 0;
+    }
+
+    /* Tables get their own scroll container, same reason as code blocks. */
+    .prose-dth .table-scroll { overflow-x: auto; }
+    .prose-dth table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+    .prose-dth th,
+    .prose-dth td {
+        padding: 0.55rem 0.75rem;
+        border: 1px solid var(--color-border);
+        text-align: left;
+        vertical-align: top;
+    }
+    .prose-dth th {
+        background: color-mix(in oklch, var(--color-surface-muted) 60%, transparent);
+        font-weight: 600;
+    }
+
+    /* The checkpoint line the guide always ends on — set apart, not shouted. */
+    .prose-dth .dth-checkpoint-line {
+        margin-top: 1.6em;
+        padding: 0.85rem 1rem;
+        border-left: 2px solid var(--color-primary);
+        border-radius: 0 0.6rem 0.6rem 0;
+        background: color-mix(in oklch, var(--color-primary) 7%, transparent);
     }
 }

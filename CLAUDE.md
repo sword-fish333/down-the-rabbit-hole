@@ -42,6 +42,11 @@ if (!$result->isSuccessfulCheck()) {
 - `loadFiles($path)` / `auto_version()` — cache-busted public asset URL (appends `?v=<mtime>`).
 - `saveFileToStorage($file, $dir)` / `deleteFile($name, $dir)` — public-disk file storage; `deleteFile` ignores `http` URLs (external avatars).
 - `fullLog($throwableOrString)` — error log with stack trace.
+- `resourceRoutesCallback($controller, $param, except: [])` — the admin CRUD route block, as a callback for `Route::group()`. Every admin resource uses it; see `routes/admin.php`.
+
+**The LLM seam.** All model access goes through `App\Contracts\LlmClient` — three verbs, because the descent only ever needs three things: `streamTeachingTurn()` (streamed prose), `gradeCheckpoint()` (a **strict JSON-Schema structured output**, never parsed from prose), and `summarizeContext()`. `CHAT_PROVIDER` binds `GeminiClient` or `AnthropicClient` in `AppServiceProvider`. Schemas live in one place: `App\Services\Llm\GradingSchema`. Tests bind `Tests\Support\FakeLlmClient` — no test touches the network.
+
+**The descent.** `DescentService` owns depth and checkpoint state and knows nothing about HTTP; `ChatStreamingService` owns the SSE wire; `MasteryService` owns the concept map and only ever moves a concept's state on **graded evidence**. A failed grading call must never cost a learner their layer.
 
 **User-facing strings are localized.** Controller flash messages and admin UI text come from `lang/en/admin/backend.php` (backend/messages) and `lang/en/admin/frontend.php` (UI labels). Convention: `__('admin/backend.auth.invalid-credentials')`. Add new strings here, don't hardcode.
 
@@ -49,10 +54,13 @@ if (!$result->isSuccessfulCheck()) {
 
 **App-specific config in `config/platform.php`** — support inbox email and the allowed `support_topics` list (validated against in `ProfileController`). Put app-level settings here, not in framework config files.
 
-**Views** are Blade-component based: `resources/views/components/admin/*` (admin layout/topbar/sidebar/ui) and `components/frontend/*` (frontend layout, theme-switch). Admin and frontend have distinct layouts.
+**Views** are Blade-component based: `resources/views/components/admin/*` (admin layout/topbar/sidebar/ui) and `components/frontend/*` (frontend layout, navbar, footer, depth-rail, mode-picker, markdown…). Admin and frontend have distinct layouts.
+
+**Motion tokens, not magic numbers.** `resources/css/app.css` defines `--motion-instant|feedback|state|panel|milestone|ambient` and four easings, named for the job. Use those (`duration-(--motion-state)`) rather than arbitrary ms values. The rule the frontend is built on: *motion must explain state, direction, hierarchy, progress or causality* — if an animation answers none of those, it doesn't ship. The learning session is deliberately quieter than the landing page; ambient movement suspends under `body.is-studying`.
 
 ## Conventions
 
 - Controllers are thin: validate → service → response. Push branching logic into a service returning `ValidationService`.
-- Reach for the global helpers and the localized `__()` strings before writing new utilities or inline text.
-- Default seeded admin: `master@admin.com` (`AdminSeeder`). Factory-seeded one: `admin@example.com` / `password` (`DatabaseSeeder`).
+- Reach for the global helpers and the localized `__()` strings before writing new utilities or inline text. `tests/Feature/LangKeyTest.php` fails the build if a raw key reaches a page.
+- Never convey state by colour alone — every status token also carries an icon and a label.
+- Default seeded admin: `master@admin.com` (`AdminSeeder`). Factory-seeded one: `admin@example.com` / `password` (`DatabaseSeeder`). `LearningModeSeeder` is idempotent and seeds the six teaching modes.

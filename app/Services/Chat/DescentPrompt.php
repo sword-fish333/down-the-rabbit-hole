@@ -2,12 +2,17 @@
 
 namespace App\Services\Chat;
 
+use App\Models\Concept;
+use App\Models\Conversation;
+use Illuminate\Support\Collection;
+
 /**
  * Builds the descent's prompts. The system prompt is FROZEN — no per-conversation
- * interpolation — so its cached prefix stays byte-stable across turns. The subject
- * and the per-turn directive travel in the message list instead.
+ * interpolation — so its cached prefix stays byte-stable across turns. The
+ * subject, the learning mode and the per-turn directive travel in the message
+ * list instead.
  *
- * This is the one place to tune how the guide teaches and grades.
+ * This is the one place to tune how the guide teaches.
  */
 class DescentPrompt
 {
@@ -30,35 +35,20 @@ class DescentPrompt
         - Teach exactly ONE layer per turn. Never dump the whole subject. Go deep, not wide.
 
         VOICE
-        - Rigorous, vivid, and concise. Plain Markdown. No filler, no flattery, no "great question".
+        - Rigorous, vivid, and concise. No filler, no flattery, no "great question".
         - Favour intuition and concrete examples over jargon; define a term the first time you use it.
+        - Write in Markdown: short paragraphs, `code` where it clarifies, tables and fenced code
+          blocks where they genuinely help. Use LaTeX ($...$ inline, $$...$$ display) only for
+          real mathematics.
 
         EVERY TEACHING TURN
         1. Teach the current layer clearly and memorably.
-        2. End with EXACTLY ONE checkpoint that forces the learner to *demonstrate* understanding —
-           explain the idea back in their own words, apply it to a new case, or predict an outcome.
-           Never ask for trivia or a definition they could copy back.
-
-        EVERY GRADING TURN
-        - Judge the learner's answer to the previous checkpoint. Pass them if they demonstrably
-          grasped the core idea (minor gaps are fine). Hold them back only on a real misunderstanding.
-        - Give brief, specific feedback: what they got right, and the one thing to fix if held back.
-
-        CONTROL PROTOCOL (silent — never explain or mention it)
-        - End EVERY message with a single fenced ```json block and nothing after it.
-        - After a teaching turn, the block is exactly: {"phase":"checkpoint"}
-        - After a grading turn, the block is exactly: {"phase":"grade","verdict":"pass"}
-          or {"phase":"grade","verdict":"retry"}.
-
-        Example ending of a teaching turn:
-
-        ...and that is why the two ideas are really the same thing seen from different angles.
-
-        **Checkpoint:** In your own words, why would the result change if we removed that assumption?
-
-        ```json
-        {"phase":"checkpoint"}
-        ```
+        2. Name the concepts you are teaching explicitly — the learner's mastery map is built
+           from the words you use, so call things by a consistent name.
+        3. End with a line that begins exactly `**Checkpoint:**` followed by ONE task that forces
+           the learner to *demonstrate* understanding — explain the idea back in their own words,
+           apply it to a new case, or predict an outcome. Never trivia, never a definition they
+           could copy back. Nothing comes after the checkpoint line.
         PROMPT;
     }
 
@@ -67,19 +57,69 @@ class DescentPrompt
      * Cheap models don't support mid-conversation system messages, so this rides
      * in the message list rather than the system block.
      */
-    public function teachInstruction(int $depth): string
+    public function teachInstruction(Conversation $conversation, Collection $resurfacing): string
     {
-        return "[GUIDE DIRECTIVE] Teach layer {$depth} of this subject now, building on everything "
-            .'already covered. Finish with one checkpoint, then the control block {"phase":"checkpoint"}.';
+        $depth = $conversation->current_depth;
+
+        $parts = ["[GUIDE DIRECTIVE] Teach layer {$depth} of this subject now, building on everything "
+            .'already covered. Finish with the `**Checkpoint:**` line.'];
+
+        if ($mode = $conversation->learningMode) {
+            $parts[] = "Teach it in {$mode->name} mode: {$mode->prompt_directive}";
+        }
+
+        if ($resurfacing->isNotEmpty()) {
+            $parts[] = $this->resurfacingNote($resurfacing);
+        }
+
+        return implode("\n\n", $parts);
     }
 
     /**
-     * Directive appended (as a user turn) to make the model grade the learner's proof.
+     * A contextual action the learner asked for mid-layer ("explain differently",
+     * "give me an analogy", "challenge me"). Re-teaches the same layer; the
+     * checkpoint requirement is unchanged so the state machine still holds.
      */
-    public function gradeInstruction(int $depth): string
+    public function reframeInstruction(Conversation $conversation, string $intent): string
     {
-        return "[GUIDE DIRECTIVE] The learner's previous message is their answer to the layer {$depth} "
-            .'checkpoint. Grade it with brief feedback, then end with the control block '
-            .'{"phase":"grade","verdict":"pass"} or {"phase":"grade","verdict":"retry"}.';
+        $directives = [
+            DescentService::REFRAME_DIFFERENT => 'Explain this same layer again from a completely different angle. '
+                .'Do not repeat your previous framing — change the entry point, not the difficulty.',
+            DescentService::REFRAME_ANALOGY => 'Explain this same layer through one extended, concrete analogy, '
+                .'then say plainly where the analogy breaks down.',
+            DescentService::REFRAME_CHALLENGE => 'Stay on this same layer but raise the difficulty: pose a harder, '
+                .'more applied version of the checkpoint that an expert would find interesting.',
+            DescentService::REFRAME_EVIDENCE => 'Show your evidence for this layer: name the specific results, '
+                .'papers, books or standards it rests on, and state plainly which parts are '
+                .'established fact, which are interpretation, and which are genuinely uncertain.',
+        ];
+
+        return "[GUIDE DIRECTIVE] {$directives[$intent]} "
+            .'Finish with the `**Checkpoint:**` line as usual.';
+    }
+
+    /**
+     * Fed back as the opening user turn once older messages have been folded
+     * into a running summary, so the guide keeps continuity for free.
+     */
+    public function summaryPreamble(string $summary): string
+    {
+        return "[SESSION SO FAR] {$summary}";
+    }
+
+    /**
+     * Ask the guide to weave an unresolved concept back in rather than teaching
+     * it cold again — spaced review, driven by graded evidence.
+     */
+    private function resurfacingNote(Collection $resurfacing): string
+    {
+        $lines = $resurfacing->map(function (Concept $concept) {
+            $note = $concept->note ? " (they believed: {$concept->note})" : '';
+
+            return "- {$concept->name}, first met at layer {$concept->first_seen_depth}{$note}";
+        })->implode("\n");
+
+        return "The learner still has unresolved trouble with these concepts:\n{$lines}\n"
+            .'Weave a brief, natural correction for them into this layer — do not devote the whole layer to it.';
     }
 }

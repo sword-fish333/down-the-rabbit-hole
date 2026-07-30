@@ -2,31 +2,68 @@
 
 namespace App\Services\Chat;
 
-use App\DTOs\LlmStreamResult;
-use App\DTOs\TurnPlan;
+use App\Contracts\LlmClient;
+use App\DTOs\Llm\GradingRequest;
+use App\DTOs\Llm\GradingResult;
+use App\DTOs\Llm\LlmStream;
+use App\DTOs\Llm\LlmUsage;
+use App\DTOs\Llm\TeachingRequest;
 use App\Events\LayerCompleted;
+use App\Jobs\CompactConversationContext;
+use App\Models\CheckpointAttempt;
 use App\Models\Conversation;
+use App\Models\LearningMode;
 use App\Models\Message;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
+use Throwable;
 
 /**
  * The brain of the descent: it owns depth and checkpoint state, but knows nothing
- * about HTTP or streaming. It builds the plan for each assistant turn, then applies
- * the turn's result — advancing depth, gating progress, and firing rewards.
+ * about HTTP or streaming. It builds the request for each teaching turn, grades
+ * the learner's proof, and applies the outcome — advancing depth, updating the
+ * mastery map, and firing rewards.
+ *
+ * The teaching turn streams prose; the grading turn is a separate, non-streaming
+ * structured-output call. That split is deliberate: verdicts are far too
+ * load-bearing to be scraped out of the tail of a Markdown response.
  */
 class DescentService
 {
-    public function __construct(private readonly DescentPrompt $prompt) {}
+    public const string REFRAME_DIFFERENT = 'different';
+
+    public const string REFRAME_ANALOGY = 'analogy';
+
+    public const string REFRAME_CHALLENGE = 'challenge';
+
+    public const string REFRAME_EVIDENCE = 'evidence';
+
+    public const array REFRAMES = [
+        self::REFRAME_DIFFERENT,
+        self::REFRAME_ANALOGY,
+        self::REFRAME_CHALLENGE,
+        self::REFRAME_EVIDENCE,
+    ];
+
+    public function __construct(
+        private readonly DescentPrompt $prompt,
+        private readonly MasteryService $mastery,
+        private readonly LlmClient $llm,
+    ) {}
 
     /**
      * Open a new rabbit hole. The first user message is the subject itself.
      */
-    public function start(?User $user, string $subject): Conversation
+    public function start(?User $user, string $subject, ?LearningMode $mode = null): Conversation
     {
+        $subject = Str::of($subject)->trim()->limit(500, '')->value();
+
         $conversation = Conversation::create([
             'user_id' => $user?->id,
+            'learning_mode_id' => ($mode ?? LearningMode::default())?->id,
             'subject' => $subject,
+            'title' => Str::limit($subject, 60),
             'current_depth' => 0,
             'status' => Conversation::STATUS_EXPLORING,
         ]);
@@ -37,69 +74,97 @@ class DescentService
     }
 
     /**
-     * Record the learner's input. During a checkpoint it's their proof; while
-     * exploring there is nothing to store (they're just asking to go deeper).
+     * Build the request for the next teaching turn. Pure — no side effects.
      */
-    public function recordUserProof(Conversation $conversation, ?string $message): void
+    public function teachingRequest(Conversation $conversation, ?string $reframe = null): TeachingRequest
     {
-        if ($conversation->isCheckpointPending() && filled($message)) {
-            $this->appendMessage($conversation, Message::ROLE_USER, $message);
-        }
-    }
-
-    /**
-     * Build the plan for the next assistant turn from the conversation's state.
-     * Pure — no side effects.
-     */
-    public function buildTurnPlan(Conversation $conversation): TurnPlan
-    {
-        $phase = $conversation->isCheckpointPending() ? Message::PHASE_GRADE : Message::PHASE_TEACH;
-        $depth = $conversation->current_depth;
-
         $messages = $this->history($conversation);
         $messages[] = [
             'role' => Message::ROLE_USER,
-            'content' => $phase === Message::PHASE_GRADE
-                ? $this->prompt->gradeInstruction($depth)
-                : $this->prompt->teachInstruction($depth),
+            'content' => $reframe
+                ? $this->prompt->reframeInstruction($conversation, $reframe)
+                : $this->prompt->teachInstruction($conversation, $this->mastery->resurfacing($conversation)),
         ];
 
-        return new TurnPlan(
-            conversation: $conversation,
-            model: $this->pickModel($depth, $phase),
-            phase: $phase,
-            depth: $depth,
+        return new TeachingRequest(
+            model: $this->pickModel($conversation->current_depth, Message::PHASE_TEACH),
             system: $this->prompt->system(),
             messages: $messages,
+            depth: $conversation->current_depth,
             maxTokens: (int) config('platform.chat.max_tokens'),
         );
     }
 
     /**
-     * Persist the assistant turn, advance the state machine, and (on a passed
-     * layer) fire the reward event. Returns the payload for the SSE "done" event.
+     * Persist a streamed teaching turn and open its checkpoint. Called after the
+     * stream closes — including when the learner disconnected mid-turn, in which
+     * case the partial text is still worth keeping.
+     *
+     * @return array<string, mixed>
      */
-    public function applyAssistantTurn(Conversation $conversation, TurnPlan $plan, LlmStreamResult $result): array
+    public function applyTeachingTurn(Conversation $conversation, LlmStream $stream): array
     {
-        $this->appendMessage(
-            $conversation,
-            Message::ROLE_ASSISTANT,
-            $result->text,
-            $plan->phase,
-            $result->model,
-            $result->inputTokens,
-            $result->outputTokens,
-            $result->cacheReadTokens,
-        );
+        $text = trim($stream->text());
 
-        if ($plan->phase === Message::PHASE_GRADE) {
-            return $this->resolveGrade($conversation, $this->parseControl($result->text));
+        if ($text === '') {
+            return $this->state($conversation);
         }
+
+        $this->appendMessage(
+            conversation: $conversation,
+            role: Message::ROLE_ASSISTANT,
+            content: $text,
+            phase: Message::PHASE_TEACH,
+            model: $stream->model,
+            usage: $stream->usage(),
+        );
 
         // A teaching turn always ends on a checkpoint awaiting the learner's proof.
         $conversation->update(['status' => Conversation::STATUS_CHECKPOINT_PENDING]);
 
-        return $this->payload($conversation);
+        return $this->state($conversation->refresh());
+    }
+
+    /**
+     * Grade the learner's proof, apply the outcome, and return both the verdict
+     * and the new conversation state.
+     *
+     * @return array{attempt: CheckpointAttempt, result: GradingResult, state: array<string, mixed>}
+     */
+    public function gradeCheckpoint(Conversation $conversation, string $answer, ?int $selfRating = null): array
+    {
+        $depth = $conversation->current_depth;
+
+        $answerMessage = $this->appendMessage($conversation, Message::ROLE_USER, trim($answer));
+
+        $result = $this->grade($conversation, $answer, $selfRating, $depth);
+
+        $this->appendMessage(
+            conversation: $conversation,
+            role: Message::ROLE_ASSISTANT,
+            content: $result->feedback,
+            phase: Message::PHASE_GRADE,
+            model: $result->model,
+            usage: $result->usage,
+        );
+
+        $attempt = $conversation->checkpointAttempts()->create($result->toAttributes() + [
+            'message_id' => $answerMessage->id,
+            'depth' => $depth,
+            'self_rating' => $selfRating,
+        ]);
+
+        $this->mastery->record($conversation, $result, $depth);
+
+        if ($result->passed()) {
+            $this->clearLayer($conversation, $depth);
+        }
+
+        return [
+            'attempt' => $attempt,
+            'result' => $result,
+            'state' => $this->state($conversation->refresh(), passed: $result->passed()),
+        ];
     }
 
     /**
@@ -110,11 +175,11 @@ class DescentService
     {
         $models = config('platform.chat.models.'.config('platform.chat.provider'));
 
-        if ($depth >= (int) config('platform.chat.deep_threshold')) {
-            return $models['deep'];
+        if ($phase === Message::PHASE_GRADE) {
+            return $models['cheap'];
         }
 
-        return $phase === Message::PHASE_GRADE ? $models['cheap'] : $models['mid'];
+        return $depth >= (int) config('platform.chat.deep_threshold') ? $models['deep'] : $models['mid'];
     }
 
     public function dailyLimitReached(?User $user, string $guestKey): bool
@@ -135,18 +200,78 @@ class DescentService
         Cache::increment($cacheKey);
     }
 
-    private function resolveGrade(Conversation $conversation, array $control): array
+    /**
+     * The checkpoint the learner is answering — the tail of the last teaching
+     * turn. Falls back to the whole turn, which is still a complete brief for
+     * the grader, so this convenience can never break grading.
+     */
+    public function currentCheckpoint(Conversation $conversation): string
     {
-        if (($control['verdict'] ?? 'retry') !== 'pass') {
-            return $this->payload($conversation); // stays checkpoint_pending — try again
+        $teaching = $conversation->messages()
+            ->where('role', Message::ROLE_ASSISTANT)
+            ->where('phase', Message::PHASE_TEACH)
+            ->latest('id')
+            ->value('content');
+
+        if (! $teaching) {
+            return '';
         }
 
-        $passedDepth = $conversation->current_depth;
+        return Str::of($teaching)->after('**Checkpoint:**')->trim()->value() ?: trim($teaching);
+    }
+
+    /**
+     * The conversation state the browser needs after any turn.
+     *
+     * @return array<string, mixed>
+     */
+    public function state(Conversation $conversation, bool $passed = false): array
+    {
+        return [
+            'status' => $conversation->status,
+            'depth' => $conversation->current_depth,
+            'max_depth' => (int) config('platform.chat.max_depth'),
+            'passed' => $passed,
+            'surfaced' => $conversation->isSurfaced(),
+            'mastery' => $this->mastery->tally($conversation),
+        ];
+    }
+
+    /**
+     * A failed grading call must never cost the learner their layer, so the
+     * unavailable verdict is a retry with an honest message.
+     */
+    private function grade(Conversation $conversation, string $answer, ?int $selfRating, int $depth): GradingResult
+    {
+        try {
+            return $this->llm->gradeCheckpoint(new GradingRequest(
+                model: $this->pickModel($depth, Message::PHASE_GRADE),
+                system: $this->prompt->system(),
+                subject: $conversation->subject,
+                checkpoint: $this->currentCheckpoint($conversation),
+                answer: $answer,
+                depth: $depth,
+                maxTokens: (int) config('platform.chat.grade_max_tokens'),
+                selfRating: $selfRating,
+            ));
+        } catch (Throwable $e) {
+            fullLog($e);
+
+            return GradingResult::unavailable(__('frontend.chat.grade-unavailable'));
+        }
+    }
+
+    /**
+     * A passed layer: descend (or surface), reward, and schedule compaction.
+     */
+    private function clearLayer(Conversation $conversation, int $passedDepth): void
+    {
         $surfaced = ($passedDepth + 1) >= (int) config('platform.chat.max_depth');
 
         $conversation->update([
             'current_depth' => $surfaced ? $passedDepth : $passedDepth + 1,
             'status' => $surfaced ? Conversation::STATUS_SURFACED : Conversation::STATUS_EXPLORING,
+            'surfaced_at' => $surfaced ? now() : null,
         ]);
 
         // Guests earn nothing until they claim the hole — a natural sign-up hook.
@@ -154,34 +279,21 @@ class DescentService
             event(new LayerCompleted($conversation->user, $conversation, $passedDepth));
         }
 
-        return $this->payload($conversation->refresh(), passed: true);
-    }
-
-    /**
-     * The model's turn ends with a fenced ```json control block. Parse the last
-     * one; a missing or malformed block falls back to the safe state (a grade
-     * defaults to retry, a teach stays exploring).
-     */
-    private function parseControl(string $text): array
-    {
-        if (preg_match_all('/```json\s*(\{.*?\})\s*```/s', $text, $matches) && $matches[1]) {
-            $decoded = json_decode(end($matches[1]), true);
-            if (is_array($decoded)) {
-                return $decoded;
-            }
+        if ($conversation->message_count > (int) config('platform.chat.summarize_after')) {
+            CompactConversationContext::dispatch($conversation->id);
         }
-
-        return [];
     }
 
     /**
-     * The last N turns mapped to the API's message shape, oldest first.
+     * The messages sent to the provider: the running summary (if any) followed
+     * by the most recent turns, oldest first. Grader feedback is included —
+     * it is what the learner just read.
      *
      * @return array<int, array{role: string, content: string}>
      */
     private function history(Conversation $conversation): array
     {
-        return $conversation->messages()
+        $messages = $conversation->messages()
             ->latest('id')
             ->take((int) config('platform.chat.history_limit'))
             ->get()
@@ -189,6 +301,17 @@ class DescentService
             ->map(fn (Message $message) => ['role' => $message->role, 'content' => $message->content])
             ->values()
             ->all();
+
+        if (! $conversation->summary) {
+            return $messages;
+        }
+
+        array_unshift($messages, [
+            'role' => Message::ROLE_USER,
+            'content' => $this->prompt->summaryPreamble($conversation->summary),
+        ]);
+
+        return $messages;
     }
 
     private function appendMessage(
@@ -197,9 +320,7 @@ class DescentService
         string $content,
         ?string $phase = null,
         ?string $model = null,
-        ?int $inputTokens = null,
-        ?int $outputTokens = null,
-        ?int $cacheReadTokens = null,
+        ?LlmUsage $usage = null,
     ): Message {
         $message = $conversation->messages()->create([
             'role' => $role,
@@ -207,9 +328,9 @@ class DescentService
             'depth' => $conversation->current_depth,
             'phase' => $phase,
             'model' => $model,
-            'input_tokens' => $inputTokens,
-            'output_tokens' => $outputTokens,
-            'cache_read_tokens' => $cacheReadTokens,
+            'input_tokens' => $usage?->inputTokens,
+            'output_tokens' => $usage?->outputTokens,
+            'cache_read_tokens' => $usage?->cacheReadTokens,
         ]);
 
         $conversation->increment('message_count');
@@ -217,6 +338,9 @@ class DescentService
         return $message;
     }
 
+    /**
+     * @return array{0: string, 1: int}
+     */
     private function limitFor(?User $user, string $guestKey): array
     {
         $today = now()->toDateString();
@@ -226,16 +350,5 @@ class DescentService
         }
 
         return ["dth:turns:guest:{$guestKey}:{$today}", (int) config('platform.chat.guest_daily_limit')];
-    }
-
-    private function payload(Conversation $conversation, bool $passed = false): array
-    {
-        return [
-            'status' => $conversation->status,
-            'depth' => $conversation->current_depth,
-            'max_depth' => (int) config('platform.chat.max_depth'),
-            'passed' => $passed,
-            'surfaced' => $conversation->isSurfaced(),
-        ];
     }
 }

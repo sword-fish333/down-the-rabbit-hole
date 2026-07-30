@@ -1,24 +1,34 @@
 /* =============================================================================
-   Down the Rabbit Hole — frontend atmosphere & flourishes.
+   Down the Rabbit Hole — atmosphere, signature interactions, motion system.
 
    Loaded as a plain stylesheet (NOT processed by Tailwind/Vite), so this file
-   is pure CSS — no @apply. It references the design-token CSS variables that
-   resources/css/app.css emits on :root (--color-wave-500, --color-glow, etc.).
-   Use Tailwind utilities for everything structural; this file is only for the
-   bespoke noir atmosphere Tailwind can't express.
+   is pure CSS — no @apply. It references the design tokens that
+   resources/css/app.css emits on :root (--color-wave-500, --motion-state,
+   --ease-out …). Tailwind utilities do everything structural; this file only
+   holds the things utilities can't express.
 
-   The signature mechanic: --depth (0 = surface, 1 = the deep). JS raises it as
-   the user descends a rabbit hole; the backdrop blooms warmer, closer, lower.
+   THE RULE this file is built on: motion must explain state, direction,
+   hierarchy, progress or causality. Anything that answers none of those is not
+   here. And the active learning session is deliberately QUIETER than the
+   landing page — ambient movement is suspended the moment the learner starts
+   reading or writing (body.is-studying), because concentration outranks polish.
+
+   Two signature mechanics:
+     --depth      0 = surface, 1 = the deep. The backdrop blooms lower & warmer.
+     descent      forward/deeper moves down and inward; surfacing moves up.
    ============================================================================= */
 
 :root {
-    --depth: 0;                       /* set by JS as the user goes deeper (0..1) */
+    --depth: 0;
 }
 
-/* --- The atmosphere: a fixed, full-bleed rain-haze behind everything --------
-   Three light sources scattering in smog — cyan air (top), dream-violet bloom
-   (the rabbit hole, drifting up from below as depth grows), a single warm
-   tungsten glow. Low alpha only; in Blade Runner the dark stays wet and matte. */
+/* =============================================================================
+   1. Atmosphere — a fixed, full-bleed rain-haze behind everything.
+
+   Three light sources scattering in smog: cyan air (top), dream-violet bloom
+   drifting up from below as depth grows, one warm tungsten glow. Low alpha
+   only; in Blade Runner the dark stays wet and matte, never lit.
+   ============================================================================= */
 .dth-atmosphere {
     position: fixed;
     inset: 0;
@@ -34,10 +44,11 @@
         radial-gradient(70% 50% at 88% 22%,
             color-mix(in oklch, var(--color-sand-500) calc(7% + var(--depth) * 8%), transparent) 0%,
             transparent 55%);
-    transition: background 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: background var(--motion-ambient) var(--ease-out), opacity var(--motion-panel) var(--ease-out);
 }
 
-/* A faint scanline veil — wet glass over a CRT. Cheap, sells the noir. */
+/* A faint static scanline veil — wet glass over a CRT. No animation, no
+   flicker, and never over the reading column (see .dth-workspace below). */
 .dth-atmosphere::after {
     content: '';
     position: absolute;
@@ -55,27 +66,409 @@
 /* Light mode = "above ground": dial the bloom right back, it should read calm. */
 :root:not(.dark) .dth-atmosphere { opacity: 0.5; }
 
-/* --- Neon glow flourishes (use sparingly — one bold thing per screen) -------- */
-.dth-glow-cyan    { box-shadow: 0 0 0 1px color-mix(in oklch, var(--color-wave-500) 40%, transparent),
-                                0 0 28px -6px color-mix(in oklch, var(--color-wave-500) 55%, transparent); }
-.dth-glow-magenta { box-shadow: 0 0 0 1px color-mix(in oklch, var(--color-clay-500) 45%, transparent),
-                                0 0 32px -4px color-mix(in oklch, var(--color-clay-500) 55%, transparent); }
-.dth-text-glow    { text-shadow: 0 0 18px color-mix(in oklch, currentColor 45%, transparent); }
+/* Deep-work / active reading: the backdrop stops moving and steps back. */
+body.is-studying .dth-atmosphere { opacity: 0.35; transition: opacity var(--motion-panel) var(--ease-out); }
+body.is-focus    .dth-atmosphere { opacity: 0.18; }
 
-/* --- Brand mark (navbar + footer logos) ------------------------------------
-   The circular rabbit-hole mark. On the navbar (inside .group) it leans in on
-   hover — a faint cyan bloom, like the tunnel pulling you down. Footer mark has
-   no .group ancestor, so it stays calm. */
-.dth-logo {
-    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), filter 0.3s ease, box-shadow 0.3s ease;
+/* Tab hidden → nothing decorative should be costing frames. */
+body.is-hidden .dth-atmosphere { transition: none; }
+
+/* =============================================================================
+   2. Glow flourishes — neon as EMITTED LIGHT, never as flat colour.
+   One bold thing per screen. These belong on interactive edges and momentary
+   state changes; never on body text, never permanently animated.
+   ============================================================================= */
+.dth-glow-cyan {
+    box-shadow: 0 0 0 1px color-mix(in oklch, var(--color-wave-500) 40%, transparent),
+                0 0 28px -6px color-mix(in oklch, var(--color-wave-500) 55%, transparent);
 }
-.group:hover .dth-logo {
+.dth-glow-sea {
+    box-shadow: 0 0 0 1px color-mix(in oklch, var(--color-sea-500) 45%, transparent),
+                0 0 30px -6px color-mix(in oklch, var(--color-sea-500) 50%, transparent);
+}
+.dth-glow-sand {
+    box-shadow: 0 0 0 1px color-mix(in oklch, var(--color-sand-500) 45%, transparent),
+                0 0 28px -8px color-mix(in oklch, var(--color-sand-500) 45%, transparent);
+}
+.dth-text-glow { text-shadow: 0 0 18px color-mix(in oklch, currentColor 45%, transparent); }
+
+/* =============================================================================
+   3. The brand mark.
+   ============================================================================= */
+.dth-logo {
+    transition: transform var(--motion-state) var(--ease-out),
+                filter var(--motion-state) var(--ease-out),
+                box-shadow var(--motion-state) var(--ease-out);
+}
+.group:hover .dth-logo,
+.group:focus-visible .dth-logo {
     transform: scale(1.06);
     box-shadow: 0 0 0 1px color-mix(in oklch, var(--color-wave-500) 45%, transparent);
     filter: drop-shadow(0 0 10px color-mix(in oklch, var(--color-wave-500) 50%, transparent));
 }
 
-/* --- Auth split-panel showcase: a warren of light blooming up from below ---- */
+/* =============================================================================
+   4. SIGNATURE — the topic field's "lock-on".
+
+   Quiet by default. On focus a cyan trace runs once around the border and
+   stops: it says "you have my attention", then gets out of the way. No pulsing
+   input, no permanent glow — a field you are about to type a paragraph into
+   must not be the brightest thing on screen.
+   ============================================================================= */
+.dth-composer {
+    position: relative;
+    isolation: isolate;
+    transition: transform var(--motion-state) var(--ease-out),
+                box-shadow var(--motion-state) var(--ease-out),
+                border-color var(--motion-feedback) var(--ease-snap);
+}
+.dth-composer::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    z-index: -1;
+    border-radius: inherit;
+    padding: 1px;
+    background: conic-gradient(
+        from var(--trace-angle, 0deg),
+        transparent 0deg,
+        color-mix(in oklch, var(--color-wave-500) 85%, transparent) 25deg,
+        transparent 70deg
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            mask-composite: exclude;
+    opacity: 0;
+    transition: opacity var(--motion-feedback) var(--ease-snap);
+}
+
+/* Surface depth increases on focus — 2px, not a scale transform: growing an
+   input under the cursor moves the text you're aiming at. */
+.dth-composer:focus-within {
+    box-shadow: 0 10px 34px -18px color-mix(in oklch, var(--color-ink-950) 80%, transparent),
+                0 0 0 1px color-mix(in oklch, var(--color-wave-500) 30%, transparent);
+}
+.dth-composer:focus-within::before {
+    opacity: 1;
+    animation: dth-trace var(--motion-panel) var(--ease-cinema) 1 forwards;
+}
+
+@property --trace-angle {
+    syntax: '<angle>';
+    inherits: false;
+    initial-value: 0deg;
+}
+@keyframes dth-trace {
+    from { --trace-angle: 0deg; }
+    to   { --trace-angle: 360deg; }
+}
+
+/* Browsers without @property can't tween the conic angle — they get a clean
+   static border-luminance state instead, which reads as deliberate. */
+@supports not (background: conic-gradient(from 0deg, red, blue)) {
+    .dth-composer::before { display: none; }
+}
+
+/* The CTA arrow: 4px of downward intent on hover. "Deeper" is DOWN, always. */
+.dth-cta-arrow {
+    transition: transform var(--motion-feedback) var(--ease-snap);
+}
+.group\/cta:hover .dth-cta-arrow,
+.group\/cta:focus-visible .dth-cta-arrow { transform: translateY(4px); }
+
+/* Suggestions enter with a short stagger — index set inline by the markup. */
+.dth-stagger {
+    animation: dth-rise var(--motion-state) var(--ease-out) both;
+    animation-delay: calc(var(--i, 0) * 45ms);
+}
+@keyframes dth-rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* =============================================================================
+   5. The descent transition.
+
+   Topic → session title as a shared element. Brief (≈420ms), inward and
+   downward, then the workspace resolves sharply and goes still. No tunnel, no
+   full-screen video, no spinning camera.
+   ============================================================================= */
+@supports (view-transition-name: none) {
+    ::view-transition-old(dth-subject),
+    ::view-transition-new(dth-subject) {
+        animation-duration: var(--motion-panel);
+        animation-timing-function: var(--ease-cinema);
+    }
+    ::view-transition-old(root) {
+        animation: dth-sink var(--motion-panel) var(--ease-cinema) both;
+    }
+    ::view-transition-new(root) {
+        animation: dth-surface var(--motion-panel) var(--ease-cinema) both;
+    }
+}
+@keyframes dth-sink {
+    to { opacity: 0; transform: translateY(-10px) scale(0.99); }
+}
+@keyframes dth-surface {
+    from { opacity: 0; transform: translateY(14px) scale(1.005); }
+}
+
+/* A restrained depth contour behind the session title while the page settles. */
+.dth-contour {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 26rem;
+    aspect-ratio: 1;
+    translate: -50% -50%;
+    border-radius: 9999px;
+    pointer-events: none;
+    z-index: -1;
+    background: radial-gradient(circle,
+        color-mix(in oklch, var(--color-wave-500) 16%, transparent) 0%,
+        transparent 58%);
+}
+
+/* =============================================================================
+   6. The depth rail — a MAP, not a loading bar.
+
+   Coordinates and layers, read vertically because that is the direction of
+   travel. Only state CHANGES animate; the rail itself never moves on its own.
+   ============================================================================= */
+.dth-rail-node {
+    position: relative;
+    display: block;
+    width: 100%;
+    transition: color var(--motion-feedback) var(--ease-snap);
+}
+.dth-rail-mark {
+    display: block;
+    height: 0.5rem;
+    border-radius: 9999px;
+    background: var(--color-border);
+    transition: background-color var(--motion-state) var(--ease-out),
+                box-shadow var(--motion-state) var(--ease-out),
+                height var(--motion-state) var(--ease-out);
+}
+.dth-rail-node[data-state='cleared'] .dth-rail-mark {
+    background: var(--color-success);
+    box-shadow: 0 0 12px -4px color-mix(in oklch, var(--color-sea-500) 70%, transparent);
+}
+.dth-rail-node[data-state='current'] .dth-rail-mark {
+    height: 0.9rem;
+    background: var(--color-primary);
+    box-shadow: 0 0 14px -3px color-mix(in oklch, var(--color-wave-500) 75%, transparent);
+}
+.dth-rail-node[data-state='review'] .dth-rail-mark { background: var(--color-accent); }
+.dth-rail-node[data-state='locked'] .dth-rail-mark {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+/* Semantic light trail: when a layer unlocks, one short cyan line travels down
+   from the layer just cleared to the one that opened, then disappears. It
+   exists to show CAUSALITY — this proof opened that layer — and nothing else. */
+.dth-rail-trail {
+    position: absolute;
+    left: 50%;
+    width: 2px;
+    translate: -50% 0;
+    background: linear-gradient(to bottom,
+        transparent,
+        color-mix(in oklch, var(--color-wave-500) 90%, transparent));
+    transform-origin: top;
+    animation: dth-trail var(--motion-milestone) var(--ease-cinema) forwards;
+    pointer-events: none;
+}
+@keyframes dth-trail {
+    0%   { opacity: 0; scale: 1 0; }
+    35%  { opacity: 1; }
+    100% { opacity: 0; scale: 1 1; }
+}
+
+/* Peripheral coordinates — quiet enough not to compete with reading. */
+.dth-coord {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: color-mix(in oklch, var(--color-foreground-muted) 65%, transparent);
+    font-variant-numeric: tabular-nums;
+}
+
+/* =============================================================================
+   7. Mastery states.
+
+   Colour alone never carries meaning: every state also has its own icon and
+   text label in the markup. This is the colour half of that pair.
+   ============================================================================= */
+.dth-concept                          { border-color: var(--color-border); }
+.dth-concept[data-state='mastered']   { border-color: color-mix(in oklch, var(--color-sea-500) 55%, transparent);  color: var(--color-success); }
+.dth-concept[data-state='developing'] { border-color: color-mix(in oklch, var(--color-wave-500) 50%, transparent); color: var(--color-primary); }
+.dth-concept[data-state='misunderstood'] {
+    border-color: color-mix(in oklch, var(--color-sand-500) 60%, transparent);
+    color: var(--color-accent);
+    /* Pattern, not just hue — legible with any colour-vision profile. */
+    background-image: repeating-linear-gradient(
+        135deg,
+        transparent 0 5px,
+        color-mix(in oklch, var(--color-sand-500) 12%, transparent) 5px 6px
+    );
+}
+.dth-concept[data-state='unexplored'] { border-style: dashed; color: var(--color-foreground-muted); }
+
+/* =============================================================================
+   8. Checkpoint — a conceptual gate, not a form.
+   ============================================================================= */
+.dth-checkpoint {
+    transition: border-color var(--motion-state) var(--ease-out),
+                box-shadow var(--motion-state) var(--ease-out);
+}
+
+/* Analysing: one slow sweep along the top edge. Determinate-looking, calm,
+   and it stops the moment a verdict lands. */
+.dth-analyzing::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 2px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg,
+        transparent,
+        color-mix(in oklch, var(--color-wave-500) 90%, transparent),
+        transparent);
+    animation: dth-sweep 1.6s var(--ease-linear) infinite;
+}
+@keyframes dth-sweep {
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(100%); }
+}
+
+/* Pass: one restrained viridian illumination, under 800ms, once. No confetti,
+   no coins, no full-screen celebration — the reward is the next layer. */
+.dth-cleared {
+    animation: dth-clear var(--motion-milestone) var(--ease-cinema) 1;
+}
+@keyframes dth-clear {
+    0%   { box-shadow: 0 0 0 0 color-mix(in oklch, var(--color-sea-500) 45%, transparent); }
+    45%  { box-shadow: 0 0 32px -6px color-mix(in oklch, var(--color-sea-500) 60%, transparent); }
+    100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* Retry: a single amber edge, held for a beat. No shake, no red flash, no
+   progress removed. Getting it wrong is part of learning, not a punishment. */
+.dth-held {
+    animation: dth-hold var(--motion-milestone) var(--ease-out) 1;
+}
+@keyframes dth-hold {
+    0%   { border-color: color-mix(in oklch, var(--color-sand-500) 70%, transparent); }
+    100% { border-color: var(--color-border-strong); }
+}
+
+/* Misconception is a different failure from "incomplete" and is marked as one. */
+.dth-misconception {
+    border-left: 2px solid var(--color-accent);
+    background: color-mix(in oklch, var(--color-sand-500) 8%, transparent);
+}
+
+/* Knowledge echo — where a resurfaced concept was first met. Ghosted on
+   purpose: it aids retrieval, it is not decoration. */
+.dth-echo {
+    color: color-mix(in oklch, var(--color-foreground-muted) 75%, transparent);
+    border-left: 1px dashed color-mix(in oklch, var(--color-sand-500) 45%, transparent);
+}
+
+/* =============================================================================
+   9. Cards — 1–2px of lift, controlled border luminance. Never a 3D tilt,
+   never cursor-tracking, never a layout shift.
+   ============================================================================= */
+.dth-card {
+    transition: transform var(--motion-feedback) var(--ease-out),
+                border-color var(--motion-feedback) var(--ease-snap),
+                box-shadow var(--motion-feedback) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+    .dth-card:hover {
+        transform: translateY(-2px);
+        border-color: color-mix(in oklch, var(--color-wave-500) 45%, transparent);
+        box-shadow: 0 12px 30px -20px color-mix(in oklch, var(--color-ink-950) 90%, transparent);
+    }
+    .dth-card:hover .dth-card-arrow { transform: translate(2px, 2px); }
+}
+/* Keyboard focus earns the same feedback — not a lesser version of it. */
+.dth-card:focus-visible,
+.dth-card:has(:focus-visible) {
+    transform: translateY(-2px);
+    border-color: color-mix(in oklch, var(--color-wave-500) 55%, transparent);
+}
+.dth-card-arrow { transition: transform var(--motion-feedback) var(--ease-snap); }
+
+/* =============================================================================
+   10. Focus aperture — deep-work mode.
+
+   Peripheral contrast drops and luminance concentrates on the reading and
+   answer column. Contrast only: the interface is never blurred, because
+   blurred UI is unusable UI, not focused UI.
+   ============================================================================= */
+body.is-focus .dth-peripheral {
+    opacity: 0.35;
+    transition: opacity var(--motion-panel) var(--ease-out);
+}
+body.is-focus .dth-peripheral:hover,
+body.is-focus .dth-peripheral:focus-within { opacity: 1; }
+body.is-focus .dth-workspace {
+    box-shadow: 0 0 140px -60px color-mix(in oklch, var(--color-wave-500) 30%, transparent);
+}
+
+/* The reading column always sits above the scanline veil. */
+.dth-workspace { position: relative; z-index: 1; }
+
+/* Long transcripts: skip layout/paint for turns that are off-screen. */
+.dth-turn {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 320px;
+}
+
+/* =============================================================================
+   11. Streaming.
+   The caret is the ONLY thing that moves while a turn arrives, and completed
+   text above it never reflows.
+   ============================================================================= */
+.dth-caret {
+    display: inline-block;
+    width: 0.45rem;
+    height: 1.05em;
+    margin-left: 0.15em;
+    border-radius: 1px;
+    background: var(--color-primary);
+    vertical-align: text-bottom;
+    animation: dth-blink 1.1s steps(2, end) infinite;
+}
+@keyframes dth-blink { 50% { opacity: 0; } }
+
+/* =============================================================================
+   12. Scroll-driven reveals (landing page only — sparse, never in a session).
+   Progressive enhancement: without support, content is simply already visible.
+   ============================================================================= */
+@supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+        .dth-reveal {
+            animation: dth-rise-in linear both;
+            animation-timeline: view();
+            animation-range: entry 5% cover 22%;
+        }
+    }
+}
+@keyframes dth-rise-in {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* =============================================================================
+   13. Auth split-panel showcase — a warren of light blooming up from below.
+   ============================================================================= */
 .dth-auth-aside::before {
     content: '';
     position: absolute;
@@ -92,7 +485,9 @@
         transparent 62%);
 }
 
-/* --- Theme switch visuals (markup in components/frontend/theme-switch.blade.php) */
+/* =============================================================================
+   14. Theme switch (markup in components/frontend/theme-switch.blade.php).
+   ============================================================================= */
 .theme-switch {
     position: relative;
     display: inline-grid;
@@ -107,16 +502,17 @@
     border: 1px solid var(--color-border);
     box-shadow: inset 0 1px 2px color-mix(in oklch, var(--color-ink-950) 12%, transparent);
     cursor: pointer;
-    transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    transition: background var(--motion-state) var(--ease-out),
+                border-color var(--motion-state) var(--ease-out),
+                box-shadow var(--motion-state) var(--ease-out);
 }
 .theme-switch:hover {
     border-color: var(--color-border-strong);
     background: color-mix(in oklch, var(--color-surface-muted) 82%, var(--color-primary) 8%);
 }
 .theme-switch:focus-visible {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-ring) 35%, transparent);
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
 }
 .theme-switch .theme-switch-icon {
     display: grid;
@@ -124,9 +520,8 @@
     z-index: 1;
     font-size: 1rem;
     color: color-mix(in oklch, var(--color-foreground-muted) 55%, transparent);
-    transition: color 0.25s ease;
+    transition: color var(--motion-state) var(--ease-out);
 }
-/* active icon brightens for the current theme; the other dims back */
 .theme-switch .theme-switch-icon-sun         { color: var(--color-sand-600); }
 .dark .theme-switch .theme-switch-icon-sun   { color: color-mix(in oklch, var(--color-foreground-muted) 45%, transparent); }
 .theme-switch .theme-switch-icon-moon        { color: color-mix(in oklch, var(--color-foreground-muted) 45%, transparent); }
@@ -142,19 +537,90 @@
     box-shadow: 0 1px 3px color-mix(in oklch, var(--color-ink-950) 35%, transparent),
                 0 0 0 1px color-mix(in oklch, var(--color-border) 60%, transparent);
     transform: translateY(-50%);
-    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+    transition: transform var(--motion-state) var(--ease-out),
+                box-shadow var(--motion-state) var(--ease-out);
 }
-/* dark = thumb on the right, lit with the "locking on" cyan glow */
 .theme-switch[aria-checked='true'] .theme-switch-thumb {
     transform: translate(1.9rem, -50%);
     box-shadow: 0 1px 3px color-mix(in oklch, var(--color-ink-950) 35%, transparent),
                 0 0 12px -2px color-mix(in oklch, var(--color-wave-500) 55%, transparent);
 }
 
-/* Respect reduced motion — kill the depth transition for sensitive users. */
+/* =============================================================================
+   15. Citation / source popover.
+   Native Popover API + CSS anchor positioning where supported; a centred
+   fallback everywhere else, and a bottom sheet on narrow screens.
+   ============================================================================= */
+.dth-source-popover {
+    border: 1px solid var(--color-border-strong);
+    border-radius: 0.9rem;
+    background: var(--color-surface);
+    box-shadow: 0 24px 60px -30px color-mix(in oklch, var(--color-ink-950) 90%, transparent);
+    padding: 0;
+    max-width: min(24rem, calc(100vw - 2rem));
+}
+.dth-source-popover:popover-open {
+    animation: dth-rise var(--motion-state) var(--ease-out);
+}
+@supports (anchor-name: --a) {
+    .dth-source-popover {
+        position-anchor: var(--dth-anchor);
+        position-area: block-end span-inline-end;
+        position-try-fallbacks: block-start span-inline-end, block-end span-inline-start;
+        margin: 0.4rem 0 0 0;
+    }
+}
+/* Touch: a bottom sheet is reachable; an anchored popover is not. */
+@media (max-width: 40rem) {
+    .dth-source-popover {
+        position: fixed;
+        inset: auto 0 0 0;
+        max-width: none;
+        width: 100%;
+        border-radius: 1.1rem 1.1rem 0 0;
+        padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+}
+
+/* =============================================================================
+   16. Reduced motion & reduced transparency.
+
+   Motion-disabled must feel DESIGNED, not broken: every animation below has a
+   meaningful static end state, so the interface still communicates the same
+   things — just instantly.
+   ============================================================================= */
 @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 1ms !important;
+        scroll-behavior: auto !important;
+    }
     .dth-atmosphere { transition: none; }
-    .theme-switch-thumb { transition: none; }
-    .dth-logo { transition: none; }
+    .dth-composer::before { display: none; }
+    .dth-composer:focus-within { box-shadow: 0 0 0 2px var(--color-ring); }
     .group:hover .dth-logo { transform: none; filter: none; }
+    .dth-card:hover { transform: none; }
+    .dth-caret { animation: none; opacity: 1; }
+    .dth-analyzing::after { animation: none; opacity: 0.6; transform: none; }
+    .dth-rail-trail { display: none; }
+    /* Mastery still reads without the pulse — the border colour carries it. */
+    .dth-cleared { box-shadow: 0 0 0 1px var(--color-success); }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .dth-atmosphere { display: none; }
+    /* Anything relying on backdrop-blur gets an opaque surface instead. */
+    header, footer, .dth-glass {
+        backdrop-filter: none !important;
+        background-color: var(--color-background) !important;
+    }
+}
+
+/* Print: the transcript is the artefact worth keeping. */
+@media print {
+    .dth-atmosphere, header, footer, .dth-peripheral, .dth-composer { display: none !important; }
+    .dth-workspace { max-width: none; }
 }

@@ -51,16 +51,43 @@ return [
             ],
             'anthropic' => [
                 'cheap' => 'claude-haiku-4-5',
-                'mid' => 'claude-sonnet-4-6',
-                'deep' => 'claude-opus-4-8',
+                'mid' => 'claude-sonnet-5',
+                'deep' => 'claude-opus-5',
             ],
         ],
+        // Anthropic-only, optional: 'disabled' | 'adaptive'. Left unset the model
+        // decides — note Claude Opus 5 / Sonnet 5 think by default, and thinking
+        // shares the max_tokens budget with the answer, hence the headroom below.
+        'thinking' => env('CHAT_THINKING'),
+
         'deep_threshold' => (int) env('CHAT_DEEP_THRESHOLD', 3),
         'max_depth' => (int) env('CHAT_MAX_DEPTH', 7),
-        'max_tokens' => (int) env('CHAT_MAX_TOKENS', 2048),
+        'max_tokens' => (int) env('CHAT_MAX_TOKENS', 4096),
+        'grade_max_tokens' => (int) env('CHAT_GRADE_MAX_TOKENS', 1024),
+        'summary_max_tokens' => (int) env('CHAT_SUMMARY_MAX_TOKENS', 512),
         'guest_daily_limit' => (int) env('CHAT_GUEST_DAILY_LIMIT', 10),
         'user_daily_limit' => (int) env('CHAT_USER_DAILY_LIMIT', 80),
         'layer_xp' => (int) env('CHAT_LAYER_XP', 50),
         'history_limit' => (int) env('CHAT_HISTORY_LIMIT', 40),
+
+        // Turns kept verbatim before the older ones are folded into a running
+        // summary (summarizeContext). Keeps deep holes inside a cheap context.
+        'summarize_after' => (int) env('CHAT_SUMMARIZE_AFTER', 24),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mastery
+    |--------------------------------------------------------------------------
+    |
+    | A concept moves to "mastered" once the learner has demonstrated it this
+    | many times; a corrected misconception resurfaces for review after
+    | `resurface_after_days`.
+    |
+    */
+
+    'mastery' => [
+        'demonstrations_to_master' => (int) env('MASTERY_DEMONSTRATIONS', 2),
+        'resurface_after_days' => (int) env('MASTERY_RESURFACE_DAYS', 3),
     ],
 ];
