@@ -16,6 +16,8 @@ use RuntimeException;
  */
 class AnthropicClient implements LlmClient
 {
+    use ReadsSseStream;
+
     public function streamTurn(TurnPlan $plan, callable $onText): LlmStreamResult
     {
         $response = Http::withHeaders([
@@ -58,8 +60,7 @@ class AnthropicClient implements LlmClient
 
     /**
      * Read the Server-Sent Events body, forwarding text deltas to $onText and
-     * accumulating the full text + token usage. Stops early if the client
-     * disconnects so the caller can still persist the partial turn.
+     * accumulating the full text + token usage.
      *
      * @param  callable(string): void  $onText
      */
@@ -68,48 +69,27 @@ class AnthropicClient implements LlmClient
         $text = '';
         $input = $output = $cacheRead = 0;
         $stopReason = null;
-        $buffer = '';
 
-        while (! $body->eof()) {
-            if (connection_aborted()) {
-                break;
-            }
+        foreach ($this->sseFrames($body) as $data) {
+            switch ($data['type'] ?? null) {
+                case 'content_block_delta':
+                    $delta = $data['delta']['text'] ?? '';
+                    if ($delta !== '') {
+                        $text .= $delta;
+                        $onText($delta);
+                    }
+                    break;
 
-            $buffer .= $body->read(8192);
+                case 'message_start':
+                    $usage = $data['message']['usage'] ?? [];
+                    $input = (int) ($usage['input_tokens'] ?? 0);
+                    $cacheRead = (int) ($usage['cache_read_input_tokens'] ?? 0);
+                    break;
 
-            while (($pos = strpos($buffer, "\n")) !== false) {
-                $line = trim(substr($buffer, 0, $pos));
-                $buffer = substr($buffer, $pos + 1);
-
-                if ($line === '' || ! str_starts_with($line, 'data:')) {
-                    continue;
-                }
-
-                $data = json_decode(trim(substr($line, 5)), true);
-                if (! is_array($data)) {
-                    continue;
-                }
-
-                switch ($data['type'] ?? null) {
-                    case 'content_block_delta':
-                        $delta = $data['delta']['text'] ?? '';
-                        if ($delta !== '') {
-                            $text .= $delta;
-                            $onText($delta);
-                        }
-                        break;
-
-                    case 'message_start':
-                        $usage = $data['message']['usage'] ?? [];
-                        $input = (int) ($usage['input_tokens'] ?? 0);
-                        $cacheRead = (int) ($usage['cache_read_input_tokens'] ?? 0);
-                        break;
-
-                    case 'message_delta':
-                        $output = (int) ($data['usage']['output_tokens'] ?? $output);
-                        $stopReason = $data['delta']['stop_reason'] ?? $stopReason;
-                        break;
-                }
+                case 'message_delta':
+                    $output = (int) ($data['usage']['output_tokens'] ?? $output);
+                    $stopReason = $data['delta']['stop_reason'] ?? $stopReason;
+                    break;
             }
         }
 

@@ -131,7 +131,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ todo.
 | ✅ | **Thin `ChatController`** — `descend` / `continue` / `show` / `stream`; landing form wired → `POST /descend` |
 | ✅ | **`DescentService`** — depth/checkpoint state machine, trailing-JSON control-block parsing (fail-safe), model routing |
 | ✅ | **`ChatStreamingService`** — SSE `StreamedResponse` + Claude stream + post-stream persist (tokens, message), persists on disconnect |
-| ✅ | **`LlmClient` interface → `AnthropicClient`** — single swap seam; bound in `AppServiceProvider` |
+| ✅ | **`LlmClient` interface → `GeminiClient` / `AnthropicClient`** — single swap seam; `CHAT_PROVIDER` picks, bound in `AppServiceProvider` |
 | ✅ | **"Prove-it-to-descend" prompt** — one frozen, prompt-cached system prompt (`DescentPrompt`); teach → checkpoint → self-grade pass/retry via trailing JSON control block (no quiz engine) |
 | ✅ | **Gamification foundation** — append-only `xp_events`, `streaks`; `LayerCompleted` → auto-discovered queued `AwardLayerRewards` (`XpService` + `StreakService`) |
 | ✅ | **Cost control** — daily turn counter (cache-keyed, no column), Haiku for grade/guest, model routing by depth |
@@ -155,7 +155,15 @@ Stripe / Cashier (when the paid tier launches).
 
 ## 8. LLM specifics (grounded via the `claude-api` skill)
 
-- **Provider:** Anthropic Claude. SDK: official **`anthropic-ai/sdk`** (Composer). PHP top-level args
+- **Current provider (MVP): Google Gemini** — `CHAT_PROVIDER=gemini`, one key (`GEMINI_API_KEY`, free
+  from [AI Studio](https://aistudio.google.com/apikey)). Free tier covers the routed models, so the
+  MVP costs nothing. `App\Services\Llm\GeminiClient` hits
+  `v1beta/models/{model}:streamGenerateContent?alt=sse` — system prompt in `systemInstruction`,
+  assistant role renamed to `model`, `thought` parts dropped, implicit caching (no `cache_control`).
+- **Models & pricing** (per 1M tokens, in / out, paid tier): `gemini-3.5-flash-lite` **$0.30 / $2.50**
+  (cheap + mid), `gemini-3.5-flash` **$1.50 / $9** (deep). Both free-of-charge on the free tier.
+- **Alternate provider:** `CHAT_PROVIDER=anthropic` → `AnthropicClient` (needs `ANTHROPIC_API_KEY`).
+  SDK path if adopted: official **`anthropic-ai/sdk`** (Composer). PHP top-level args
   are **camelCase** (`maxTokens`), nested keys copied verbatim from docs.
 - **Models & pricing** (per 1M tokens, in / out): `claude-opus-4-8` **$5 / $25**,
   `claude-sonnet-4-6` **$3 / $15**, `claude-haiku-4-5` **$1 / $5**. Route by turn complexity:

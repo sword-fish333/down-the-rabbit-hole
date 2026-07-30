@@ -108,7 +108,7 @@ class DescentService
      */
     public function pickModel(int $depth, string $phase): string
     {
-        $models = config('platform.chat.models');
+        $models = config('platform.chat.models.'.config('platform.chat.provider'));
 
         if ($depth >= (int) config('platform.chat.deep_threshold')) {
             return $models['deep'];

@@ -47,4 +47,9 @@ return [
         'version' => env('ANTHROPIC_VERSION', '2023-06-01'),
         'base_url' => env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com'),
     ],
+
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+        'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com'),
+    ],
 ];

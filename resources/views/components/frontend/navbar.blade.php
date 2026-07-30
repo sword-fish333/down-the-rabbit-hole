@@ -24,7 +24,7 @@
                     @else
                         <span class="grid h-8 w-8 place-items-center rounded-full bg-primary/12 text-xs font-semibold text-primary ring-1 ring-primary/25">{{ auth()->user()->initials() }}</span>
                     @endif
-                    <span class="hidden max-w-[8rem] truncate text-sm font-medium text-foreground sm:inline">{{ auth()->user()->name }}</span>
+                    <span class="hidden max-w-32 truncate text-sm font-medium text-foreground sm:inline">{{ auth()->user()->name }}</span>
                 </span>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf

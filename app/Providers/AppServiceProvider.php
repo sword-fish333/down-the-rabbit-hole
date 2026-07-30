@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Contracts\LlmClient;
 use App\Services\Llm\AnthropicClient;
+use App\Services\Llm\GeminiClient;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -17,8 +18,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // The single seam over the LLM provider — swap the binding to change it.
-        $this->app->bind(LlmClient::class, AnthropicClient::class);
+        // The single seam over the LLM provider — CHAT_PROVIDER picks the client.
+        $this->app->bind(LlmClient::class, fn () => match (config('platform.chat.provider')) {
+            'anthropic' => new AnthropicClient,
+            default => new GeminiClient,
+        });
     }
 
     /**

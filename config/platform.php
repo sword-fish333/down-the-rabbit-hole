@@ -38,10 +38,22 @@ return [
     */
 
     'chat' => [
+        // Which LlmClient AppServiceProvider binds: 'gemini' or 'anthropic'.
+        'provider' => env('CHAT_PROVIDER', 'gemini'),
+
+        // Depth tiers per provider. Gemini's free tier covers both Flash-Lite
+        // and Flash, so the MVP runs at zero cost until billing is enabled.
         'models' => [
-            'cheap' => env('CHAT_MODEL_CHEAP', 'claude-haiku-4-5'),
-            'mid' => env('CHAT_MODEL_MID', 'claude-sonnet-4-6'),
-            'deep' => env('CHAT_MODEL_DEEP', 'claude-opus-4-8'),
+            'gemini' => [
+                'cheap' => 'gemini-3.5-flash-lite',
+                'mid' => 'gemini-3.5-flash-lite',
+                'deep' => 'gemini-3.5-flash',
+            ],
+            'anthropic' => [
+                'cheap' => 'claude-haiku-4-5',
+                'mid' => 'claude-sonnet-4-6',
+                'deep' => 'claude-opus-4-8',
+            ],
         ],
         'deep_threshold' => (int) env('CHAT_DEEP_THRESHOLD', 3),
         'max_depth' => (int) env('CHAT_MAX_DEPTH', 7),

@@ -106,9 +106,11 @@ class DescentTest extends TestCase
         $descent = $this->descent();
         config(['platform.chat.deep_threshold' => 3]);
 
-        $this->assertSame(config('platform.chat.models.mid'), $descent->pickModel(0, Message::PHASE_TEACH));
-        $this->assertSame(config('platform.chat.models.cheap'), $descent->pickModel(0, Message::PHASE_GRADE));
-        $this->assertSame(config('platform.chat.models.deep'), $descent->pickModel(3, Message::PHASE_TEACH));
+        $models = config('platform.chat.models.'.config('platform.chat.provider'));
+
+        $this->assertSame($models['mid'], $descent->pickModel(0, Message::PHASE_TEACH));
+        $this->assertSame($models['cheap'], $descent->pickModel(0, Message::PHASE_GRADE));
+        $this->assertSame($models['deep'], $descent->pickModel(3, Message::PHASE_TEACH));
     }
 
     public function test_an_authenticated_pass_awards_xp_and_streak(): void
