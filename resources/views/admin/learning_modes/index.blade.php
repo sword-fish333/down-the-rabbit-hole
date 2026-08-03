@@ -33,7 +33,7 @@
              a table-like grid row — one DOM tree, not two. --}}
         <div class="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
             <div class="hidden border-b border-border bg-muted/40 px-5 py-3 lg:grid lg:grid-cols-[minmax(0,2.2fr)_minmax(0,3fr)_7rem_8rem_9rem] lg:gap-4">
-                @foreach (['mode', 'directive', 'holes', 'status', ''] as $heading)
+                @foreach (['mode', 'directive', 'subjects', 'status', ''] as $heading)
                     <p class="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                         {{ $heading ? __('admin/frontend.learning-modes.col-'.$heading) : '' }}
                     </p>
@@ -73,7 +73,7 @@
 
                         {{-- Usage --}}
                         <p class="mt-3 text-sm text-foreground lg:mt-0">
-                            <span class="lg:hidden">{{ __('admin/frontend.learning-modes.col-holes') }}: </span>
+                            <span class="lg:hidden">{{ __('admin/frontend.learning-modes.col-subjects') }}: </span>
                             <span class="font-mono tabular-nums">{{ $mode->conversations_count }}</span>
                         </p>
 

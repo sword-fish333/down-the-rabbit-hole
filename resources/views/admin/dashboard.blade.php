@@ -11,7 +11,7 @@
     <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
         @php($cards = [
             ['key' => 'users',         'icon' => 'group',         'tone' => 'text-wave-600 bg-wave-500/12'],
-            ['key' => 'holes',         'icon' => 'forum',         'tone' => 'text-sea-600 bg-sea-500/12'],
+            ['key' => 'subjects',         'icon' => 'forum',         'tone' => 'text-sea-600 bg-sea-500/12'],
             ['key' => 'admins',        'icon' => 'shield_person', 'tone' => 'text-sand-700 bg-sand-500/12'],
             ['key' => 'active_admins', 'icon' => 'verified',      'tone' => 'text-clay-600 bg-clay-500/12'],
         ])
@@ -99,18 +99,18 @@
                 <p class="text-sm text-muted-foreground">{{ __('admin/frontend.dashboard.recent-empty') }}</p>
             @else
                 <ul class="space-y-1">
-                    @foreach ($recent as $hole)
+                    @foreach ($recent as $subject)
                         <li>
-                            <a href="{{ route('admin.conversation.edit', $hole) }}"
+                            <a href="{{ route('admin.conversation.edit', $subject) }}"
                                class="flex items-center justify-between gap-3 rounded-xl px-2.5 py-2 text-sm transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
                                 <span class="min-w-0">
-                                    <span class="block truncate text-foreground">{{ $hole->displayTitle() }}</span>
+                                    <span class="block truncate text-foreground">{{ $subject->displayTitle() }}</span>
                                     <span class="block truncate text-xs text-muted-foreground">
-                                        {{ $hole->user?->name ?? __('admin/frontend.conversations.guest') }} · {{ $hole->updated_at->diffForHumans() }}
+                                        {{ $subject->user?->name ?? __('admin/frontend.conversations.guest') }} · {{ $subject->updated_at->diffForHumans() }}
                                     </span>
                                 </span>
                                 <span class="shrink-0 font-mono text-xs text-muted-foreground">
-                                    {{ str_pad($hole->current_depth, 2, '0', STR_PAD_LEFT) }}
+                                    {{ str_pad($subject->current_depth, 2, '0', STR_PAD_LEFT) }}
                                 </span>
                             </a>
                         </li>
@@ -127,7 +127,7 @@
             @foreach ([
                 ['route' => 'admin.learning-mode.index', 'icon' => 'tune', 'label' => 'nav.learning-modes', 'hint' => 'dashboard.manage-modes'],
                 ['route' => 'admin.user.index', 'icon' => 'group', 'label' => 'nav.users', 'hint' => 'dashboard.manage-users'],
-                ['route' => 'admin.conversation.index', 'icon' => 'forum', 'label' => 'nav.conversations', 'hint' => 'dashboard.manage-holes'],
+                ['route' => 'admin.conversation.index', 'icon' => 'forum', 'label' => 'nav.conversations', 'hint' => 'dashboard.manage-subjects'],
             ] as $action)
                 <a href="{{ route($action['route']) }}"
                    class="group flex items-center gap-3 rounded-xl border border-border p-4 transition hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">

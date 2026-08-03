@@ -10,7 +10,7 @@
 An AI-chat **deep-learning** app, not a chat app. You **name a subject, fall in, and at each layer the
 AI makes you prove you understood before the next, deeper layer unlocks — until you surface an expert.**
 
-The spine is the *descent*: a single conversation per rabbit hole with a measurable **depth**. Every
+The spine is the *descent*: a single conversation per subject with a measurable **depth**. Every
 reward is anchored to **depth of learning**, never time-on-app. Design language is Blade-Runner-noir ×
 Alice-in-Wonderland; the principles are **deep work, flow, and mastery** (clear goals → immediate
 feedback → challenge/skill balance).
@@ -29,7 +29,7 @@ feedback → challenge/skill balance).
   on file), and can manage their own **profile** (details / password / avatar / learning record).
   Verification is a **nudge, not a gate** — an unverified learner still descends.
 - **Frontend:** the noir × Alice design system (`resources/css/app.css` `@theme` OKLCH tokens plus a
-  **motion-token layer**, dark-default, Space Grotesk / DM Sans / JetBrains Mono); landing page, holes
+  **motion-token layer**, dark-default, Space Grotesk / DM Sans / JetBrains Mono); landing page, subject
   library, learning workspace, auth, profile — all rendered from `resources/views/frontend/*` with
   shared Blade components. Bespoke atmosphere and the signature interactions live in
   `public/css/frontend/custom.css`.
@@ -39,7 +39,7 @@ feedback → challenge/skill balance).
 - **Localization:** every user-facing string via `__('frontend.*')` / `__('admin/...')`. English only
   today, but nothing is hardcoded — adding a locale is a lang-file drop.
 - **Models:** `User`, `Admin`, `Conversation`, `Message`, `LearningMode`, `Concept`,
-  `CheckpointAttempt`, `XpEvent`, `Streak`.
+  `CheckpointAttempt`, `XpEvent`, `Streak`, `SubjectFolder`, `Source`.
 - **Packages:** `laravel/framework ^13.8`, `sanctum ^4`, `socialite ^5.28`, `tinker`. **No new runtime
   dependency was added** for any of the above — see §5.
 
@@ -47,10 +47,38 @@ feedback → challenge/skill balance).
 `LlmClient` seam, the depth + checkpoint state machine (`DescentService`), **schema-enforced grading**,
 the **mastery map**, **learning modes**, model routing + daily caps, and the event-driven XP/streak
 foundation (`xp_events` ledger, `streaks`, `LayerCompleted` → `AwardLayerRewards`). Guest-capable
-(session ownership). Covered by 53 tests, all offline (`Tests\Support\FakeLlmClient`).
+(session ownership). Covered by 82 tests, all offline (`Tests\Support\FakeLlmClient`, `Http::fake`).
 
-**Still absent:** source/document ingestion (§7), achievements / leagues / quests, subscriptions /
-payments, public sharing, flashcards and spaced review across holes.
+**Built — the library.** The persistent **subject rail** on every app screen (recents or folder tree,
+switched by an unencrypted `dth_subject_view` cookie so the tree is only queried when shown), the
+**library** at `/subjects` (cursor pagination, escaped LIKE search, state filters, bulk delete, one
+Blade partial serving both first paint and the `fragment=1` lazy-load), and the **organiser** at
+`/subjects/organization` — an Obsidian-style tree with drag-and-drop filing, nested folders, rename,
+and a client-side filter that reveals matches inside collapsed folders. Every mutation is a real form
+post; drag-and-drop only fills in forms the server rendered, so the whole surface works without JS.
+
+**Built — read-only sharing.** `share_token` on a conversation *is* the capability; `/s/{token}` is a
+server-rendered public page and unsharing nulls the token, which kills the link. This is the SEO / UGC
+loop in §6 with no second rendering path.
+
+**Built — source-grounded learning (first pass, §7).** A URL in the composer is fetched by
+`SourceFetcher` (SSRF-checked per host *and* per redirect hop, timeout + byte + redirect caps, regex
+readability extraction, no new dependency), stored as a `Source`, and re-sent in every teaching
+directive so it survives context compaction. The guide is told to teach from it and to say plainly
+where it steps beyond the page. Chunking, locators and per-passage citations are still to come.
+
+**Built — honest progress.** SSE now carries `stage` frames alongside `token`: each is emitted when
+that work actually happens and carries its numbers ("Reading X — 1,200 words", "Recalling 4 concepts
+you've proven", "Composing Layer 04"). The workspace renders them as a collapsible descent, and prose
+is revealed a completed block at a time — committed blocks land in stable DOM once and animate once;
+only the unfinished tail re-renders per frame.
+
+**Still absent:** source chunking / citations (§7), achievements / leagues / quests, subscriptions /
+payments, flashcards and spaced review across subjects.
+
+**Vocabulary is fixed.** The model stays `Conversation`; the product says **subject** everywhere.
+Progression words: **Layer NN**, *Descend* / *Go deeper*, *Prove it*, "Depth reached: Layer X of Y",
+"N-day descent" (never "streak" in the UI), "Your deepest dive: [subject] — N layers".
 
 ---
 
@@ -67,7 +95,7 @@ payments, public sharing, flashcards and spaced review across holes.
 
 ## 4. The signature mechanic — "prove it to descend"
 
-One conversation = one rabbit hole. `DescentService` drives a small state machine, and the important
+One conversation = one subject. `DescentService` drives a small state machine, and the important
 design decision is that **its two turns use two different transports**:
 
 1. **Teach turn** — `LlmClient::streamTeachingTurn()`. Streamed Markdown, rendered as it arrives. The
@@ -121,7 +149,7 @@ interface LlmClient
 `CHAT_PROVIDER` binds `GeminiClient` or `AnthropicClient` in `AppServiceProvider`. `LlmStream` is
 iterated for text deltas and then read for `text()` / `usage()`, so a learner who disconnects mid-turn
 still gets their partial layer persisted. `summarizeContext()` runs in a **queued job**
-(`CompactConversationContext`) once a hole outgrows its verbatim window — a deep hole stays affordable
+(`CompactConversationContext`) once a subject outgrows its verbatim window — a deep subject stays affordable
 without ever putting a second round-trip on the critical path.
 
 ### Mastery map
@@ -209,14 +237,14 @@ learner starts reading or writing.
 - Launch **freemium + a single ~$20 "Wonderland" Pro tier** (don't over-engineer tiers).
 - **Meter the expensive path:** daily turn credits, **model routing** (cheap for grading, mid for
   shallow teaching, deep for the deepest layers), **prompt caching** of the frozen system prompt,
-  **context compaction** on long holes, hard spend caps.
+  **context compaction** on long subjects, hard spend caps.
 - The paid tier should sell **depth and durability**, not access to knowledge: higher daily limits,
-  source ingestion (§7), longer holes, export, and the weekly mastery report. **Never pay-to-win on
+  source ingestion (§7), longer subjects, export, and the weekly mastery report. **Never pay-to-win on
   knowledge** — money buys convenience and more AI, never exclusive learning.
 - **No Stripe / Cashier yet** — gate with the daily counter until the tier actually launches.
 
 ### Growth
-- **Blade is already SSR**, so public shareable hole pages need no Inertia SSR — add per-page OG/meta
+- **Blade is already SSR**, so public shareable subject pages need no Inertia SSR — add per-page OG/meta
   and a sitemap and the pages are a UGC-distribution + SEO loop out of the box.
 - Later: double-sided referral (bonus credits both sides), topic communities.
 
@@ -224,15 +252,23 @@ learner starts reading or writing.
 
 ## 7. Source-grounded learning (specified, not yet built)
 
-**The feature:** a learner drops a **URL or a document** into a hole; the guide reads it and teaches
+**The feature:** a learner drops a **URL or a document** into a subject; the guide reads it and teaches
 *from it*, with checkpoints that quote it. This is the single highest-value addition to the product and
 the most defensible thing to put behind the paid tier — it turns "explain this subject" into "make me
 understand *this specific material*", which is what course notes, papers and books actually demand.
 
-It is **deliberately not implemented in this pass.** Ingestion is not one feature, it is a pipeline
-(fetch → extract → chunk → store → retrieve → cite), each stage with its own failure modes, and
-shipping a half-built version would put unreliable grounding underneath a grading system whose whole
-value is that it is trustworthy. The design below is settled so it can be built cleanly next.
+**Status: the URL half is built, deliberately without chunking.** Ingestion is a pipeline (fetch →
+extract → chunk → store → retrieve → cite) and each stage has its own failure modes, so it was split:
+today one page is fetched, extracted and re-sent whole (truncated to `platform.sources.prompt_words`)
+in every teaching directive. That is enough for "make me understand *this article*" and it puts nothing
+unreliable underneath grading — a checkpoint still grades the learner's understanding, not a retrieval
+score. `sources` exists; `source_chunks` and `conversation_source` do not yet. Uploads are not built.
+
+**What the built half guarantees.** `SourceFetcher` refuses any host that resolves into a private or
+reserved range, re-checks on every redirect hop (Guzzle `on_redirect`), bounds the fetch by timeout,
+bytes and hops, accepts only HTML/text, and refuses a page with under 100 readable words rather than
+teaching from nothing. `SourceFetcherTest` asserts *no request is sent* for each refused case — that
+assertion is the point of the test, not a detail of it.
 
 ### Data model
 
@@ -240,11 +276,11 @@ value is that it is trustworthy. The design below is settled so it can be built 
 |---|---|
 | `sources` | one ingested artefact: `type` (url / pdf / text), `url`, `title`, `author`, `published_at`, `status`, `checksum`, `bytes` |
 | `source_chunks` | ordered extracts with a stable `locator` (page / heading / char range) — the anchor a citation points at |
-| `conversation_source` | which sources ground which hole |
+| `conversation_source` | which sources ground which subject |
 
 ### Pipeline
 
-1. `POST /hole/{id}/sources` accepts a URL or an upload; validates type, size and (for URLs) that the
+1. `POST /subject/{id}/sources` accepts a URL or an upload; validates type, size and (for URLs) that the
    host resolves publicly — **SSRF is the first thing to get right here**.
 2. A queued `IngestSource` job fetches and extracts. URLs need a readability pass; PDFs need a text
    layer (and OCR is out of scope — a scanned PDF should fail loudly, not silently produce nothing).
@@ -262,7 +298,7 @@ positioning where supported, a centred fallback elsewhere, and a **bottom sheet 
 The "Show the evidence" contextual action already exists in the workspace and currently asks the guide
 to name what the layer rests on; once sources exist it becomes a real citation surface.
 
-**Ship it behind the paid tier**, metered by pages ingested rather than by hole.
+**Ship it behind the paid tier**, metered by pages ingested rather than by subject.
 
 ---
 
@@ -282,25 +318,33 @@ Legend: ✅ done · 🟡 in progress · ⬜ todo.
 | ✅ | **Mastery map** — `concepts` (mastered / developing / misunderstood / unexplored) from graded evidence; misconceptions resurface |
 | ✅ | **`checkpoint_attempts`** — criterion-by-criterion feedback, confidence calibration |
 | ✅ | **Learning modes** — 6 seeded, full admin CRUD, wired into the teaching directive |
-| ✅ | **Context compaction** — queued `CompactConversationContext` keeps deep holes affordable |
+| ✅ | **Context compaction** — queued `CompactConversationContext` keeps deep subjects affordable |
 | ✅ | **Gamification foundation** — `xp_events`, `streaks`, `LayerCompleted` → `AwardLayerRewards` |
 | ✅ | **Cost control** — daily turn counter, model routing, prompt caching, compaction |
-| ✅ | **Ungated first descent** — anonymous guest hole, tracked in the session |
+| ✅ | **Ungated first descent** — anonymous guest subject, tracked in the session |
 | ✅ | **Web-guard auth** — register / login / logout / Google, first+last name, queued email verification, learner profile |
-| ✅ | **Frontend** — motion system, learning workspace, depth rail, mastery map, deep-work mode, Markdown rendering, holes library |
-| ✅ | **Admin** — dashboard with learning-health metrics, learning-mode CRUD, learner management, rabbit-hole oversight |
+| ✅ | **Frontend** — motion system, learning workspace, depth rail, mastery map, deep-work mode, Markdown rendering, subject library |
+| ✅ | **Admin** — dashboard with learning-health metrics, learning-mode CRUD, learner management, subject oversight |
 
 ### Stage 1 — retention & utility
-⬜ **Source-grounded learning (§7)** · ⬜ Auto-generated flashcards from the mastery map · ⬜ Personal
-notes & highlights · ⬜ End-of-hole synthesis artefact · ⬜ Export to Markdown/PDF · ⬜ Cross-hole spaced
-review · ⬜ Weekly mastery report · ⬜ Learning paths with prerequisites.
+| Status | Item |
+|---|---|
+| ✅ | **Subject library** — `/subjects`, cursor pagination, search, state filters, bulk delete, lazy load |
+| ✅ | **Organisation** — `subject_folders` tree, drag-and-drop filing, nested folders, filter |
+| ✅ | **Persistent subject rail** — recents or folder tree on every app screen |
+| ✅ | **Source-grounded learning, URL half (§7)** — SSRF-guarded fetch, extract, grounded teaching |
+| 🟡 | **Source chunking + citations** — `source_chunks`, locators, FTS retrieval, `evidence` in the schema |
+| ⬜ | Document/PDF upload · flashcards from the mastery map · notes & highlights · end-of-subject synthesis · export · cross-subject spaced review · weekly mastery report · learning paths |
 
 ### Stage 2 — engagement & first revenue
-⬜ Public shareable hole pages (Blade + OG/meta + sitemap) · ⬜ Achievements on the same event stream ·
-⬜ Double-sided referral · ⬜ Stripe / Cashier when the paid tier launches.
+| Status | Item |
+|---|---|
+| ✅ | **Public shareable subject pages** — `share_token` capability, `/s/{token}`, server-rendered |
+| ⬜ | Per-page OG images + sitemap for the shared pages |
+| ⬜ | Achievements on the same event stream · double-sided referral · Stripe / Cashier at launch |
 
 ### Stage 3 — UGC & scale
-⬜ Fork another learner's hole · ⬜ Curated expert learning paths · ⬜ Collaborative study rooms ·
+⬜ Fork another learner's subject · ⬜ Curated expert learning paths · ⬜ Collaborative study rooms ·
 ⬜ Resource voting & reputation · ⬜ BYOK · ⬜ Creator monetization.
 
 **Deliberately delayed:** leagues, cosmetic stores and creator monetization, until the metrics in §10
@@ -352,13 +396,13 @@ Tracked (or directly derivable) today, surfaced on the admin dashboard:
 
 - **% completing the first layer** — the activation number.
 - **Layers cleared** and **checkpoint pass rate** — retry-to-pass improvement over time.
-- **Average and maximum depth reached** per hole.
+- **Average and maximum depth reached** per subject.
 - **Concepts mastered** vs **open misconceptions**.
 - **Completed descents** (surfaced).
-- **Token spend per hole** — cost per completed layer.
+- **Token spend per subject** — cost per completed layer.
 
 Deliberately **not** tracked: messages sent, session length, time on site. All three can rise while
 learning quality falls, and a product that optimises for them stops being a learning tool.
 
-Still to instrument: next-day and seven-day recall, review completion rate, % resuming an existing hole,
+Still to instrument: next-day and seven-day recall, review completion rate, % resuming an existing subject,
 and false-grading rate (needs a human-labelled sample of `checkpoint_attempts`).

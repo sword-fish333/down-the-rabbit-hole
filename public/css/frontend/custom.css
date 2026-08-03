@@ -187,6 +187,21 @@ body.is-hidden .dth-atmosphere { transition: none; }
     to   { opacity: 1; transform: none; }
 }
 
+/* Composer fields: a resting height you can read the placeholder in, growing
+   with the answer up to a ceiling and only then scrolling inside itself.
+
+   `min-height` is the load-bearing line. It holds the box open before any script
+   runs, while the control is still hidden, and after the value is cleared — the
+   three moments a JS-measured height gets it wrong. */
+.dth-autogrow {
+    min-height: 4.25rem;
+    max-height: 26rem;
+    overflow-y: auto;
+}
+@supports (field-sizing: content) {
+    .dth-autogrow { field-sizing: content; }
+}
+
 /* =============================================================================
    5. The descent transition.
 
@@ -583,7 +598,189 @@ body.is-focus .dth-workspace {
 }
 
 /* =============================================================================
-   16. Reduced motion & reduced transparency.
+   16. The subject rail.
+
+   Static from `lg` up, a drawer below it. Transform only — animating `left`
+   would relayout the page on every frame of the slide.
+   ============================================================================= */
+.dth-sidebar.is-open { transform: translateX(0); }
+
+/* Behind an open drawer the page must not scroll under the finger. */
+body.is-rail-open { overflow: hidden; }
+@media (min-width: 64rem) {
+    body.is-rail-open { overflow: visible; }
+}
+
+/* The list / folders switch — the pressed one is stated, not implied. */
+.dth-view-toggle[aria-pressed='true'] {
+    background: color-mix(in oklch, var(--color-primary) 14%, transparent);
+    color: var(--color-primary);
+}
+
+/* =============================================================================
+   17. SIGNATURE — the guide, thinking.
+
+   A dot descends a hairline shaft: the same gesture as the depth rail's light
+   trail, at the scale of a single turn. It answers "is anything happening, and
+   in which direction" — and it is the ONLY thing looping on this screen, which
+   is why the stage list below it is deliberately still.
+
+   The stages themselves are real events from the server, so the list is a log,
+   not a placeholder: it grows when work actually happens and stops when it does.
+   ============================================================================= */
+.dth-descent-dot {
+    position: relative;
+    display: inline-block;
+    flex: none;
+    width: 0.6rem;
+    height: 1.15rem;
+}
+.dth-descent-dot::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    left: 50%;
+    width: 1px;
+    translate: -50% 0;
+    background: linear-gradient(to bottom,
+        transparent,
+        color-mix(in oklch, var(--color-wave-500) 45%, transparent),
+        transparent);
+}
+.dth-descent-dot::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 0.32rem;
+    height: 0.32rem;
+    border-radius: 9999px;
+    translate: -50% 0;
+    background: var(--color-primary);
+    box-shadow: 0 0 10px -1px color-mix(in oklch, var(--color-wave-500) 85%, transparent);
+    animation: dth-descend 1.6s var(--ease-cinema) infinite;
+}
+@keyframes dth-descend {
+    0%   { top: 0; opacity: 0; }
+    18%  { opacity: 1; }
+    82%  { opacity: 1; }
+    100% { top: calc(100% - 0.32rem); opacity: 0; }
+}
+
+/* Finished: the dot settles at the bottom, viridian, still. The panel stays
+   openable — how a layer was built is worth being able to look at again. */
+.dth-thinking[data-done] .dth-descent-dot::after {
+    animation: none;
+    top: calc(100% - 0.32rem);
+    background: var(--color-success);
+    box-shadow: none;
+}
+
+.dth-stages {
+    display: grid;
+    gap: 0.55rem;
+    list-style: none;
+    margin: 0;
+}
+.dth-stages li {
+    display: grid;
+    grid-template-columns: 0.5rem 1fr;
+    align-items: start;
+    gap: 0.7rem;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: color-mix(in oklch, var(--color-foreground-muted) 85%, transparent);
+    animation: dth-rise var(--motion-state) var(--ease-out) both;
+}
+.dth-stage-mark {
+    position: relative;
+    margin-top: 0.36rem;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 9999px;
+    box-shadow: inset 0 0 0 1px var(--color-border-strong);
+}
+/* A hairline from each step to the next: the descent, in miniature. */
+.dth-stages li:not(:last-child) .dth-stage-mark::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0.62rem;
+    width: 1px;
+    height: 0.85rem;
+    translate: -50% 0;
+    background: var(--color-border);
+}
+.dth-stages li[data-state='active'] .dth-stage-mark {
+    background: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-wave-500) 15%, transparent);
+}
+.dth-stages li[data-state='active'] .dth-stage-text { color: var(--color-foreground); }
+.dth-stages li[data-state='done'] .dth-stage-mark {
+    background: var(--color-success);
+    box-shadow: none;
+}
+
+/* A completed block arriving. 3px and once — it says "this is new", then stops.
+   Transform, so nothing above it is ever re-laid-out. */
+.dth-block-in { animation: dth-block-in var(--motion-state) var(--ease-out) both; }
+@keyframes dth-block-in {
+    from { opacity: 0; transform: translateY(3px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* Copy a layer — present for keyboard and touch, quiet for the mouse. */
+.dth-copy { opacity: 0; }
+.group\/turn:hover .dth-copy,
+.dth-copy:focus-visible { opacity: 1; }
+@media (hover: none) {
+    .dth-copy { opacity: 0.6; }
+}
+
+/* =============================================================================
+   18. The library — rows, and selecting several of them.
+   ============================================================================= */
+.dth-select { display: none; }
+.is-selecting .dth-select { display: block; }
+.is-selecting .dth-row-link {
+    padding-left: 2.75rem;
+    cursor: pointer;
+}
+
+/* Loading the next page: the list dims slightly rather than showing a spinner
+   over content the learner is still reading. */
+[data-loading] [data-rows] { opacity: 0.65; transition: opacity var(--motion-feedback) var(--ease-out); }
+
+/* =============================================================================
+   19. The organiser — a tree you can drag things into.
+
+   The drop target is drawn as an inset edge rather than a moved row: nothing
+   shifts while you are aiming at it.
+   ============================================================================= */
+.dth-tree-row {
+    transition: background-color var(--motion-feedback) var(--ease-snap),
+                box-shadow var(--motion-feedback) var(--ease-snap);
+}
+.dth-tree-row:hover { background: color-mix(in oklch, var(--color-surface-muted) 70%, transparent); }
+
+.dth-tree-row.is-dragging { opacity: 0.4; }
+.dth-tree-row.is-drop-target {
+    background: color-mix(in oklch, var(--color-primary) 12%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--color-wave-500) 55%, transparent);
+}
+
+/* Row actions: quiet for a mouse, always there for everyone else. */
+.dth-row-actions { opacity: 0; transition: opacity var(--motion-feedback) var(--ease-out); }
+.dth-tree-row:hover .dth-row-actions,
+.dth-row-actions:focus-within { opacity: 1; }
+@media (hover: none) {
+    .dth-row-actions { opacity: 0.7; }
+}
+
+[data-saving] { cursor: progress; }
+
+/* =============================================================================
+   20. Reduced motion & reduced transparency.
 
    Motion-disabled must feel DESIGNED, not broken: every animation below has a
    meaningful static end state, so the interface still communicates the same
@@ -608,6 +805,10 @@ body.is-focus .dth-workspace {
     .dth-rail-trail { display: none; }
     /* Mastery still reads without the pulse — the border colour carries it. */
     .dth-cleared { box-shadow: 0 0 0 1px var(--color-success); }
+    /* The descent dot stops travelling and simply sits lit: "working" still
+       reads, it just doesn't move. */
+    .dth-descent-dot::after { animation: none; top: 40%; opacity: 1; }
+    .dth-block-in { animation: none; opacity: 1; transform: none; }
 }
 
 @media (prefers-reduced-transparency: reduce) {

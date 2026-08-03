@@ -14,7 +14,7 @@
     @else
         <div class="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
             <div class="hidden border-b border-border bg-muted/40 px-5 py-3 lg:grid lg:grid-cols-[minmax(0,2.4fr)_7rem_7rem_8rem_7rem] lg:gap-4">
-                @foreach (['learner', 'holes', 'xp', 'status', ''] as $heading)
+                @foreach (['learner', 'subjects', 'xp', 'status', ''] as $heading)
                     <p class="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                         {{ $heading ? __('admin/frontend.users.col-'.$heading) : '' }}
                     </p>
@@ -33,7 +33,7 @@
                         </div>
 
                         <p class="mt-3 text-sm text-foreground lg:mt-0">
-                            <span class="lg:hidden">{{ __('admin/frontend.users.col-holes') }}: </span>
+                            <span class="lg:hidden">{{ __('admin/frontend.users.col-subjects') }}: </span>
                             <span class="font-mono tabular-nums">{{ $user->conversations_count }}</span>
                         </p>
 

@@ -45,8 +45,8 @@
                     </li>
                     @auth
                         <li>
-                            <a href="{{ route('holes.index') }}" class="text-foreground-muted transition duration-(--motion-feedback) hover:text-foreground">
-                                {{ __('frontend.footer.your-holes') }}
+                            <a href="{{ route('subjects.index') }}" class="text-foreground-muted transition duration-(--motion-feedback) hover:text-foreground">
+                                {{ __('frontend.footer.your-subjects') }}
                             </a>
                         </li>
                         <li>

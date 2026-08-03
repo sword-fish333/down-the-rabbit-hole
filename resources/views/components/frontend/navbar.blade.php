@@ -1,51 +1,72 @@
-@props(['peripheral' => false])
+@props(['peripheral' => false, 'shell' => false])
 
 @php($user = auth()->user())
 
-{{-- Frontend top bar. Translucent noir glass; brand left, controls right.
+{{-- Frontend top bar. Translucent noir glass.
+
+     Two shapes, one component. Off the app shell it is the whole navigation:
+     brand left, destinations centre, account right. Inside the shell the rail
+     already owns navigation, so this thins out to the drawer trigger, the streak
+     and the account — one place per job, no duplicated links.
+
      On the learning workspace it carries .dth-peripheral, so deep-work mode can
-     dim it without removing it — the way out of a focus mode must stay
-     reachable, just quieter. --}}
+     dim it without removing it: the way out of a focus mode must stay reachable,
+     just quieter. --}}
 <header @class([
-    'dth-glass sticky top-0 z-50 border-b border-border/70 bg-background/72 backdrop-blur-xl',
+    'dth-glass sticky top-0 z-30 border-b border-border/70 bg-background/72 backdrop-blur-xl',
     'dth-peripheral' => $peripheral,
 ])>
-    <nav class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8"
+    <nav @class([
+             'mx-auto flex h-16 items-center gap-3 px-4 sm:px-6',
+             'max-w-7xl justify-between lg:px-8' => ! $shell,
+             'w-full' => $shell,
+         ])
          aria-label="{{ __('frontend.navbar.primary') }}">
-        {{-- Brand --}}
-        <a href="{{ route('home') }}"
-           class="group flex shrink-0 items-center gap-2.5 rounded-xl font-display text-base font-semibold tracking-tight text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <img src="{{ loadFiles('images/logos/main_logo.png') }}"
-                 alt="" width="36" height="36" loading="eager" decoding="async"
-                 class="dth-logo h-9 w-9 shrink-0 rounded-full object-contain ring-1 ring-border/60">
-            <span class="hidden sm:inline">{{ config('app.name') }}</span>
-            <span class="sr-only sm:hidden">{{ config('app.name') }}</span>
-        </a>
 
-        @auth
-            {{-- Signed in: the two destinations that matter, then the account menu. --}}
-            <div class="hidden items-center gap-1 md:flex">
-                <a href="{{ route('holes.index') }}" @class([
-                    'inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition duration-(--motion-feedback) ease-(--ease-snap)',
-                    'bg-primary/10 text-primary' => request()->routeIs('holes.*', 'hole.*'),
-                    'text-foreground-muted hover:text-foreground' => ! request()->routeIs('holes.*', 'hole.*'),
-                ])>
-                    <span class="material-symbols-outlined text-[1.15rem]" aria-hidden="true">stairs</span>
-                    {{ __('frontend.navbar.holes') }}
-                </a>
-            </div>
-        @endauth
+        @if ($shell)
+            {{-- Drawer trigger — the rail is off-canvas below `lg`. --}}
+            <button type="button" data-sidebar-open aria-controls="dth-sidebar" aria-expanded="false"
+                    class="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border text-foreground-muted transition duration-(--motion-feedback) hover:border-primary/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden">
+                <span class="material-symbols-outlined text-[1.25rem]" aria-hidden="true">menu</span>
+                <span class="sr-only">{{ __('frontend.sidebar.open') }}</span>
+            </button>
 
-        <div class="flex items-center gap-2 sm:gap-3">
+            {{-- Page title slot: the workspace fills it, everything else leaves it
+                 empty so the bar stays a bar and not a second header. --}}
+            <div class="min-w-0 flex-1">{{ $slot }}</div>
+        @else
+            <a href="{{ route('home') }}"
+               class="group flex shrink-0 items-center gap-2.5 rounded-xl font-display text-base font-semibold tracking-tight text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <img src="{{ loadFiles('images/logos/main_logo.png') }}"
+                     alt="" width="36" height="36" loading="eager" decoding="async"
+                     class="dth-logo h-9 w-9 shrink-0 rounded-full object-contain ring-1 ring-border/60">
+                <span class="hidden sm:inline">{{ config('app.name') }}</span>
+                <span class="sr-only sm:hidden">{{ config('app.name') }}</span>
+            </a>
+
             @auth
-                {{-- Streak: the only gamification the chrome ever shows, and only
-                     when it is alive. No zero-state guilt, no loss anxiety. --}}
+                <div class="hidden items-center gap-1 md:flex">
+                    <a href="{{ route('subjects.index') }}" @class([
+                        'inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition duration-(--motion-feedback) ease-(--ease-snap)',
+                        'bg-primary/10 text-primary' => request()->routeIs('subjects.*', 'subject.*'),
+                        'text-foreground-muted hover:text-foreground' => ! request()->routeIs('subjects.*', 'subject.*'),
+                    ])>
+                        <span class="material-symbols-outlined text-[1.15rem]" aria-hidden="true">stairs</span>
+                        {{ __('frontend.navbar.subjects') }}
+                    </a>
+                </div>
+            @endauth
+        @endif
+
+        <div class="flex shrink-0 items-center gap-2 sm:gap-3">
+            @auth
+                {{-- The descent: days in a row with a layer cleared. Shown only
+                     when it is alive — no zero-state guilt, no loss anxiety. --}}
                 @if ($user->streak && $user->streak->current_count > 0)
                     <span class="hidden items-center gap-1.5 rounded-full border border-accent/30 bg-accent/8 px-3 py-1 font-mono text-xs text-accent sm:inline-flex"
                           title="{{ __('frontend.navbar.streak-title') }}">
                         <span class="material-symbols-outlined text-[1rem]" aria-hidden="true">local_fire_department</span>
-                        {{ $user->streak->current_count }}
-                        <span class="sr-only">{{ __('frontend.navbar.streak-title') }}</span>
+                        {{ trans_choice('frontend.navbar.descent-days', $user->streak->current_count, ['count' => $user->streak->current_count]) }}
                     </span>
                 @endif
             @endauth
@@ -70,11 +91,13 @@
                             <p class="truncate text-xs text-foreground-muted">{{ $user->email }}</p>
                         </div>
                         <div class="p-1.5">
-                            <a href="{{ route('holes.index') }}"
-                               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground-muted transition hover:bg-surface-muted hover:text-foreground md:hidden">
-                                <span class="material-symbols-outlined text-[1.15rem]" aria-hidden="true">stairs</span>
-                                {{ __('frontend.navbar.holes') }}
-                            </a>
+                            @unless ($shell)
+                                <a href="{{ route('subjects.index') }}"
+                                   class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground-muted transition hover:bg-surface-muted hover:text-foreground md:hidden">
+                                    <span class="material-symbols-outlined text-[1.15rem]" aria-hidden="true">stairs</span>
+                                    {{ __('frontend.navbar.subjects') }}
+                                </a>
+                            @endunless
                             <a href="{{ route('profile.index') }}"
                                class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground-muted transition hover:bg-surface-muted hover:text-foreground">
                                 <span class="material-symbols-outlined text-[1.15rem]" aria-hidden="true">manage_accounts</span>

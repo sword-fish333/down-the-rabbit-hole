@@ -1,6 +1,6 @@
 @php($activeTab = session('active_profile_tab', 'record'))
 
-<x-frontend.layout :title="__('frontend.profile.title')" :active-tab="$activeTab">
+<x-frontend.layout :title="__('frontend.profile.title')" :active-tab="$activeTab" shell>
     <section class="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
         <x-frontend.verify-banner />
 
@@ -33,7 +33,7 @@
                     @if ($streak && $streak->current_count > 0)
                         <span class="inline-flex items-center gap-1.5">
                             <span class="material-symbols-outlined text-[0.95rem] text-accent" aria-hidden="true">local_fire_department</span>
-                            {{ trans_choice('frontend.profile.streak', $streak->current_count, ['count' => $streak->current_count]) }}
+                            {{ trans_choice('frontend.navbar.descent-days', $streak->current_count, ['count' => $streak->current_count]) }}
                         </span>
                     @endif
                 </p>
@@ -70,12 +70,31 @@
                                  icon="verified" tone="success" :hint="__('frontend.profile.record.mastered-hint')" />
                 <x-frontend.stat :label="__('frontend.profile.record.deepest')" :value="$record['deepest']"
                                  icon="south_east" tone="primary" :hint="__('frontend.profile.record.deepest-hint')" />
-                <x-frontend.stat :label="__('frontend.profile.record.holes')" :value="$record['holes']" icon="forum" tone="muted" />
+                <x-frontend.stat :label="__('frontend.profile.record.subjects')" :value="$record['subjects']" icon="forum" tone="muted" />
                 <x-frontend.stat :label="__('frontend.profile.record.surfaced')" :value="$record['surfaced']"
                                  icon="workspace_premium" tone="success" />
                 <x-frontend.stat :label="__('frontend.profile.record.to-review')" :value="$record['to_review']"
                                  icon="history" tone="accent" :hint="__('frontend.profile.record.to-review-hint')" />
             </div>
+
+            {{-- The one line worth screenshotting. Only shown once there is a
+                 real dive behind it — a zero-layer "personal best" is a taunt. --}}
+            @if ($deepestDive && $deepestDive->current_depth > 0)
+                <a href="{{ route('subject.show', $deepestDive) }}"
+                   class="dth-card group mt-6 flex items-center gap-3 rounded-2xl border border-accent/30 bg-accent/8 px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <span class="material-symbols-outlined shrink-0 text-[1.2rem] text-accent" aria-hidden="true">military_tech</span>
+                    <span class="min-w-0">
+                        <span class="dth-coord block">{{ __('frontend.profile.record.deepest-dive') }}</span>
+                        <span class="block truncate text-sm font-medium text-foreground">
+                            {{ trans_choice('frontend.profile.record.deepest-dive-value', $deepestDive->current_depth, [
+                                'subject' => $deepestDive->displayTitle(),
+                                'count' => $deepestDive->current_depth,
+                            ]) }}
+                        </span>
+                    </span>
+                    <span class="dth-card-arrow material-symbols-outlined ml-auto shrink-0 text-[1.1rem] text-accent" aria-hidden="true">arrow_forward</span>
+                </a>
+            @endif
 
             {{-- No leaderboard, no time-on-site number, no badge wall. This is
                  the whole gamification surface, and it is all outcome-based. --}}

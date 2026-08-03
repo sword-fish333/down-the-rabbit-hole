@@ -50,7 +50,7 @@ class CheckpointEndpointTest extends TestCase
         $user = User::factory()->create();
         $hole = $this->holeAwaitingProof($user);
 
-        $response = $this->actingAs($user)->postJson(route('hole.checkpoint', $hole), [
+        $response = $this->actingAs($user)->postJson(route('subject.checkpoint', $hole), [
             'message' => 'Same input, same output, and it touches nothing outside itself.',
             'self_rating' => 60,
         ]);
@@ -72,7 +72,7 @@ class CheckpointEndpointTest extends TestCase
         $hole = app(DescentService::class)->start($user, 'Chess'); // never taught
 
         $this->actingAs($user)
-            ->postJson(route('hole.checkpoint', $hole), ['message' => 'an answer'])
+            ->postJson(route('subject.checkpoint', $hole), ['message' => 'an answer'])
             ->assertStatus(409);
     }
 
@@ -82,10 +82,10 @@ class CheckpointEndpointTest extends TestCase
         $intruder = User::factory()->create();
         $hole = $this->holeAwaitingProof($owner);
 
-        $this->actingAs($intruder)->get(route('hole.show', $hole))->assertRedirect(route('home'));
+        $this->actingAs($intruder)->get(route('subject.show', $hole))->assertRedirect(route('home'));
 
         $this->actingAs($intruder)
-            ->postJson(route('hole.checkpoint', $hole), ['message' => 'an answer'])
+            ->postJson(route('subject.checkpoint', $hole), ['message' => 'an answer'])
             ->assertStatus(403);
     }
 
@@ -97,11 +97,11 @@ class CheckpointEndpointTest extends TestCase
         $this->assertNull($hole->user_id);
 
         // Same session: allowed.
-        $this->get(route('hole.show', $hole))->assertOk();
+        $this->get(route('subject.show', $hole))->assertOk();
 
         // A different session has no claim on it.
         $this->flushSession();
-        $this->get(route('hole.show', $hole))->assertRedirect(route('home'));
+        $this->get(route('subject.show', $hole))->assertRedirect(route('home'));
     }
 
     public function test_the_daily_limit_closes_the_stream_with_an_error_event(): void
@@ -111,7 +111,7 @@ class CheckpointEndpointTest extends TestCase
         $this->post(route('descend'), ['prompt' => 'Stoicism']);
         $hole = Conversation::firstOrFail();
 
-        $response = $this->get(route('hole.stream', $hole));
+        $response = $this->get(route('subject.stream', $hole));
 
         $response->assertOk();
         // The browser gets a normal `error` frame rather than a dropped

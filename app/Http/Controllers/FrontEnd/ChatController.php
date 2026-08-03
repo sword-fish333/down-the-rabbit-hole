@@ -18,7 +18,7 @@ use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * The descent: start a hole, view it, stream a teaching turn, submit proof, and
+ * The descent: open a subject, read it, stream a teaching turn, submit proof,
  * descend. Thin — every rule lives in DescentService / ChatStreamingService.
  *
  * Two transports on purpose: teaching streams over SSE (prose, rendered as it
@@ -29,6 +29,9 @@ class ChatController extends Controller
 {
     use ValidationHelper;
 
+    /** Session key holding the ids of subjects a guest started here. */
+    public const string GUEST_KEY = 'dth_subjects';
+
     public function __construct(
         private readonly DescentService $descent,
         private readonly ChatStreamingService $streaming,
@@ -37,23 +40,11 @@ class ChatController extends Controller
         $this->initializeValidator();
     }
 
-    /** The learner's library of holes — resume, review, or start another. */
-    public function index(): View
-    {
-        $holes = Conversation::query()
-            ->ownedBy(auth()->id())
-            ->with('learningMode:id,name,icon,accent')
-            ->withCount(['concepts as mastered_count' => fn ($query) => $query->where('state', 'mastered')])
-            ->latest('updated_at')
-            ->paginate(12);
-
-        return view('frontend.chat.index', [
-            'holes' => $holes,
-            'modes' => LearningMode::query()->enabled()->ordered()->get(),
-        ]);
-    }
-
-    /** Start a new rabbit hole from the home composer. */
+    /**
+     * Open a subject from the composer. The prompt may be a subject to learn or
+     * a link to study — DescentService::open() decides which and, for a link,
+     * fetches the page the descent will be grounded in.
+     */
     public function descend(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -61,12 +52,21 @@ class ChatController extends Controller
             'learning_mode_id' => ['nullable', Rule::exists('learning_modes', 'id')->where('enabled', true)],
         ]);
 
-        $mode = LearningMode::find($validated['learning_mode_id'] ?? null);
-        $conversation = $this->descent->start(auth()->user(), $validated['prompt'], $mode);
+        $opened = $this->descent->open(
+            auth()->user(),
+            $validated['prompt'],
+            LearningMode::find($validated['learning_mode_id'] ?? null),
+        );
 
-        $this->rememberGuestHole($request, $conversation);
+        if (! $opened->isSuccessfulCheck()) {
+            return back()->withInput()->with('error', $opened->getFirstError());
+        }
 
-        return redirect()->route('hole.show', $conversation)->with('stream', true);
+        $conversation = $opened->getValidatedItem('conversation');
+
+        $this->rememberGuestSubject($request, $conversation);
+
+        return redirect()->route('subject.show', $conversation)->with('stream', true);
     }
 
     public function show(Request $request, Conversation $conversation): View|RedirectResponse
@@ -75,7 +75,7 @@ class ChatController extends Controller
             return redirect()->route('home')->with('error', __('frontend.chat.no-access'));
         }
 
-        $conversation->load('learningMode');
+        $conversation->load(['learningMode', 'sources']);
 
         return view('frontend.chat.show', [
             'conversation' => $conversation,
@@ -172,25 +172,23 @@ class ChatController extends Controller
         return $this->validateTurn($request, $conversation);
     }
 
-    /** Owned by the signed-in user, or a guest hole remembered in this session. */
+    /** Owned by the signed-in user, or a guest subject remembered in this session. */
     private function canAccess(Request $request, Conversation $conversation): bool
     {
         if ($conversation->user_id) {
             return $conversation->user_id === auth()->id();
         }
 
-        return in_array($conversation->id, $request->session()->get('dth_holes', []), true);
+        return in_array($conversation->id, $request->session()->get(self::GUEST_KEY, []), true);
     }
 
-    private function rememberGuestHole(Request $request, Conversation $conversation): void
+    private function rememberGuestSubject(Request $request, Conversation $conversation): void
     {
         if ($conversation->user_id) {
             return;
         }
 
-        $holes = $request->session()->get('dth_holes', []);
-        $holes[] = $conversation->id;
-        $request->session()->put('dth_holes', $holes);
+        $request->session()->push(self::GUEST_KEY, $conversation->id);
     }
 
     private function guestKey(Request $request): string

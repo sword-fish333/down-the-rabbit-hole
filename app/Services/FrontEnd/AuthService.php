@@ -12,18 +12,18 @@ use Laravel\Socialite\Contracts\User as SocialiteUser;
 
 /**
  * Web-guard (learner) authentication. HTTP-free: the controller passes in the
- * session's guest-hole ids and maps the returned {@see ValidationService}.
+ * session's guest-subject ids and maps the returned {@see ValidationService}.
  */
 class AuthService
 {
     /**
-     * Register a learner, claim any holes they started as a guest this session,
+     * Register a learner, claim any subjects they started as a guest this session,
      * sign them in, and queue the verification email.
      *
      * @param  array<string, mixed>  $data
-     * @param  array<int, int>  $guestHoleIds
+     * @param  array<int, int>  $guestSubjectIds
      */
-    public function register(array $data, array $guestHoleIds = []): ValidationService
+    public function register(array $data, array $guestSubjectIds = []): ValidationService
     {
         $validation = new ValidationService;
 
@@ -36,7 +36,7 @@ class AuthService
             'login_method' => User::AUTH_LOGIN_METHOD,
         ]);
 
-        $this->claimGuestHoles($user, $guestHoleIds);
+        $this->claimGuestSubjects($user, $guestSubjectIds);
 
         Auth::guard('web')->login($user);
 
@@ -46,9 +46,9 @@ class AuthService
     }
 
     /**
-     * @param  array<int, int>  $guestHoleIds
+     * @param  array<int, int>  $guestSubjectIds
      */
-    public function attemptLogin(string $email, string $password, bool $remember, array $guestHoleIds = []): ValidationService
+    public function attemptLogin(string $email, string $password, bool $remember, array $guestSubjectIds = []): ValidationService
     {
         $validation = new ValidationService;
 
@@ -65,19 +65,19 @@ class AuthService
         $user = Auth::guard('web')->user();
         $user->update(['login_method' => User::AUTH_LOGIN_METHOD]);
 
-        $this->claimGuestHoles($user, $guestHoleIds);
+        $this->claimGuestSubjects($user, $guestSubjectIds);
 
         return $validation->addValidatedItems(['user' => $user]);
     }
 
     /**
      * Sign in (or register, first time) a learner via Google, then claim their
-     * guest holes. Unlike the admin side, a Google account auto-creates a user —
+     * guest subjects. Unlike the admin side, a Google account auto-creates a user —
      * and Google has already verified the address, so no verification mail.
      *
-     * @param  array<int, int>  $guestHoleIds
+     * @param  array<int, int>  $guestSubjectIds
      */
-    public function handleGoogleLogin(SocialiteUser $googleUser, array $guestHoleIds = []): ValidationService
+    public function handleGoogleLogin(SocialiteUser $googleUser, array $guestSubjectIds = []): ValidationService
     {
         $validation = new ValidationService;
 
@@ -104,7 +104,7 @@ class AuthService
             $user->forceFill(['email_verified_at' => now()])->save();
         }
 
-        $this->claimGuestHoles($user, $guestHoleIds);
+        $this->claimGuestSubjects($user, $guestSubjectIds);
 
         Auth::guard('web')->login($user);
 
@@ -112,18 +112,18 @@ class AuthService
     }
 
     /**
-     * Re-parent the visitor's anonymous holes onto their account. Only unowned
-     * holes the visitor actually started this session are claimed.
+     * Re-parent the visitor's anonymous subjects onto their account. Only unowned
+     * subjects the visitor actually started this session are claimed.
      *
-     * @param  array<int, int>  $guestHoleIds
+     * @param  array<int, int>  $guestSubjectIds
      */
-    private function claimGuestHoles(User $user, array $guestHoleIds): void
+    private function claimGuestSubjects(User $user, array $guestSubjectIds): void
     {
-        if (! $guestHoleIds) {
+        if (! $guestSubjectIds) {
             return;
         }
 
-        Conversation::whereIn('id', $guestHoleIds)
+        Conversation::whereIn('id', $guestSubjectIds)
             ->whereNull('user_id')
             ->update(['user_id' => $user->id]);
     }

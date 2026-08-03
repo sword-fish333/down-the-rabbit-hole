@@ -77,6 +77,43 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Subjects — the learner's library
+    |--------------------------------------------------------------------------
+    |
+    | How many subjects a page of the library holds, how many the sidebar keeps
+    | in view, and how deep the folder tree may nest. The depth cap is a product
+    | decision (a tree you can't see the bottom of stops being an organiser),
+    | which is why it lives here and not in the schema.
+    |
+    */
+
+    'subjects' => [
+        'per_page' => (int) env('SUBJECTS_PER_PAGE', 25),
+        'sidebar_limit' => (int) env('SUBJECTS_SIDEBAR_LIMIT', 12),
+        'max_folder_depth' => (int) env('SUBJECTS_MAX_FOLDER_DEPTH', 5),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sources — study a web page
+    |--------------------------------------------------------------------------
+    |
+    | A learner can drop a URL in the composer and descend through *that page*.
+    | The fetch is deliberately tightly bounded: a learning app has no business
+    | holding a socket open, and an unbounded extract is an unbounded prompt.
+    |
+    */
+
+    'sources' => [
+        'timeout' => (int) env('SOURCE_TIMEOUT', 10),
+        'max_bytes' => (int) env('SOURCE_MAX_BYTES', 2_000_000),
+        'max_redirects' => (int) env('SOURCE_MAX_REDIRECTS', 3),
+        // Words of the extract that reach the teaching prompt.
+        'prompt_words' => (int) env('SOURCE_PROMPT_WORDS', 3000),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Mastery
     |--------------------------------------------------------------------------
     |

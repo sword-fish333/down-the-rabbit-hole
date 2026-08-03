@@ -21,7 +21,7 @@
         </form>
 
         {{-- Verification is not a gate: the way on is always available. --}}
-        <a href="{{ route('holes.index') }}" class="mt-5 text-sm font-medium text-primary transition hover:text-primary/80">
+        <a href="{{ route('subjects.index') }}" class="mt-5 text-sm font-medium text-primary transition hover:text-primary/80">
             {{ __('frontend.auth.verify-skip') }}
         </a>
     </section>

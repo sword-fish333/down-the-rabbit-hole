@@ -38,7 +38,7 @@ class UserController extends Controller
 
         return view('admin.users.edit', [
             'user' => $user,
-            'holes' => $user->conversations()->latest('updated_at')->limit(10)->get(),
+            'subjects' => $user->conversations()->latest('updated_at')->limit(10)->get(),
             'streak' => $user->streak,
         ]);
     }

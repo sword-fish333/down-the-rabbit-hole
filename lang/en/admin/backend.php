@@ -25,7 +25,7 @@ return [
         'created' => 'The learning mode has been created.',
         'updated' => 'The learning mode has been saved.',
         'deleted' => 'The learning mode has been deleted.',
-        'in-use' => 'This mode is used by existing rabbit holes. Disable it instead — that hides it from new descents without breaking the ones already running.',
+        'in-use' => 'This mode is used by existing subjects. Disable it instead — that hides it from new descents without breaking the ones already running.',
         'cannot-disable-default' => 'This is the default mode for new descents. Promote another mode to default first.',
     ],
 
@@ -35,7 +35,7 @@ return [
     ],
 
     'conversations' => [
-        'deleted' => 'The rabbit hole has been deleted.',
+        'deleted' => 'The subject has been deleted.',
     ],
 
     'mail' => [

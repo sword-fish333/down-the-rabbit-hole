@@ -21,6 +21,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin.auth' => AdminAuthMiddleware::class,
         ]);
+
+        // Which subject view the rail is showing is set by the browser and read
+        // by a view composer. It holds no secret, and encrypting it would mean
+        // the JS that writes it could never produce a value PHP can read.
+        $middleware->encryptCookies(except: ['dth_subject_view']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

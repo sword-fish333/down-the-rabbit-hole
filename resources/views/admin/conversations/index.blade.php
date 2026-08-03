@@ -60,12 +60,30 @@
                                class="block truncate font-medium text-foreground transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
                                 {{ $conversation->displayTitle() }}
                             </a>
-                            @if ($conversation->learningMode)
-                                <p class="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                                    <x-admin.icon :name="$conversation->learningMode->icon" class="text-sm" />
-                                    {{ $conversation->learningMode->name }}
-                                </p>
-                            @endif
+                            <p class="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                                @if ($conversation->learningMode)
+                                    <span class="inline-flex items-center gap-1.5">
+                                        <x-admin.icon :name="$conversation->learningMode->icon" class="text-sm" />
+                                        {{ $conversation->learningMode->name }}
+                                    </span>
+                                @endif
+
+                                {{-- Grounded in a page, and/or publicly readable: the two
+                                     things a moderator needs to see without opening it. --}}
+                                @if ($source = $conversation->sources->first())
+                                    <span class="inline-flex min-w-0 items-center gap-1.5">
+                                        <x-admin.icon name="link" class="text-sm" />
+                                        <span class="truncate">{{ $source->site }}</span>
+                                    </span>
+                                @endif
+
+                                @if ($conversation->isShared())
+                                    <span class="inline-flex items-center gap-1.5 text-warning">
+                                        <x-admin.icon name="public" class="text-sm" />
+                                        {{ __('admin/frontend.conversations.public') }}
+                                    </span>
+                                @endif
+                            </p>
                         </div>
 
                         <p class="mt-2 truncate text-sm text-muted-foreground lg:mt-0">

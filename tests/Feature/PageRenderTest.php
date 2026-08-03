@@ -82,13 +82,13 @@ class PageRenderTest extends TestCase
     public function test_the_learner_pages_render(): void
     {
         $this->actingAs($this->user)
-            ->get(route('holes.index'))->assertOk()->assertSee('Pure functions');
+            ->get(route('subjects.index'))->assertOk()->assertSee('Pure functions');
 
         $this->actingAs($this->user)
             ->get(route('profile.index'))->assertOk();
 
         $this->actingAs($this->user)
-            ->get(route('hole.show', $this->hole))->assertOk()
+            ->get(route('subject.show', $this->hole))->assertOk()
             ->assertSee('Pure functions')
             ->assertSee('Layer cleared');
     }
@@ -104,7 +104,7 @@ class PageRenderTest extends TestCase
     {
         $this->actingAs($this->user)
             ->get(route('verification.notice'))
-            ->assertRedirect(route('holes.index'));
+            ->assertRedirect(route('subjects.index'));
     }
 
     public function test_the_home_page_offers_a_resumable_hole(): void
@@ -155,7 +155,7 @@ class PageRenderTest extends TestCase
         ]);
 
         $this->actingAs($this->user)
-            ->get(route('hole.show', $this->hole))
+            ->get(route('subject.show', $this->hole))
             ->assertOk()
             ->assertSee('Referential transparency')
             ->assertSee('Misunderstood');

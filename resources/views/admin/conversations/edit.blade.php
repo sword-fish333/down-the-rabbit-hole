@@ -59,6 +59,8 @@
                         'mode' => $conversation->learningMode?->name ?? '—',
                         'depth' => $conversation->current_depth.' / '.$maxDepth,
                         'status' => __('admin/frontend.conversations.status.'.$conversation->status),
+                        'folder' => $conversation->folder?->name ?? '—',
+                        'shared' => __('admin/frontend.general.'.($conversation->isShared() ? 'yes' : 'no')),
                         'messages' => $conversation->message_count,
                         'tokens' => number_format($tokens),
                         'cache-reads' => number_format($cacheReads),
@@ -70,6 +72,27 @@
                     @endforeach
                 </dl>
             </x-admin.ui.card>
+
+            {{-- What the guide was told to teach from. Worth surfacing here: a
+                 grounded subject can only be as good as the page behind it. --}}
+            @if ($conversation->sources->isNotEmpty())
+                <x-admin.ui.card :title="__('admin/frontend.conversations.source')"
+                                 :subtitle="__('admin/frontend.conversations.source-hint')">
+                    <ul class="space-y-3">
+                        @foreach ($conversation->sources as $source)
+                            <li class="min-w-0 text-sm">
+                                <a href="{{ $source->url }}" rel="noopener noreferrer nofollow" target="_blank"
+                                   class="block truncate font-medium text-foreground transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+                                    {{ $source->displayTitle() }}
+                                </a>
+                                <p class="mt-0.5 truncate font-mono text-xs text-muted-foreground">
+                                    {{ $source->url }} · {{ number_format($source->words) }}w
+                                </p>
+                            </li>
+                        @endforeach
+                    </ul>
+                </x-admin.ui.card>
+            @endif
 
             @if ($conversation->concepts->isNotEmpty())
                 <x-admin.ui.card :title="__('admin/frontend.conversations.mastery')">

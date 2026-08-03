@@ -17,7 +17,7 @@ use Illuminate\View\View;
 
 /**
  * The learner's own account: details, password, avatar — plus the learning
- * record that makes the page worth visiting (mastery, streak, holes).
+ * record that makes the page worth visiting (mastery, descent, subjects).
  */
 class ProfileController extends Controller
 {
@@ -29,6 +29,11 @@ class ProfileController extends Controller
             'user' => $user,
             'streak' => $user->streak,
             'record' => $this->record($user),
+            // The one stat worth quoting out loud: "7 layers deep on Stoicism".
+            'deepestDive' => $user->conversations()
+                ->orderByDesc('current_depth')
+                ->latest('updated_at')
+                ->first(),
         ]);
     }
 
@@ -113,17 +118,17 @@ class ProfileController extends Controller
      */
     private function record(User $user): array
     {
-        $holeIds = $user->conversations()->pluck('id');
+        $subjectIds = $user->conversations()->pluck('id');
 
         return [
-            'holes' => $holeIds->count(),
+            'subjects' => $subjectIds->count(),
             'surfaced' => $user->conversations()->where('status', Conversation::STATUS_SURFACED)->count(),
             'deepest' => (int) $user->conversations()->max('current_depth'),
             'layers' => XpEvent::where('user_id', $user->id)
                 ->where('type', XpEvent::TYPE_LAYER_COMPLETED)->count(),
-            'mastered' => Concept::whereIn('conversation_id', $holeIds)
+            'mastered' => Concept::whereIn('conversation_id', $subjectIds)
                 ->where('state', Concept::STATE_MASTERED)->count(),
-            'to_review' => Concept::whereIn('conversation_id', $holeIds)
+            'to_review' => Concept::whereIn('conversation_id', $subjectIds)
                 ->where('state', Concept::STATE_MISUNDERSTOOD)->count(),
         ];
     }

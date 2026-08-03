@@ -86,7 +86,7 @@ class WebAuthTest extends TestCase
             'password_confirmation' => 'password123',
         ]);
 
-        $response->assertRedirect(route('holes.index'));
+        $response->assertRedirect(route('subjects.index'));
         $this->assertAuthenticated();
 
         // `name` is a projection of the two parts, kept in sync on save.
@@ -118,7 +118,7 @@ class WebAuthTest extends TestCase
             'hash' => sha1($user->getEmailForVerification()),
         ]);
 
-        $this->actingAs($user)->get($url)->assertRedirect(route('holes.index'));
+        $this->actingAs($user)->get($url)->assertRedirect(route('subjects.index'));
         $this->assertTrue($user->fresh()->hasVerifiedEmail());
     }
 

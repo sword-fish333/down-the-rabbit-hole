@@ -1,15 +1,17 @@
 @php
-    use App\Models\CheckpointAttempt;
     use App\Models\Message;
 
     $maxDepth = (int) config('platform.chat.max_depth');
     $autostream = session('stream') && ! $conversation->isSurfaced();
     $progress = $maxDepth > 0 ? min(100, round($conversation->current_depth / $maxDepth * 100)) : 0;
+    $source = $conversation->sources->first();
+    $isOwner = auth()->check() && $conversation->user_id === auth()->id();
 
     // Strings chat.js needs. Passed as one JSON blob rather than a dozen data-*
     // attributes, so the localisation stays in lang/ and out of the JS.
     $strings = [
         'thinking' => __('frontend.chat.thinking'),
+        'thoughtFor' => __('frontend.chat.thought-for'),
         'analyzing' => __('frontend.chat.analyzing'),
         'checkpointReady' => __('frontend.chat.checkpoint-ready'),
         'surfaced' => __('frontend.chat.surfaced-title'),
@@ -24,27 +26,23 @@
         'calibrationUnder' => __('frontend.chat.calibration-under'),
         'genericError' => __('frontend.chat.llm-error'),
         'connectionLost' => __('frontend.chat.connection-lost'),
+        'stopped' => __('frontend.chat.stopped'),
+        'copied' => __('frontend.chat.copied'),
+        'copy' => __('frontend.chat.copy'),
     ];
 @endphp
 
-<x-frontend.layout :title="$conversation->displayTitle()" workspace>
+<x-frontend.layout :title="$conversation->displayTitle()" workspace shell>
     {{-- ===================================================================
-         The descent — one rabbit hole.
+         The descent — one subject.
 
          The most important screen in the product, so it is the calmest. The
          thread renders server-side; chat.js streams the live turn and swaps in
-         exactly one control when it lands. Layout is a three-column grid on
-         wide screens so the reading column keeps its measure regardless of
-         viewport width — the rail does not steal from it.
+         exactly one control when it lands. Two columns on wide screens so the
+         reading column keeps its measure regardless of viewport width — the rail
+         reports, it never competes.
          =================================================================== --}}
-    <div class="mx-auto grid w-full max-w-[92rem] grid-cols-1 gap-8 px-4 sm:px-6 lg:grid-cols-[11rem_minmax(0,1fr)_13rem] lg:px-8">
-
-        {{-- ---- Left rail: where you are. Sticky, quiet, collapses away on mobile. --}}
-        <div class="hidden lg:block">
-            <div class="sticky top-24 pt-6">
-                <x-frontend.depth-rail :conversation="$conversation" :concepts="$concepts" :mastery="$mastery" />
-            </div>
-        </div>
+    <div class="mx-auto grid w-full max-w-[78rem] grid-cols-1 gap-8 px-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_15rem] lg:px-8">
 
         {{-- ---- Centre: the workspace. --}}
         <div class="dth-workspace flex min-h-[calc(100svh-4rem)] flex-col">
@@ -67,6 +65,24 @@
                             </span>
                         @endif
 
+                        @if ($isOwner)
+                            {{-- Publish read-only. One button, two states, each
+                                 stating what it will do rather than what is true. --}}
+                            <form method="POST" action="{{ route('subject.share', $conversation) }}">
+                                @csrf
+                                <button type="submit"
+                                        title="{{ $conversation->isShared() ? __('frontend.subjects.unshare') : __('frontend.subjects.share') }}"
+                                        @class([
+                                            'grid h-9 w-9 place-items-center rounded-xl border transition duration-(--motion-feedback) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                            'border-primary/45 bg-primary/10 text-primary' => $conversation->isShared(),
+                                            'border-border text-foreground-muted hover:border-primary/40 hover:text-foreground' => ! $conversation->isShared(),
+                                        ])>
+                                    <span class="material-symbols-outlined text-[1.15rem]" aria-hidden="true">{{ $conversation->isShared() ? 'public' : 'ios_share' }}</span>
+                                    <span class="sr-only">{{ $conversation->isShared() ? __('frontend.subjects.unshare') : __('frontend.subjects.share') }}</span>
+                                </button>
+                            </form>
+                        @endif
+
                         {{-- Deep-work mode: collapses the periphery and concentrates
                              luminance on this column. Never blurs anything. --}}
                         <button type="button" data-focus-toggle aria-pressed="false"
@@ -85,15 +101,26 @@
                              style="width: {{ $progress }}%"></div>
                     </div>
                     <p class="dth-coord shrink-0">
-                        {{ __('frontend.chat.depth') }} {{ str_pad($conversation->current_depth, 2, '0', STR_PAD_LEFT) }}
-                        <span aria-hidden="true">/</span>
-                        <span class="sr-only">{{ __('frontend.chat.of') }}</span>
-                        {{ str_pad($maxDepth, 2, '0', STR_PAD_LEFT) }}
+                        {{ __('frontend.chat.depth-reached', [
+                            'depth' => str_pad($conversation->current_depth, 2, '0', STR_PAD_LEFT),
+                            'max' => str_pad($maxDepth, 2, '0', STR_PAD_LEFT),
+                        ]) }}
                     </p>
                 </div>
+
+                {{-- What this descent is grounded in, when it is grounded in
+                     something. The guide is instructed to teach from it. --}}
+                @if ($source)
+                    <a href="{{ $source->url }}" rel="noopener noreferrer nofollow" target="_blank"
+                       class="mt-2.5 inline-flex max-w-full items-center gap-1.5 rounded-lg border border-border bg-surface/40 px-2.5 py-1 text-xs text-foreground-muted transition duration-(--motion-feedback) hover:border-primary/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                        <span class="material-symbols-outlined shrink-0 text-[0.95rem]" aria-hidden="true">link</span>
+                        <span class="truncate">{{ $source->displayTitle() }}</span>
+                        <span class="dth-coord shrink-0">{{ number_format($source->words) }}w</span>
+                    </a>
+                @endif
             </header>
 
-            {{-- Thread. Each turn is content-visibility:auto so a 40-turn hole
+            {{-- Thread. Each turn is content-visibility:auto so a 40-turn subject
                  doesn't pay layout for what is off-screen. --}}
             <div id="dth-thread" class="flex flex-1 flex-col gap-8 py-8">
                 @foreach ($messages as $message)
@@ -118,10 +145,36 @@
                                 @include('frontend.chat.partials.verdict', ['attempt' => $attempt])
                             @endif
                         @elseif ($message->phase !== Message::PHASE_GRADE)
-                            <x-frontend.markdown :content="$message->content" />
+                            <div class="group/turn relative">
+                                <x-frontend.markdown :content="$message->content" />
+                                <button type="button" data-copy-turn
+                                        title="{{ __('frontend.chat.copy') }}"
+                                        class="dth-copy absolute -top-1 right-0 grid h-8 w-8 place-items-center rounded-lg border border-border bg-surface/80 text-foreground-muted backdrop-blur-sm transition duration-(--motion-feedback) hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                                    <span class="material-symbols-outlined text-[1rem]" aria-hidden="true">content_copy</span>
+                                    <span class="sr-only">{{ __('frontend.chat.copy') }}</span>
+                                </button>
+                            </div>
                         @endif
                     </article>
                 @endforeach
+
+                {{-- The guide, working. Real stages arrive over SSE and land here
+                     in order; chat.js moves this block to the end of the thread at
+                     the start of every turn, so it always sits directly above the
+                     answer it belongs to. --}}
+                <div id="dth-thinking" class="dth-thinking measure mx-auto w-full" hidden>
+                    <details data-thinking-panel open
+                             class="group rounded-2xl border border-border/70 bg-surface/40 backdrop-blur-sm">
+                        <summary class="flex cursor-pointer list-none items-center gap-2.5 px-3.5 py-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                            <span class="dth-descent-dot" aria-hidden="true"></span>
+                            <span class="flex-1 text-sm text-foreground-muted" data-thinking-label>{{ __('frontend.chat.thinking') }}</span>
+                            <span class="material-symbols-outlined text-[1.1rem] text-foreground-muted transition-transform duration-(--motion-state) group-open:rotate-180"
+                                  aria-hidden="true">expand_more</span>
+                        </summary>
+
+                        <ol data-thinking-stages class="dth-stages px-3.5 pb-3.5 pt-0.5"></ol>
+                    </details>
+                </div>
 
                 {{-- Streaming turns are appended here by chat.js. --}}
             </div>
@@ -138,7 +191,7 @@
                     {{-- Prove it. The form posts for real without JS; chat.js
                          intercepts the submit to grade in place instead. --}}
                     <div id="dth-control-checkpoint" class="dth-checkpoint relative" hidden>
-                        <form id="dth-proof-form" method="POST" action="{{ route('hole.checkpoint', $conversation) }}">
+                        <form id="dth-proof-form" method="POST" action="{{ route('subject.checkpoint', $conversation) }}">
                             @csrf
                             <label for="dth-proof" class="mb-2 flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.16em] text-primary">
                                 <span class="material-symbols-outlined text-[1rem]" aria-hidden="true">quiz</span>
@@ -146,10 +199,10 @@
                             </label>
 
                             <div class="dth-composer rounded-2xl border border-border-strong bg-surface/70 p-2 shadow-xl backdrop-blur-md">
-                                <textarea id="dth-proof" name="message" rows="3" required minlength="2" maxlength="4000"
+                                <textarea id="dth-proof" name="message" rows="2" required minlength="2" maxlength="4000"
                                           data-autogrow data-submit-on-enter
                                           placeholder="{{ __('frontend.chat.proof-placeholder') }}"
-                                          class="block w-full resize-none border-0 bg-transparent px-3 py-2 text-base text-foreground placeholder:text-foreground-muted/70 focus:outline-none"></textarea>
+                                          class="dth-autogrow block w-full resize-none border-0 bg-transparent px-3 py-2 text-base text-foreground placeholder:text-foreground-muted/70 focus:outline-none"></textarea>
 
                                 <div class="flex flex-col gap-3 px-1 pb-1 pt-2 sm:flex-row sm:items-end sm:justify-between">
                                     {{-- Optional self-rating before submitting. Calibration
@@ -233,21 +286,24 @@
                                     {{ __('frontend.chat.new-descent') }}
                                 </a>
                                 @auth
-                                    <a href="{{ route('holes.index') }}"
+                                    <a href="{{ route('subjects.index') }}"
                                        class="inline-flex items-center gap-2 rounded-xl border border-border-strong px-5 py-2.5 text-sm font-medium text-foreground transition hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                                        {{ __('frontend.chat.all-holes') }}
+                                        {{ __('frontend.sidebar.all') }}
                                     </a>
                                 @endauth
                             </div>
                         </div>
                     </div>
 
-                    {{-- Waiting on the guide. One line, no bouncing dots. --}}
-                    <p id="dth-thinking" hidden
-                       class="flex items-center justify-center gap-2 text-center font-mono text-xs text-foreground-muted/70">
-                        <span class="material-symbols-outlined text-[1rem] text-primary" aria-hidden="true">neurology</span>
-                        {{ __('frontend.chat.thinking') }}
-                    </p>
+                    {{-- Streaming: the one control that matters mid-turn is the
+                         way to stop it. The partial layer is still persisted. --}}
+                    <div id="dth-control-stop" hidden class="flex justify-center">
+                        <button type="button" data-stop-stream
+                                class="inline-flex items-center gap-2 rounded-xl border border-border-strong px-4 py-2 text-sm text-foreground-muted transition duration-(--motion-feedback) hover:border-danger/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                            <span class="material-symbols-outlined text-[1.1rem]" aria-hidden="true">stop_circle</span>
+                            {{ __('frontend.chat.stop') }}
+                        </button>
+                    </div>
 
                     <p id="dth-error" hidden role="alert"
                        class="rounded-xl border border-danger/40 bg-danger/10 px-4 py-2.5 text-center text-sm text-danger"></p>
@@ -255,28 +311,33 @@
             </div>
         </div>
 
-        {{-- ---- Right rail: what you know. Collapses under the thread on mobile. --}}
-        <aside class="dth-peripheral pb-10 lg:pb-0" aria-labelledby="dth-concepts-heading">
-            <div class="sticky top-24 pt-6">
-                <h2 id="dth-concepts-heading" class="dth-coord mb-3">{{ __('frontend.chat.concepts') }}</h2>
+        {{-- ---- Right rail: where you are, and what you know. Collapses under
+                  the thread on mobile. --}}
+        <aside class="dth-peripheral pb-10 lg:pb-0">
+            <div class="sticky top-28 space-y-7 pt-6">
+                <x-frontend.depth-rail :conversation="$conversation" :concepts="$concepts" :mastery="$mastery" />
 
-                @if ($concepts->isEmpty())
-                    <p class="text-xs leading-relaxed text-foreground-muted/80">{{ __('frontend.chat.concepts-empty') }}</p>
-                @else
-                    <div class="flex flex-wrap gap-1.5">
-                        @foreach ($concepts as $concept)
-                            <x-frontend.concept-chip :concept="$concept" :current-depth="$conversation->current_depth" />
-                        @endforeach
-                    </div>
-                @endif
+                <div aria-labelledby="dth-concepts-heading">
+                    <h2 id="dth-concepts-heading" class="dth-coord mb-3">{{ __('frontend.chat.concepts') }}</h2>
+
+                    @if ($concepts->isEmpty())
+                        <p class="text-xs leading-relaxed text-foreground-muted/80">{{ __('frontend.chat.concepts-empty') }}</p>
+                    @else
+                        <div class="flex flex-wrap gap-1.5">
+                            @foreach ($concepts as $concept)
+                                <x-frontend.concept-chip :concept="$concept" :current-depth="$conversation->current_depth" />
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
             </div>
         </aside>
     </div>
 
     {{-- Config for chat.js. --}}
     <div data-chat hidden
-         data-stream-url="{{ route('hole.stream', $conversation) }}"
-         data-checkpoint-url="{{ route('hole.checkpoint', $conversation) }}"
+         data-stream-url="{{ route('subject.stream', $conversation) }}"
+         data-checkpoint-url="{{ route('subject.checkpoint', $conversation) }}"
          data-status="{{ $conversation->status }}"
          data-depth="{{ $conversation->current_depth }}"
          data-max-depth="{{ $maxDepth }}"

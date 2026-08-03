@@ -5,6 +5,8 @@ use App\Http\Controllers\FrontEnd\ChatController;
 use App\Http\Controllers\FrontEnd\EmailVerificationController;
 use App\Http\Controllers\FrontEnd\HomeController;
 use App\Http\Controllers\FrontEnd\ProfileController;
+use App\Http\Controllers\FrontEnd\SubjectController;
+use App\Http\Controllers\FrontEnd\SubjectFolderController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -14,7 +16,7 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 | Learner auth (web guard)
 |--------------------------------------------------------------------------
 |
-| Registering or logging in claims any rabbit holes started as a guest this
+| Registering or logging in claims any subjects started as a guest this
 | session, then XP and streaks begin to count.
 |
 */
@@ -60,17 +62,58 @@ Route::middleware('auth')->prefix('profile')->as('profile.')->group(function () 
 
 /*
 |--------------------------------------------------------------------------
-| The descent — rabbit-hole chat
+| The descent — one subject
 |--------------------------------------------------------------------------
 |
-| Ungated: a guest can start and explore a hole; the session tracks ownership
-| until they sign up. GET streams a teaching turn over SSE; POST /checkpoint
-| grades their proof and returns the structured verdict as JSON.
+| Ungated: a guest can start and descend through a subject; the session tracks
+| ownership until they sign up. GET streams a teaching turn over SSE; POST
+| /checkpoint grades their proof and returns the structured verdict as JSON.
 |
 */
 
-Route::get('/holes', [ChatController::class, 'index'])->middleware('auth')->name('holes.index');
 Route::post('/descend', [ChatController::class, 'descend'])->middleware('throttle:descend')->name('descend');
-Route::get('/hole/{conversation}', [ChatController::class, 'show'])->name('hole.show');
-Route::get('/hole/{conversation}/stream', [ChatController::class, 'stream'])->name('hole.stream');
-Route::post('/hole/{conversation}/checkpoint', [ChatController::class, 'checkpoint'])->name('hole.checkpoint');
+
+Route::prefix('subject')->as('subject.')->group(function () {
+    Route::get('{conversation}', [ChatController::class, 'show'])->name('show');
+    Route::get('{conversation}/stream', [ChatController::class, 'stream'])->name('stream');
+    Route::post('{conversation}/checkpoint', [ChatController::class, 'checkpoint'])->name('checkpoint');
+
+    // Owning a subject is what lets you file or publish it, so these are gated
+    // where the descent itself is not.
+    Route::middleware('auth')->group(function () {
+        Route::post('{conversation}/share', [SubjectController::class, 'share'])->name('share');
+        Route::patch('{conversation}/folder', [SubjectController::class, 'file'])->name('file');
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| The library — every subject, and how the learner files them
+|--------------------------------------------------------------------------
+|
+| `index` doubles as the lazy-load endpoint: asked for a fragment it returns
+| just the next page of rows, so the list markup lives in Blade once.
+|
+*/
+
+Route::middleware('auth')->prefix('subjects')->as('subjects.')->group(function () {
+    Route::get('/', [SubjectController::class, 'index'])->name('index');
+    Route::delete('/', [SubjectController::class, 'destroy'])->name('destroy');
+
+    Route::get('organization', [SubjectFolderController::class, 'index'])->name('organization');
+    Route::post('folders', [SubjectFolderController::class, 'store'])->name('folders.store');
+    Route::patch('folders/{folder}', [SubjectFolderController::class, 'update'])->name('folders.update');
+    Route::delete('folders/{folder}', [SubjectFolderController::class, 'destroy'])->name('folders.destroy');
+});
+
+/*
+|--------------------------------------------------------------------------
+| A shared subject — public, read-only
+|--------------------------------------------------------------------------
+|
+| The token IS the capability: unshare nulls it and the link dies. Nothing here
+| is guessable and nothing here is indexed unless the learner published it.
+|
+*/
+
+Route::get('/s/{token}', [SubjectController::class, 'shared'])->name('subject.shared');

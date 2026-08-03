@@ -19,7 +19,7 @@ class EmailVerificationController extends Controller
     public function notice(): View|RedirectResponse
     {
         if (auth()->user()->hasVerifiedEmail()) {
-            return redirect()->route('holes.index');
+            return redirect()->route('subjects.index');
         }
 
         return view('frontend.auth.verify-email');
@@ -38,13 +38,13 @@ class EmailVerificationController extends Controller
         }
 
         if ($user->hasVerifiedEmail()) {
-            return redirect()->route('holes.index')->with('success', __('frontend.auth.verify-already'));
+            return redirect()->route('subjects.index')->with('success', __('frontend.auth.verify-already'));
         }
 
         $user->markEmailAsVerified();
         event(new Verified($user));
 
-        return redirect()->route('holes.index')->with('success', __('frontend.auth.verify-done'));
+        return redirect()->route('subjects.index')->with('success', __('frontend.auth.verify-done'));
     }
 
     public function resend(Request $request): RedirectResponse

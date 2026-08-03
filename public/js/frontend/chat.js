@@ -1,8 +1,8 @@
 /* Down the Rabbit Hole — the learning workspace.
 
    Two transports, because the two jobs are different:
-     GET  /hole/{id}/stream      SSE, prose, rendered as it arrives
-     POST /hole/{id}/checkpoint  JSON, a structured verdict rendered in place
+     GET  /subject/{id}/stream      SSE, prose, rendered as it arrives
+     POST /subject/{id}/checkpoint  JSON, a structured verdict rendered in place
 
    Rules this file exists to enforce, all of them about not breaking
    concentration while someone is trying to think:
@@ -11,7 +11,7 @@
        were already at the bottom;
      - exactly one control is offered at a time;
      - every state change is announced to assistive tech;
-     - nothing animates while reading except the caret.
+     - nothing animates while reading except the caret and the arriving block.
 
    Pairs with resources/views/frontend/chat/show.blade.php. */
 (function () {
@@ -30,18 +30,24 @@
     var thread = document.getElementById('dth-thread');
     var rail = document.getElementById('dth-rail');
     var errorBox = document.getElementById('dth-error');
+
     var thinking = document.getElementById('dth-thinking');
+    var thinkingPanel = thinking && thinking.querySelector('[data-thinking-panel]');
+    var thinkingLabel = thinking && thinking.querySelector('[data-thinking-label]');
+    var thinkingStages = thinking && thinking.querySelector('[data-thinking-stages]');
 
     var controls = {
         checkpoint: document.getElementById('dth-control-checkpoint'),
         deeper: document.getElementById('dth-control-deeper'),
         surfaced: document.getElementById('dth-control-surfaced'),
+        stop: document.getElementById('dth-control-stop'),
     };
 
     var verdictPanel = document.getElementById('dth-verdict');
     var proofField = document.getElementById('dth-proof');
     var proofForm = document.getElementById('dth-proof-form');
     var busy = false;
+    var aborter = null;
 
     /* --- Small DOM helpers -------------------------------------------------- */
     function show(el) { if (el) el.hidden = false; }
@@ -61,6 +67,51 @@
 
     function follow(wasNearBottom) {
         if (wasNearBottom) window.scrollTo({ top: document.body.scrollHeight, behavior: 'auto' });
+    }
+
+    /* --- The thinking panel ------------------------------------------------- */
+    /* What the guide is doing, before there is prose to show. Every line here
+       arrives from the server as it happens — nothing is on a timer, and a
+       subject with no source never claims to be reading one. The panel is moved
+       to the end of the thread each turn so it always sits directly above the
+       answer it belongs to. */
+    function openThinking() {
+        if (!thinking) return;
+
+        thread.appendChild(thinking);
+        thinkingStages.replaceChildren();
+        thinkingLabel.textContent = text.thinking || '';
+        thinking.removeAttribute('data-done');
+        if (thinkingPanel) thinkingPanel.open = true;
+        show(thinking);
+    }
+
+    function addStage(label) {
+        if (!thinkingStages || !label) return;
+
+        var previous = thinkingStages.lastElementChild;
+        if (previous) previous.setAttribute('data-state', 'done');
+
+        var item = document.createElement('li');
+        item.setAttribute('data-state', 'active');
+        item.innerHTML = '<span class="dth-stage-mark" aria-hidden="true"></span>' +
+            '<span class="dth-stage-text">' + md.escape(label) + '</span>';
+        thinkingStages.appendChild(item);
+    }
+
+    /* Collapsed, not removed: the trace of how a layer was built is worth being
+       able to reopen, and it is worth nothing while you are reading. */
+    function closeThinking() {
+        if (!thinking) return;
+
+        var stages = thinkingStages.children;
+        for (var i = 0; i < stages.length; i++) stages[i].setAttribute('data-state', 'done');
+
+        thinking.setAttribute('data-done', '1');
+        thinkingLabel.textContent = text.thoughtFor || '';
+        if (thinkingPanel) thinkingPanel.open = false;
+
+        if (!stages.length) hide(thinking);
     }
 
     /* --- The depth rail ---------------------------------------------------- */
@@ -100,7 +151,7 @@
         hide(controls.checkpoint);
         hide(controls.deeper);
         hide(controls.surfaced);
-        hide(thinking);
+        hide(controls.stop);
 
         if (state.surfaced || state.status === 'surfaced') {
             show(controls.surfaced);
@@ -110,6 +161,8 @@
 
         if (state.status === 'checkpoint_pending') {
             show(controls.checkpoint);
+            // Only measurable now that it is on screen — see DTH.autoGrow.
+            if (window.DTH) window.DTH.autoGrow(proofField);
             if (proofField) proofField.focus({ preventScroll: true });
             announce(text.checkpointReady || '');
             return;
@@ -119,7 +172,8 @@
     }
 
     function fail(message) {
-        hide(thinking);
+        closeThinking();
+        hide(controls.stop);
         if (!errorBox) return;
         errorBox.textContent = message;
         show(errorBox);
@@ -127,6 +181,11 @@
     }
 
     /* --- Streaming a teaching turn ----------------------------------------- */
+    /* Text arrives token by token but is REVEALED a block at a time: everything
+       up to the last completed block is committed into stable DOM once (and
+       animates in once), and only the unfinished tail is re-rendered per frame.
+       That is what makes a long layer read like it is being written rather than
+       flickering, and it means nothing already read is ever re-laid-out. */
     function startStream(reframe) {
         if (busy) return;
         busy = true;
@@ -135,12 +194,10 @@
         hide(controls.checkpoint);
         hide(controls.deeper);
         hide(verdictPanel);
-        show(thinking);
-        announce(text.thinking || '');
+        openThinking();
+        show(controls.stop);
         if (window.DTH) window.DTH.setStudying(true);
 
-        /* One turn element, created up front. Its height grows; nothing above
-           it ever moves, so no cumulative layout shift. */
         var turn = document.createElement('article');
         turn.className = 'dth-turn measure mx-auto w-full';
         turn.setAttribute('aria-live', 'off');
@@ -148,28 +205,59 @@
         thread.appendChild(turn);
 
         var bodyEl = turn.querySelector('[data-stream-body]');
+        var tailEl = document.createElement('div');
+        bodyEl.appendChild(tailEl);
+
         var buffer = '';
+        var committed = 0;
         var pending = false;
         var stuck = nearBottom();
 
         /* Re-render at most once per frame: a token-per-render loop on a long
            turn is the difference between 60fps and a stuttering read. */
-        function paint() {
+        function paint(final) {
             pending = false;
-            bodyEl.innerHTML = md.render(buffer) + '<span class="dth-caret" aria-hidden="true"></span>';
+
+            var cut = final ? buffer.length : commitPoint(buffer, committed);
+
+            if (cut > committed) {
+                var block = document.createElement('div');
+                block.innerHTML = md.render(buffer.slice(committed, cut));
+                committed = cut;
+
+                /* The rendered nodes are moved in, not wrapped: the prose rules
+                   are written for `.prose-dth > p + p`, and a wrapper div would
+                   quietly change every margin in the reading column. */
+                while (block.firstChild) {
+                    var node = block.firstChild;
+                    if (node.nodeType === 1) node.classList.add('dth-block-in');
+                    bodyEl.insertBefore(node, tailEl);
+                }
+            }
+
+            var rest = buffer.slice(committed);
+            tailEl.innerHTML = rest
+                ? md.render(rest) + (final ? '' : '<span class="dth-caret" aria-hidden="true"></span>')
+                : '';
+            tailEl.hidden = !rest;
+
             follow(stuck);
         }
 
         function schedule() {
             if (pending) return;
             pending = true;
-            window.requestAnimationFrame(paint);
+            window.requestAnimationFrame(function () { paint(false); });
         }
 
         function onEvent(name, data) {
+            if (name === 'stage') {
+                addStage(data.label);
+                return;
+            }
+
             if (name === 'token') {
                 buffer += (data.text || '');
-                hide(thinking);
                 stuck = nearBottom() || stuck;
                 schedule();
                 return;
@@ -177,7 +265,8 @@
 
             if (name === 'done') {
                 busy = false;
-                bodyEl.innerHTML = md.render(buffer);
+                paint(true);
+                closeThinking();
                 paintRail(data.depth, false);
                 reveal(data);
                 return;
@@ -192,18 +281,44 @@
 
         var url = streamUrl + (reframe ? (streamUrl.indexOf('?') === -1 ? '?' : '&') + 'reframe=' + encodeURIComponent(reframe) : '');
 
-        readEventStream(url, onEvent).catch(function () {
+        aborter = new AbortController();
+
+        readEventStream(url, onEvent, aborter.signal).catch(function (error) {
             busy = false;
+            /* A deliberate stop is not a failure. The page reloads so what the
+               learner sees is what the server actually kept — the alternative is
+               prose on screen that may not exist any more. */
+            if (error && error.name === 'AbortError') {
+                announce(text.stopped || '');
+                window.location.reload();
+                return;
+            }
             fail(text.connectionLost || '');
         });
     }
 
+    /* The furthest point in the buffer that is safe to freeze: the last blank
+       line that is NOT inside an open code fence. Committing inside a fence
+       would render half a code block as prose and then re-render it as code. */
+    function commitPoint(buffer, from) {
+        var index = buffer.lastIndexOf('\n\n');
+
+        while (index > from) {
+            var head = buffer.slice(0, index);
+            if ((head.split('```').length - 1) % 2 === 0) return index + 2;
+            index = buffer.lastIndexOf('\n\n', index - 1);
+        }
+
+        return from;
+    }
+
     /* SSE over fetch. EventSource can't send credentials-aware POSTs or custom
        headers, and we need the reader anyway to keep rendering incremental. */
-    function readEventStream(url, onEvent) {
+    function readEventStream(url, onEvent, signal) {
         return fetch(url, {
             headers: { Accept: 'text/event-stream' },
             credentials: 'same-origin',
+            signal: signal,
         }).then(function (response) {
             if (!response.ok || !response.body) throw new Error('stream failed');
 
@@ -288,7 +403,7 @@
                 paintRail(data.state.depth, data.state.passed);
                 reveal(data.state);
                 proofField.value = '';
-                proofField.style.height = 'auto';
+                if (window.DTH) window.DTH.resetGrow(proofField);
             })
             .catch(function (error) {
                 fail(error.message || text.genericError);
@@ -384,6 +499,22 @@
         if (state.surfaced) announce(text.surfaced || '');
     }
 
+    /* --- Copying a layer --------------------------------------------------- */
+    /* The rendered text, not the source: it is what the learner read, and it
+       keeps the markup out of their notes app. */
+    function copyTurn(button) {
+        var prose = button.closest('.dth-turn, .group\\/turn');
+        var body = prose && prose.querySelector('.prose-dth');
+        if (!body || !navigator.clipboard) return;
+
+        navigator.clipboard.writeText(body.innerText.trim()).then(function () {
+            var icon = button.querySelector('.material-symbols-outlined');
+            if (icon) icon.textContent = 'check';
+            announce(text.copied || '');
+            window.setTimeout(function () { if (icon) icon.textContent = 'content_copy'; }, 1600);
+        });
+    }
+
     /* --- Wiring ------------------------------------------------------------ */
     if (proofForm) proofForm.addEventListener('submit', submitProof);
 
@@ -399,6 +530,21 @@
         if (reframe) {
             event.preventDefault();
             startStream(reframe.getAttribute('data-reframe'));
+            return;
+        }
+
+        var stop = event.target.closest('[data-stop-stream]');
+        if (stop) {
+            event.preventDefault();
+            stop.disabled = true;
+            if (aborter) aborter.abort();
+            return;
+        }
+
+        var copy = event.target.closest('[data-copy-turn]');
+        if (copy) {
+            event.preventDefault();
+            copyTurn(copy);
         }
     });
 

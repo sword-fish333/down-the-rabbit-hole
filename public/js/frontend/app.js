@@ -73,6 +73,41 @@
         } catch (e) {}
     }
 
+    /* --- The subject rail -------------------------------------------------- */
+    /* Static from `lg` up, off-canvas below it. Position is CSS; this only
+       handles the drawer state, and only on the screens that have one. */
+    var sidebar = document.getElementById('dth-sidebar');
+    var scrim = document.querySelector('[data-sidebar-scrim]');
+    var railTrigger = null;
+
+    function setSidebar(open) {
+        if (!sidebar) return;
+
+        sidebar.classList.toggle('is-open', open);
+        if (scrim) scrim.hidden = !open;
+        body.classList.toggle('is-rail-open', open);
+
+        document.querySelectorAll('[data-sidebar-open]').forEach(function (el) {
+            el.setAttribute('aria-expanded', String(open));
+        });
+
+        if (open) {
+            var first = sidebar.querySelector('a, button');
+            if (first) first.focus();
+        } else if (railTrigger) {
+            railTrigger.focus();
+            railTrigger = null;
+        }
+    }
+
+    /* Which view the rail shows is a server-rendered decision (the folder tree
+       is only queried when it is on screen), so the preference goes in a cookie
+       and the page is asked again. One reload on a rare, deliberate toggle. */
+    function setSubjectView(view) {
+        document.cookie = 'dth_subject_view=' + view + '; path=/; max-age=31536000; samesite=lax';
+        window.location.reload();
+    }
+
     /* --- Menus ------------------------------------------------------------- */
     function toggleMenu(button, open) {
         var menu = document.getElementById(button.getAttribute('aria-controls'));
@@ -105,6 +140,19 @@
 
         var themeSwitch = target.closest('[data-theme-switch]');
         if (themeSwitch) setTheme(!root.classList.contains('dark'));
+
+        var railOpen = target.closest('[data-sidebar-open]');
+        if (railOpen) {
+            railTrigger = railOpen;
+            setSidebar(true);
+        }
+
+        if (target.closest('[data-sidebar-close], [data-sidebar-scrim]')) setSidebar(false);
+
+        var subjectView = target.closest('[data-subject-view]');
+        if (subjectView && subjectView.getAttribute('aria-pressed') !== 'true') {
+            setSubjectView(subjectView.getAttribute('data-subject-view'));
+        }
 
         var focusToggle = target.closest('[data-focus-toggle]');
         if (focusToggle) setFocusMode(!body.classList.contains('is-focus'));
@@ -157,7 +205,7 @@
         }
     });
 
-    /* Escape closes the open menu and returns focus to its trigger. */
+    /* Escape closes the open menu or the rail, and returns focus to its trigger. */
     document.addEventListener('keydown', function (event) {
         if (event.key !== 'Escape') return;
 
@@ -165,7 +213,10 @@
         if (open) {
             toggleMenu(open, false);
             open.focus();
+            return;
         }
+
+        if (sidebar && sidebar.classList.contains('is-open')) setSidebar(false);
     });
 
     var initialTab = body.getAttribute('data-active-tab');
@@ -225,12 +276,30 @@
     });
 
     /* --- Auto-growing textareas -------------------------------------------- */
-    /* Height comes from scrollHeight on input only, so the composer grows with
-       the answer instead of scrolling inside a fixed box. */
+    /* `field-sizing: content` is the native version of this, so where the browser
+       has it the browser owns the height and JS never writes one. The fallback
+       grows from scrollHeight — but ONLY while the field is actually rendered: a
+       hidden element measures 0, and writing that back collapses the box and
+       clips its own placeholder the moment it is revealed. */
+    var nativeFieldSizing = !!(window.CSS && CSS.supports && CSS.supports('field-sizing', 'content'));
+
     function autoGrow(field) {
+        if (nativeFieldSizing || !field || field.offsetParent === null) return;
+
         field.style.height = 'auto';
-        field.style.height = Math.min(field.scrollHeight, 420) + 'px';
+        field.style.height = Math.min(field.scrollHeight, 416) + 'px';
     }
+
+    /* Back to the resting height after the value is cleared. */
+    function resetGrow(field) {
+        if (!field) return;
+        field.style.height = '';
+        autoGrow(field);
+    }
+
+    window.DTH.autoGrow = autoGrow;
+    window.DTH.resetGrow = resetGrow;
+
     document.querySelectorAll('textarea[data-autogrow]').forEach(autoGrow);
     document.addEventListener('input', function (event) {
         if (event.target.matches('textarea[data-autogrow]')) autoGrow(event.target);

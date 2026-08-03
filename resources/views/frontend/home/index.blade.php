@@ -1,13 +1,16 @@
-<x-frontend.layout :description="__('frontend.meta.description')">
+<x-frontend.layout :description="__('frontend.meta.description')" shell :marketing="auth()->guest()">
     {{-- ===================================================================
-         Home — the front door.
+         The composer — the front door and, for a returning learner, the whole
+         app's home.
 
-         One job: get a subject typed and the first layer opened. Everything
-         else on this page is subordinate to that, which is why the composer is
-         above the fold, ungated, and pre-filled with a sensible mode.
+         One job: get a subject typed and the first layer opened. Everything else
+         is subordinate to that, which is why the composer is above the fold,
+         ungated, and pre-filled with a sensible mode.
 
-         This is the ONE page allowed ambient movement and scroll reveals. The
-         session that follows is deliberately quieter.
+         A signed-in learner has already read the pitch, so the marketing
+         sections below only render for guests. This is the ONE page allowed
+         ambient movement and scroll reveals; the session that follows is
+         deliberately quieter.
          =================================================================== --}}
     <section class="relative mx-auto flex min-h-[calc(100svh-4rem)] max-w-3xl flex-col items-center justify-center px-4 py-16 text-center sm:px-6">
 
@@ -15,11 +18,11 @@
              else. Resuming beats starting: it is the behaviour that correlates
              with actually finishing something. --}}
         @if ($resumable)
-            <a href="{{ route('hole.show', $resumable) }}"
+            <a href="{{ route('subject.show', $resumable) }}"
                class="dth-card group mb-8 inline-flex max-w-full items-center gap-3 rounded-2xl border border-primary/30 bg-primary/8 px-4 py-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <span class="material-symbols-outlined shrink-0 text-[1.2rem] text-primary" aria-hidden="true">play_circle</span>
                 <span class="min-w-0">
-                    <span class="dth-coord block">{{ __('frontend.home.resume') }} · {{ __('frontend.chat.depth') }} {{ $resumable->current_depth }}</span>
+                    <span class="dth-coord block">{{ __('frontend.home.resume') }} · {{ __('frontend.chat.layer') }} {{ str_pad($resumable->current_depth, 2, '0', STR_PAD_LEFT) }}</span>
                     <span class="block truncate text-sm font-medium text-foreground">{{ $resumable->displayTitle() }}</span>
                 </span>
                 <span class="dth-card-arrow material-symbols-outlined shrink-0 text-[1.1rem] text-primary" aria-hidden="true">arrow_forward</span>
@@ -43,6 +46,10 @@
              The composer. Quiet border by default; a one-time cyan lock-on
              trace when it takes focus (see .dth-composer). No pulsing, no
              permanent glow — you are about to type a paragraph in here.
+
+             It takes a subject OR a link. A link is not a second feature with
+             a second input: DescentService::open() reads what you typed and
+             decides, so there is one field and one button either way.
              --------------------------------------------------------------- --}}
         <form action="{{ route('descend') }}" method="POST" class="mt-10 w-full" data-descend>
             @csrf
@@ -60,11 +67,11 @@
                     data-submit-on-enter
                     aria-describedby="dth-prompt-hint"
                     placeholder="{{ __('frontend.home.placeholder') }}"
-                    class="block w-full resize-none border-0 bg-transparent px-4 py-3 text-base text-foreground placeholder:text-foreground-muted/70 focus:outline-none"></textarea>
+                    class="dth-autogrow block w-full resize-none border-0 bg-transparent px-4 py-3 text-base text-foreground placeholder:text-foreground-muted/70 focus:outline-none">{{ old('prompt') }}</textarea>
 
                 <div class="flex flex-col gap-3 px-2 pb-1 pt-2 sm:flex-row sm:items-center sm:justify-between">
                     <p id="dth-prompt-hint" class="flex items-center gap-1.5 text-left font-mono text-xs text-foreground-muted/70">
-                        <span class="material-symbols-outlined text-[1rem] text-success" aria-hidden="true">neurology</span>
+                        <span class="material-symbols-outlined text-[1rem] text-success" aria-hidden="true">link</span>
                         {{ __('frontend.home.composer-hint') }}
                     </p>
 
@@ -90,7 +97,7 @@
             </div>
         </form>
 
-        {{-- One-tap rabbit holes — the lowest-friction way to start at all. --}}
+        {{-- One-tap subjects — the lowest-friction way to start at all. --}}
         <div class="mt-8 flex flex-col items-center gap-3">
             <span class="dth-coord">{{ __('frontend.home.topics-label') }}</span>
             <div class="flex flex-wrap items-center justify-center gap-2">
@@ -104,58 +111,60 @@
         </div>
     </section>
 
-    {{-- ---------------------------------------------------------------
-         Below the fold: what the mechanic actually is. Sparse scroll
-         reveals only — one per section, and only where support exists.
-         --------------------------------------------------------------- --}}
-    <section class="mx-auto max-w-5xl px-4 pb-24 sm:px-6" aria-labelledby="dth-how-heading">
-        <h2 id="dth-how-heading" class="dth-reveal text-balance text-center font-display text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-            {{ __('frontend.home.how-title') }}
-        </h2>
-        <p class="dth-reveal mx-auto mt-3 max-w-2xl text-pretty text-center text-sm text-foreground-muted sm:text-base">
-            {{ __('frontend.home.how-body') }}
-        </p>
+    @guest
+        {{-- ---------------------------------------------------------------
+             Below the fold: what the mechanic actually is. Sparse scroll
+             reveals only — one per section, and only where support exists.
+             --------------------------------------------------------------- --}}
+        <section class="mx-auto max-w-5xl px-4 pb-24 sm:px-6" aria-labelledby="dth-how-heading">
+            <h2 id="dth-how-heading" class="dth-reveal text-balance text-center font-display text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                {{ __('frontend.home.how-title') }}
+            </h2>
+            <p class="dth-reveal mx-auto mt-3 max-w-2xl text-pretty text-center text-sm text-foreground-muted sm:text-base">
+                {{ __('frontend.home.how-body') }}
+            </p>
 
-        <ol class="mt-12 grid gap-4 sm:grid-cols-3">
-            @foreach ([
-                ['icon' => 'edit_note', 'key' => 'name'],
-                ['icon' => 'quiz', 'key' => 'prove'],
-                ['icon' => 'stairs', 'key' => 'descend'],
-            ] as $index => $step)
-                <li class="dth-reveal dth-card relative rounded-2xl border border-border/70 bg-surface/40 p-5 backdrop-blur-sm">
-                    <span class="dth-coord">{{ str_pad($index + 1, 2, '0', STR_PAD_LEFT) }}</span>
-                    <span class="mt-3 grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
-                        <span class="material-symbols-outlined text-[1.25rem]" aria-hidden="true">{{ $step['icon'] }}</span>
-                    </span>
-                    <h3 class="mt-4 font-display text-sm font-semibold text-foreground">
-                        {{ __('frontend.home.steps.'.$step['key'].'.title') }}
-                    </h3>
-                    <p class="mt-1.5 text-sm leading-relaxed text-foreground-muted">
-                        {{ __('frontend.home.steps.'.$step['key'].'.body') }}
-                    </p>
-                </li>
-            @endforeach
-        </ol>
+            <ol class="mt-12 grid gap-4 sm:grid-cols-3">
+                @foreach ([
+                    ['icon' => 'edit_note', 'key' => 'name'],
+                    ['icon' => 'quiz', 'key' => 'prove'],
+                    ['icon' => 'stairs', 'key' => 'descend'],
+                ] as $index => $step)
+                    <li class="dth-reveal dth-card relative rounded-2xl border border-border/70 bg-surface/40 p-5 backdrop-blur-sm">
+                        <span class="dth-coord">{{ str_pad($index + 1, 2, '0', STR_PAD_LEFT) }}</span>
+                        <span class="mt-3 grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
+                            <span class="material-symbols-outlined text-[1.25rem]" aria-hidden="true">{{ $step['icon'] }}</span>
+                        </span>
+                        <h3 class="mt-4 font-display text-sm font-semibold text-foreground">
+                            {{ __('frontend.home.steps.'.$step['key'].'.title') }}
+                        </h3>
+                        <p class="mt-1.5 text-sm leading-relaxed text-foreground-muted">
+                            {{ __('frontend.home.steps.'.$step['key'].'.body') }}
+                        </p>
+                    </li>
+                @endforeach
+            </ol>
 
-        {{-- Feature cards. Hover is 2px of lift and a border, nothing more —
-             and keyboard focus gets exactly the same treatment. --}}
-        <div class="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            @foreach ([
-                ['icon' => 'flowsheet', 'key' => 'flow'],
-                ['icon' => 'psychology', 'key' => 'mastery'],
-                ['icon' => 'history', 'key' => 'review'],
-                ['icon' => 'tune', 'key' => 'modes'],
-            ] as $feature)
-                <div class="dth-reveal dth-card rounded-2xl border border-border/70 bg-surface/40 p-5 backdrop-blur-sm">
-                    <span class="material-symbols-outlined text-[1.35rem] text-primary" aria-hidden="true">{{ $feature['icon'] }}</span>
-                    <h3 class="mt-3 font-display text-sm font-semibold text-foreground">
-                        {{ __('frontend.home.features.'.$feature['key'].'.title') }}
-                    </h3>
-                    <p class="mt-1.5 text-sm leading-relaxed text-foreground-muted">
-                        {{ __('frontend.home.features.'.$feature['key'].'.body') }}
-                    </p>
-                </div>
-            @endforeach
-        </div>
-    </section>
+            {{-- Feature cards. Hover is 2px of lift and a border, nothing more —
+                 and keyboard focus gets exactly the same treatment. --}}
+            <div class="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                @foreach ([
+                    ['icon' => 'flowsheet', 'key' => 'flow'],
+                    ['icon' => 'psychology', 'key' => 'mastery'],
+                    ['icon' => 'link', 'key' => 'sources'],
+                    ['icon' => 'folder_managed', 'key' => 'library'],
+                ] as $feature)
+                    <div class="dth-reveal dth-card rounded-2xl border border-border/70 bg-surface/40 p-5 backdrop-blur-sm">
+                        <span class="material-symbols-outlined text-[1.35rem] text-primary" aria-hidden="true">{{ $feature['icon'] }}</span>
+                        <h3 class="mt-3 font-display text-sm font-semibold text-foreground">
+                            {{ __('frontend.home.features.'.$feature['key'].'.title') }}
+                        </h3>
+                        <p class="mt-1.5 text-sm leading-relaxed text-foreground-muted">
+                            {{ __('frontend.home.features.'.$feature['key'].'.body') }}
+                        </p>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+    @endguest
 </x-frontend.layout>

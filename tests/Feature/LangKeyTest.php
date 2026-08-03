@@ -6,6 +6,7 @@ use App\Contracts\LlmClient;
 use App\Models\Admin;
 use App\Models\Conversation;
 use App\Models\LearningMode;
+use App\Models\SubjectFolder;
 use App\Models\User;
 use App\Services\Chat\DescentService;
 use Database\Seeders\LearningModeSeeder;
@@ -43,15 +44,15 @@ class LangKeyTest extends TestCase
             'enabled' => true,
         ]);
 
-        $hole = $this->holeWithContent($user);
+        $subject = $this->subjectWithContent($user);
         $unresolved = [];
 
-        foreach ($this->learnerPages($user, $hole) as [$uri, $actor]) {
+        foreach ($this->learnerPages($user, $subject) as [$uri, $actor]) {
             $response = $actor ? $this->actingAs($actor)->get($uri) : $this->get($uri);
             $unresolved = [...$unresolved, ...$this->keysIn($uri, $response->getContent())];
         }
 
-        foreach ($this->adminPages($user, $hole) as $uri) {
+        foreach ($this->adminPages($user, $subject) as $uri) {
             $response = $this->actingAs($admin, 'admin')->get($uri);
             $unresolved = [...$unresolved, ...$this->keysIn($uri, $response->getContent())];
         }
@@ -63,40 +64,61 @@ class LangKeyTest extends TestCase
         );
     }
 
-    /** A hole far enough along that transcript, verdict and mastery map all render. */
-    private function holeWithContent(User $user): Conversation
+    /**
+     * A subject far enough along that transcript, verdict and mastery map all
+     * render — filed in a folder and shared, so the library, the organiser and
+     * the public page all have something real to show.
+     */
+    private function subjectWithContent(User $user): Conversation
     {
         $descent = app(DescentService::class);
-        $hole = $descent->start($user, 'Pure functions');
+        $subject = $descent->start($user, 'Pure functions');
 
-        $stream = app(LlmClient::class)->streamTeachingTurn($descent->teachingRequest($hole));
+        $stream = app(LlmClient::class)->streamTeachingTurn($descent->teachingRequest($subject));
         foreach ($stream as $chunk) {
         }
-        $descent->applyTeachingTurn($hole, $stream);
-        $descent->gradeCheckpoint($hole->fresh(), 'Same input, same output.', 80);
+        $descent->applyTeachingTurn($subject, $stream);
+        $descent->gradeCheckpoint($subject->fresh(), 'Same input, same output.', 80);
 
-        return $hole->fresh();
+        $folder = SubjectFolder::create(['user_id' => $user->id, 'name' => 'Functional programming']);
+        SubjectFolder::create(['user_id' => $user->id, 'parent_id' => $folder->id, 'name' => 'Laws']);
+
+        $subject = $subject->fresh();
+        $subject->update(['folder_id' => $folder->id]);
+        $subject->sources()->create([
+            'url' => 'https://example.com/pure-functions',
+            'title' => 'Pure functions, explained',
+            'site' => 'example.com',
+            'text' => str_repeat('A pure function returns the same output for the same input. ', 30),
+            'words' => 300,
+        ]);
+        $subject->share();
+
+        return $subject->fresh();
     }
 
     /**
      * @return array<int, array{0: string, 1: ?User}>
      */
-    private function learnerPages(User $user, Conversation $hole): array
+    private function learnerPages(User $user, Conversation $subject): array
     {
         return [
             ['/', null],
             ['/login', null],
             ['/register', null],
-            [route('holes.index'), $user],
+            [route('subjects.index'), $user],
+            [route('subjects.index', ['q' => 'nothing here', 'filter' => 'shared']), $user],
+            [route('subjects.organization'), $user],
             [route('profile.index'), $user],
-            [route('hole.show', $hole), $user],
+            [route('subject.show', $subject), $user],
+            [route('subject.shared', $subject->share_token), null],
         ];
     }
 
     /**
      * @return array<int, string>
      */
-    private function adminPages(User $user, Conversation $hole): array
+    private function adminPages(User $user, Conversation $subject): array
     {
         return [
             route('admin.dashboard'),
@@ -107,7 +129,7 @@ class LangKeyTest extends TestCase
             route('admin.user.index'),
             route('admin.user.edit', $user),
             route('admin.conversation.index'),
-            route('admin.conversation.edit', $hole),
+            route('admin.conversation.edit', $subject),
         ];
     }
 

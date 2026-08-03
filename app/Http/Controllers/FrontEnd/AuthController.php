@@ -37,12 +37,12 @@ class AuthController extends Controller
             'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
         ]);
 
-        $this->authService->register($validated, $this->guestHoleIds($request));
+        $this->authService->register($validated, $this->guestSubjectIds($request));
 
-        $request->session()->forget('dth_holes');
+        $request->session()->forget(ChatController::GUEST_KEY);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('holes.index'))->with('success', __('frontend.auth.welcome'));
+        return redirect()->intended(route('subjects.index'))->with('success', __('frontend.auth.welcome'));
     }
 
     public function showLogin(): View|RedirectResponse
@@ -65,17 +65,17 @@ class AuthController extends Controller
             $credentials['email'],
             $credentials['password'],
             $request->boolean('remember'),
-            $this->guestHoleIds($request),
+            $this->guestSubjectIds($request),
         );
 
         if (! $result->isSuccessfulCheck()) {
             return back()->with('error', $result->getFirstError())->withInput($request->except('password'));
         }
 
-        $request->session()->forget('dth_holes');
+        $request->session()->forget(ChatController::GUEST_KEY);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('holes.index'))->with('success', __('frontend.auth.welcome-back'));
+        return redirect()->intended(route('subjects.index'))->with('success', __('frontend.auth.welcome-back'));
     }
 
     public function oauthRedirect(Request $request): RedirectResponse
@@ -99,16 +99,16 @@ class AuthController extends Controller
             return redirect()->route('login')->with('error', __('frontend.auth.google-failed'));
         }
 
-        $result = $this->authService->handleGoogleLogin($googleUser, $this->guestHoleIds($request));
+        $result = $this->authService->handleGoogleLogin($googleUser, $this->guestSubjectIds($request));
 
         if (! $result->isSuccessfulCheck()) {
             return redirect()->route('login')->with('error', $result->getFirstError());
         }
 
-        $request->session()->forget('dth_holes');
+        $request->session()->forget(ChatController::GUEST_KEY);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('holes.index'))->with('success', __('frontend.auth.welcome'));
+        return redirect()->intended(route('subjects.index'))->with('success', __('frontend.auth.welcome'));
     }
 
     public function logout(Request $request): RedirectResponse
@@ -123,8 +123,8 @@ class AuthController extends Controller
     /**
      * @return array<int, int>
      */
-    private function guestHoleIds(Request $request): array
+    private function guestSubjectIds(Request $request): array
     {
-        return $request->session()->get('dth_holes', []);
+        return $request->session()->get(ChatController::GUEST_KEY, []);
     }
 }

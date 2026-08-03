@@ -15,6 +15,8 @@ use App\Models\Conversation;
 use App\Models\LearningMode;
 use App\Models\Message;
 use App\Models\User;
+use App\Services\ValidationService;
+use App\Traits\ValidationHelper;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Throwable;
@@ -31,6 +33,8 @@ use Throwable;
  */
 class DescentService
 {
+    use ValidationHelper;
+
     public const string REFRAME_DIFFERENT = 'different';
 
     public const string REFRAME_ANALOGY = 'analogy';
@@ -49,11 +53,53 @@ class DescentService
     public function __construct(
         private readonly DescentPrompt $prompt,
         private readonly MasteryService $mastery,
+        private readonly SourceFetcher $sources,
         private readonly LlmClient $llm,
-    ) {}
+    ) {
+        $this->initializeValidator();
+    }
 
     /**
-     * Open a new rabbit hole. The first user message is the subject itself.
+     * Open a subject from whatever the learner typed.
+     *
+     * A URL in the prompt means "teach me *this page*": it is fetched, stored as
+     * the subject's source, and the guide is grounded in it from the first layer.
+     * Anything the learner typed alongside the link wins as the subject name —
+     * it is their framing of why they're reading it — otherwise the page's own
+     * title stands in.
+     *
+     * @return ValidationService `conversation` on success.
+     */
+    public function open(?User $user, string $prompt, ?LearningMode $mode = null): ValidationService
+    {
+        $url = $this->firstUrl($prompt);
+
+        if ($url === null) {
+            return $this->addValidatedItems(['conversation' => $this->start($user, $prompt, $mode)]);
+        }
+
+        $fetch = $this->sources->fetch($url);
+
+        if (! $fetch->isSuccessfulCheck()) {
+            return $fetch;
+        }
+
+        $attributes = $fetch->getValidatedItem('attributes');
+        $aside = trim(str_replace($url, '', $prompt), " \t\n\r—-–:·|");
+
+        $conversation = $this->start(
+            $user,
+            $aside !== '' ? $aside : ($attributes['title'] ?: $attributes['site']),
+            $mode,
+        );
+
+        $conversation->sources()->create($attributes);
+
+        return $this->addValidatedItems(['conversation' => $conversation]);
+    }
+
+    /**
+     * Open a new subject. The first user message is the subject itself.
      */
     public function start(?User $user, string $subject, ?LearningMode $mode = null): Conversation
     {
@@ -274,7 +320,7 @@ class DescentService
             'surfaced_at' => $surfaced ? now() : null,
         ]);
 
-        // Guests earn nothing until they claim the hole — a natural sign-up hook.
+        // Guests earn nothing until they claim the subject — a natural sign-up hook.
         if ($conversation->user_id) {
             event(new LayerCompleted($conversation->user, $conversation, $passedDepth));
         }
@@ -336,6 +382,19 @@ class DescentService
         $conversation->increment('message_count');
 
         return $message;
+    }
+
+    /**
+     * The first http(s) URL in the prompt, minus any sentence punctuation that
+     * ran into it. Returns null when the learner just named a subject.
+     */
+    private function firstUrl(string $prompt): ?string
+    {
+        if (! preg_match('~https?://[^\s<>"\'\)\]]+~i', $prompt, $match)) {
+            return null;
+        }
+
+        return rtrim($match[0], '.,;:!?') ?: null;
     }
 
     /**

@@ -18,7 +18,7 @@ class ConversationController extends Controller
     public function index(Request $request): View
     {
         $conversations = Conversation::query()
-            ->with(['user:id,name,email', 'learningMode:id,name,accent'])
+            ->with(['user:id,name,email', 'learningMode:id,name,accent', 'sources:id,conversation_id,site'])
             ->withCount('concepts')
             ->when($request->filled('search'), fn ($query) => $query->where('subject', 'like', '%'.$request->string('search').'%'))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
@@ -35,7 +35,7 @@ class ConversationController extends Controller
 
     public function edit(Conversation $conversation): View
     {
-        $conversation->load(['user', 'learningMode', 'concepts', 'checkpointAttempts']);
+        $conversation->load(['user', 'learningMode', 'folder', 'sources', 'concepts', 'checkpointAttempts']);
 
         return view('admin.conversations.edit', [
             'conversation' => $conversation,

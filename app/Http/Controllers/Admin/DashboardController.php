@@ -31,7 +31,7 @@ class DashboardController extends Controller
     {
         return [
             'users' => User::count(),
-            'holes' => Conversation::count(),
+            'subjects' => Conversation::count(),
             'admins' => Admin::count(),
             'active_admins' => Admin::where('enabled', true)->count(),
         ];
@@ -47,13 +47,13 @@ class DashboardController extends Controller
     {
         $attempts = CheckpointAttempt::count();
         $passes = CheckpointAttempt::where('verdict', CheckpointAttempt::VERDICT_PASS)->count();
-        $holes = Conversation::count();
+        $subjects = Conversation::count();
         $pastFirstLayer = Conversation::where('current_depth', '>=', 1)->count();
 
         return [
             'layers_cleared' => $passes,
             'pass_rate' => $attempts > 0 ? (int) round($passes / $attempts * 100) : 0,
-            'first_layer_rate' => $holes > 0 ? (int) round($pastFirstLayer / $holes * 100) : 0,
+            'first_layer_rate' => $subjects > 0 ? (int) round($pastFirstLayer / $subjects * 100) : 0,
             'average_depth' => round((float) Conversation::avg('current_depth'), 1),
             'surfaced' => Conversation::where('status', Conversation::STATUS_SURFACED)->count(),
             'mastered_concepts' => Concept::where('state', Concept::STATE_MASTERED)->count(),

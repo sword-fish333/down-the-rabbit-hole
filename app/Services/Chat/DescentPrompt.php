@@ -4,6 +4,7 @@ namespace App\Services\Chat;
 
 use App\Models\Concept;
 use App\Models\Conversation;
+use App\Models\Source;
 use Illuminate\Support\Collection;
 
 /**
@@ -68,6 +69,13 @@ class DescentPrompt
             $parts[] = "Teach it in {$mode->name} mode: {$mode->prompt_directive}";
         }
 
+        // Re-sent every turn rather than left in the message history: the older
+        // turns get compacted into a summary as a subject deepens, and the
+        // material must not be what falls out of the window.
+        if ($source = $conversation->sources->first()) {
+            $parts[] = $this->sourceNote($source);
+        }
+
         if ($resurfacing->isNotEmpty()) {
             $parts[] = $this->resurfacingNote($resurfacing);
         }
@@ -105,6 +113,23 @@ class DescentPrompt
     public function summaryPreamble(string $summary): string
     {
         return "[SESSION SO FAR] {$summary}";
+    }
+
+    /**
+     * Ground the layer in a specific page. The honesty clause matters more than
+     * it looks: a guide that quietly fills gaps from its own knowledge turns
+     * "make me understand this article" back into "explain this topic", and the
+     * learner has no way to tell which they got.
+     */
+    private function sourceNote(Source $source): string
+    {
+        $extract = $source->extract((int) config('platform.sources.prompt_words'));
+
+        return 'The learner is studying ONE specific page, not the subject in general. Teach FROM it: '
+            .'every layer must be grounded in what this page actually says, quoting it where a quote '
+            .'earns its place. Where you go beyond the page, say so in one short clause. Where the page '
+            ."is wrong or thin, say that too — it is material, not scripture.\n\n"
+            ."[SOURCE] {$source->displayTitle()} — {$source->url}\n\"\"\"\n{$extract}\n\"\"\"";
     }
 
     /**

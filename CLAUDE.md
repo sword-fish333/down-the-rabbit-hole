@@ -48,13 +48,23 @@ if (!$result->isSuccessfulCheck()) {
 
 **The descent.** `DescentService` owns depth and checkpoint state and knows nothing about HTTP; `ChatStreamingService` owns the SSE wire; `MasteryService` owns the concept map and only ever moves a concept's state on **graded evidence**. A failed grading call must never cost a learner their layer.
 
+`DescentService::open()` is the entry point for the composer: a URL in the prompt is fetched by `SourceFetcher` and stored as the subject's `Source`, and `DescentPrompt::sourceNote()` grounds every teaching turn in it. `SourceFetcher` is the app's only outbound fetch — **it resolves and range-checks every host, including each redirect hop, before a socket opens.** Never loosen that: the URL comes from a visitor and the fetch runs inside the network.
+
+**SSE events are `stage` / `token` / `done` / `error`.** The `stage` frames are *real* — each is emitted at the moment that work happens and carries the numbers behind it, so the thinking panel is a log, not a spinner. Never emit one on a timer or for work that didn't occur.
+
+**Subject, not hole.** The model stays `Conversation` (that's what it is at the data layer); everything a learner sees says **subject**. Routes are `subjects.*` (the library: `/subjects`, `/subjects/organization`) and `subject.*` (one subject: show / stream / checkpoint / share / file). Progression words are fixed: **Layer NN**, *Descend* / *Go deeper*, *Prove it*, "Depth reached: Layer X of Y", "N-day descent", "Your deepest dive".
+
+**The app shell.** `<x-frontend.layout shell>` wraps a page in the persistent subject rail (`components/frontend/sidebar`); its data comes from `AppServiceProvider::composeSidebar()`, not from controllers. Which view the rail shows travels in the **unencrypted `dth_subject_view` cookie** (excepted in `bootstrap/app.php`) so the folder tree is only queried when it is on screen. `SubjectLibraryService` cursor-paginates the library; `subjects.index` returns just the rows partial when asked for `fragment=1`, which is how search and infinite scroll reuse one renderer. `SubjectFolderService` guards the two tree invariants: no folder inside its own subtree, and the depth cap from `platform.subjects.max_folder_depth`.
+
+**Drag-and-drop is an enhancement, never an implementation.** Every mutation on the organiser is a real form post to a real route; `subjects.js` fills in forms the server rendered rather than inventing endpoints, so the whole surface works with JavaScript off.
+
 **User-facing strings are localized.** Controller flash messages and admin UI text come from `lang/en/admin/backend.php` (backend/messages) and `lang/en/admin/frontend.php` (UI labels). Convention: `__('admin/backend.auth.invalid-credentials')`. Add new strings here, don't hardcode.
 
 **Flash + tab convention.** Controllers redirect with `->with('success', ...)` / `->with('error', ...)` (rendered by `<x-admin.flash>`). The profile page is tabbed — controllers `session()->flash('active_profile_tab', 'profile'|'password'|'support')` so the right tab reopens after a redirect.
 
-**App-specific config in `config/platform.php`** — support inbox email and the allowed `support_topics` list (validated against in `ProfileController`). Put app-level settings here, not in framework config files.
+**App-specific config in `config/platform.php`** — support inbox email and the allowed `support_topics` list (validated against in `ProfileController`), plus `chat`, `mastery`, `subjects` (page sizes, folder depth cap) and `sources` (fetch timeout, byte cap, redirect cap, words that reach the prompt). Put app-level settings here, not in framework config files.
 
-**Views** are Blade-component based: `resources/views/components/admin/*` (admin layout/topbar/sidebar/ui) and `components/frontend/*` (frontend layout, navbar, footer, depth-rail, mode-picker, markdown…). Admin and frontend have distinct layouts.
+**Views** are Blade-component based: `resources/views/components/admin/*` (admin layout/topbar/sidebar/ui) and `components/frontend/*` (frontend layout, sidebar, navbar, footer, depth-rail, subject-link, subject-status, mode-picker, markdown…). Admin and frontend have distinct layouts. Row and tree markup lives in Blade partials (`frontend/subjects/partials/*`) that are reused verbatim by the fragment endpoints — if you find yourself writing markup in JS, the partial is the answer.
 
 **Motion tokens, not magic numbers.** `resources/css/app.css` defines `--motion-instant|feedback|state|panel|milestone|ambient` and four easings, named for the job. Use those (`duration-(--motion-state)`) rather than arbitrary ms values. The rule the frontend is built on: *motion must explain state, direction, hierarchy, progress or causality* — if an animation answers none of those, it doesn't ship. The learning session is deliberately quieter than the landing page; ambient movement suspends under `body.is-studying`.
 

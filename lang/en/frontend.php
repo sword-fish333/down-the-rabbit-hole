@@ -3,13 +3,14 @@
 return [
 
     'meta' => [
-        'description' => 'Name a subject and fall in. Each layer asks you to prove you understood it before the next one opens — until you surface an expert.',
+        'description' => 'Name a subject — or drop in a link — and fall in. Each layer asks you to prove you understood it before the next one opens, until you surface an expert.',
     ],
 
     'general' => [
         'skip-to-content' => 'Skip to content',
         'dismiss' => 'Dismiss',
         'required' => 'required',
+        'cancel' => 'Cancel',
     ],
 
     'navbar' => [
@@ -18,10 +19,40 @@ return [
         'sign-in' => 'Sign in',
         'start' => 'Start a descent',
         'sign-out' => 'Sign out',
-        'holes' => 'Your holes',
+        'subjects' => 'Subjects',
         'profile' => 'Profile',
         'account' => 'Account menu',
-        'streak-title' => 'Days in a row with a layer completed',
+        'streak-title' => 'Days in a row with a layer cleared',
+        'descent-days' => '{1} :count-day descent|[2,*] :count-day descent',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | The subject rail
+    |--------------------------------------------------------------------------
+    |
+    | Present on every app screen. One primary action, one list, two
+    | destinations — and, for a visitor, one honest reason to sign in.
+    |
+    */
+
+    'sidebar' => [
+        'label' => 'Your subjects',
+        'open' => 'Open the subject rail',
+        'close' => 'Close the subject rail',
+        'new' => 'New descent',
+        'subjects' => 'Subjects',
+        'view-label' => 'How to show your subjects',
+        'view' => [
+            'list' => 'Most recent first',
+            'folders' => 'By folder',
+        ],
+        'empty' => 'Nothing yet. Name a subject and it will be waiting here.',
+        'all' => 'All subjects',
+        'organize' => 'Organise',
+        'guest-title' => 'Keep what you learn',
+        'guest-body' => 'Sign in and your subjects, your mastery map and your descent are still here tomorrow.',
+        'guest-cta' => 'Sign in',
     ],
 
     'auth' => [
@@ -70,7 +101,7 @@ return [
         // Email confirmation
         'verify-title' => 'Confirm your email',
         'verify-body' => 'We sent a confirmation link to :email. It keeps your account and your progress yours — but you can keep learning right now either way.',
-        'verify-banner' => 'Confirm :email to secure your account and your streak.',
+        'verify-banner' => 'Confirm :email to secure your account and your descent.',
         'verify-resend' => 'Resend the link',
         'verify-skip' => 'Keep learning for now',
         'verify-sent' => 'Confirmation link sent.',
@@ -82,7 +113,7 @@ return [
     'mail' => [
         'verify-subject' => 'Confirm your email · :app',
         'verify-heading' => 'One click and you’re set, :name',
-        'verify-body' => 'Confirm your email address so your descents, mastery map and streak stay attached to your account.',
+        'verify-body' => 'Confirm your email address so your subjects, mastery map and descent stay attached to your account.',
         'verify-cta' => 'Confirm email address',
         'verify-expiry' => 'The link is valid for :minutes minutes.',
         'verify-ignore' => 'If you didn’t create an account, you can safely ignore this message.',
@@ -96,7 +127,7 @@ return [
         'learn' => 'Learn',
         'how' => 'How it works',
         'start-descent' => 'Start a descent',
-        'your-holes' => 'Your rabbit holes',
+        'your-subjects' => 'Your subjects',
         'your-record' => 'Your learning record',
         'create-account' => 'Create an account',
         'sign-in' => 'Sign in',
@@ -115,10 +146,10 @@ return [
     'home' => [
         'kicker' => 'Begin the descent',
         'title' => 'What do you want to understand?',
-        'subtitle' => 'Name a subject. Fall in. Each layer asks you to prove you got it before the next one opens — until you surface an expert.',
-        'placeholder' => 'World War II · transformers · the French Revolution · how interest rates work…',
-        'placeholder-label' => 'The subject you want to understand',
-        'composer-hint' => 'One subject, one thread, no distractions',
+        'subtitle' => 'Name a subject or paste a link. Each layer asks you to prove you got it before the next one opens — until you surface an expert.',
+        'placeholder' => 'Transformers · the French Revolution · https://a-page-you-want-to-understand.com …',
+        'placeholder-label' => 'The subject or link you want to understand',
+        'composer-hint' => 'One subject, or one link to study — no distractions',
         'cta' => 'Descend',
         'cta-loading' => 'Descending…',
         'resume' => 'Resume',
@@ -135,31 +166,91 @@ return [
         'how-title' => 'One loop, repeated until you’re expert',
         'how-body' => 'No lesson library, no video queue, no quiz bank. A single conversation with a measurable depth, and a gate at every layer that only opens on evidence.',
         'steps' => [
-            'name' => ['title' => 'Name the subject', 'body' => 'Anything you can be curious about. The guide starts at the foundation a beginner actually needs.'],
+            'name' => ['title' => 'Name the subject', 'body' => 'Anything you can be curious about — or a link you want to actually understand. The guide starts at the foundation a beginner needs.'],
             'prove' => ['title' => 'Prove the layer', 'body' => 'Explain it back, apply it to a new case, or predict an outcome. Never trivia you could copy.'],
             'descend' => ['title' => 'Descend', 'body' => 'Pass and the next layer opens beneath the last. Miss something and the guide corrects it before you move.'],
         ],
         'features' => [
             'flow' => ['title' => 'Deep-work flow', 'body' => 'One focused thread, no feed, no noise — just you and the subject, going deeper.'],
             'mastery' => ['title' => 'A real mastery map', 'body' => 'Every concept is marked mastered, developing, or misunderstood — from graded evidence, not from clicking “got it”.'],
-            'review' => ['title' => 'Misconceptions resurface', 'body' => 'Get something wrong and it comes back, woven into a later layer, until you actually have it.'],
-            'modes' => ['title' => 'Teach it your way', 'body' => 'Socratic, visual, exam prep, project-based, fast overview, or a full technical descent.'],
+            'sources' => ['title' => 'Study any page', 'body' => 'Drop in a link and the guide teaches from that material, with checkpoints that hold you to what it actually says.'],
+            'library' => ['title' => 'Your own library', 'body' => 'Every subject you’ve been curious about, filed in folders you built, ready to descend again.'],
         ],
     ],
 
-    'holes' => [
-        'title' => 'Your rabbit holes',
-        'subtitle' => 'Resume a descent, or review what you’ve already proven.',
+    /*
+    |--------------------------------------------------------------------------
+    | The library
+    |--------------------------------------------------------------------------
+    */
+
+    'subjects' => [
+        'title' => 'Subjects',
         'new' => 'New descent',
+        'select' => 'Select',
+        'select-all' => 'Select all',
+        'selected' => 'selected',
+        'delete' => 'Delete',
+        'deleted' => '{0} Nothing was deleted.|{1} One subject deleted.|[2,*] :count subjects deleted.',
+        'search-label' => 'Search your subjects',
+        'search-placeholder' => 'Search subjects…',
+        'filter-label' => 'Filter subjects',
+        'filter' => [
+            'all' => 'All',
+            'active' => 'In progress',
+            'surfaced' => 'Surfaced',
+            'shared' => 'Shared',
+        ],
+        'load-more' => 'Load more',
         'empty-title' => 'Nothing open yet',
         'empty-body' => 'Name a subject and the first layer will be waiting. Your progress is saved from the first checkpoint onward.',
-        'empty-cta' => 'Start your first descent',
+        'no-matches' => 'Nothing matches that',
+        'no-matches-body' => 'Try a shorter search, or clear the filter.',
         'mastered' => '{1} :count concept mastered|[2,*] :count concepts mastered',
         'status' => [
             'surfaced' => 'Surfaced',
             'checkpoint' => 'Checkpoint open',
             'exploring' => 'In progress',
+            'shared' => 'Shared',
         ],
+
+        // Sharing
+        'share' => 'Share read-only',
+        'unshare' => 'Stop sharing',
+        'shared-notice' => 'Anyone with this link can read it: :url',
+        'unshared' => 'That link no longer works. The subject is private again.',
+        'shared-by' => 'Descended by :name',
+        'shared-meta' => 'A read-only descent through :subject — one layer at a time, each one proven.',
+        'shared-cta-title' => 'Reading it isn’t understanding it.',
+        'shared-cta-body' => 'Start your own descent through this subject, and prove each layer before the next one opens.',
+
+        // Organisation
+        'organization-title' => 'Organise',
+        'organization-subtitle' => 'Your own shelves. Drag a subject onto a folder, or drop it in the open space to unfile it.',
+        'tree-label' => 'Your folders and subjects',
+        'tree-search-label' => 'Search folders and subjects',
+        'tree-search-placeholder' => 'Filter folders and subjects…',
+        'tree-empty-title' => 'No shelves yet',
+        'tree-empty-body' => 'Create a folder and drag your subjects in. Folders can hold folders.',
+        'tree-note' => 'Deleting a folder deletes the folders inside it and keeps every subject — they go back to unfiled.',
+        'unfiled' => 'Unfiled',
+        'add-folder' => 'Add',
+        'folder-name' => 'Folder name',
+        'folder-root' => 'Move to the top level',
+        'folder-inside' => 'Inside :name',
+        'new-subfolder' => 'New folder inside this one',
+        'rename' => 'Rename',
+        'save' => 'Save',
+        'delete-folder' => 'Delete folder',
+        'confirm-delete-folder' => 'Delete folder?',
+        'filed' => 'Moved.',
+        'folder-created' => 'Folder created.',
+        'folder-saved' => 'Folder updated.',
+        'folder-deleted' => 'Folder deleted. Its subjects are unfiled.',
+        'folder-missing' => 'That folder no longer exists.',
+        'folder-cycle' => 'A folder can’t be moved inside itself.',
+        'folder-too-deep' => 'That’s as deep as folders go. Move it somewhere higher up.',
+        'move-failed' => 'That move didn’t stick. Nothing was changed.',
     ],
 
     'profile' => [
@@ -193,7 +284,9 @@ return [
             'mastered-hint' => 'Demonstrated more than once.',
             'deepest' => 'Deepest layer',
             'deepest-hint' => 'Your furthest descent.',
-            'holes' => 'Rabbit holes',
+            'deepest-dive' => 'Your deepest dive',
+            'deepest-dive-value' => '{1} :subject — 1 layer|[2,*] :subject — :count layers',
+            'subjects' => 'Subjects',
             'surfaced' => 'Completed',
             'to-review' => 'To revisit',
             'to-review-hint' => 'Concepts still misunderstood.',
@@ -203,7 +296,7 @@ return [
 
     'chat' => [
         // Flash / error messages
-        'no-access' => 'That rabbit hole isn’t yours to explore.',
+        'no-access' => 'That subject isn’t yours to explore.',
         'no-checkpoint' => 'There’s no open checkpoint on this layer.',
         'daily-limit' => 'You’ve reached today’s descent limit. Come back tomorrow — rest is part of deep work.',
         'already-surfaced' => 'You’ve already surfaced from this one.',
@@ -211,16 +304,23 @@ return [
         'grade-unavailable' => 'The guide couldn’t read your answer just now — nothing is lost, try submitting it again.',
         'connection-lost' => 'The connection dropped. Reload to continue where you were.',
 
-        // The hole
+        // Studying a page
+        'source-unreachable' => 'That link can’t be reached from here. Check it, or name the subject instead.',
+        'source-failed' => 'That page wouldn’t load. Try another link, or name the subject instead.',
+        'source-too-thin' => 'There isn’t enough readable text on that page to descend through.',
+
+        // The subject
         'subject-label' => 'Descending into',
         'depth' => 'Depth',
+        'depth-reached' => 'Depth reached: Layer :depth of :max',
         'layer' => 'Layer',
         'of' => 'of',
         'depth-rail' => 'The descent',
         'mastery' => 'Mastery',
         'concepts' => 'Concepts',
         'concepts-empty' => 'Concepts appear here as you prove them, marked by what you’ve actually demonstrated.',
-        'thinking' => 'The guide is thinking…',
+        'thinking' => 'Thinking',
+        'thought-for' => 'Thought it through',
         'analyzing' => 'Reading your answer against the layer…',
         'begin' => 'Open the first layer',
         'go-deeper' => 'Go deeper',
@@ -228,13 +328,28 @@ return [
         'focus-toggle' => 'Deep-work mode',
         'focus-on' => 'Deep-work mode on',
         'focus-off' => 'Deep-work mode off',
+        'stop' => 'Stop',
+        'stopped' => 'Stopped. What arrived is kept.',
+        'copy' => 'Copy this layer',
+        'copied' => 'Copied',
+
+        // What the guide is doing, before there is prose to show
+        'stage' => [
+            'orienting' => 'Orienting in “:subject”',
+            'reading' => 'Reading :title — :words words',
+            'recalling' => '{1} Recalling 1 concept you’ve proven|[2,*] Recalling :count concepts you’ve proven',
+            'revisiting' => '{1} Weaving back 1 concept to revisit|[2,*] Weaving back :count concepts to revisit',
+            'composing' => 'Composing Layer :layer',
+            'writing' => 'Writing it out',
+        ],
 
         // Checkpoint
         'checkpoint' => 'Prove you’ve got it',
         'checkpoint-ready' => 'A checkpoint is waiting for your answer.',
         'proof-placeholder' => 'Explain it back in your own words…',
-        'submit-proof' => 'Submit answer',
+        'submit-proof' => 'Prove it',
         'your-answer' => 'Your answer',
+        'their-answer' => 'Their answer',
         'confidence-legend' => 'How sure are you?',
         'confidence' => [
             'shaky' => 'Shaky',
@@ -281,6 +396,5 @@ return [
         'surfaced-title' => 'You’ve surfaced an expert.',
         'surfaced-body' => 'You went all the way down and came back up, proving every layer on the way. That’s the whole game.',
         'new-descent' => 'Start another descent',
-        'all-holes' => 'Your holes',
     ],
 ];

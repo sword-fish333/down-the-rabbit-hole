@@ -1,7 +1,9 @@
 @props([
     'title' => null,
     'description' => null,
+    'shell' => false,          // app chrome: the persistent subject sidebar
     'workspace' => false,      // the learning session: quieter chrome, deep-work mode
+    'marketing' => false,      // landing sections below the fold, and the footer
     'activeTab' => null,
     'bodyClass' => '',
 ])
@@ -58,7 +60,8 @@
 </head>
 <body
     @class([
-        'flex min-h-screen flex-col bg-background text-foreground antialiased',
+        'min-h-screen bg-background text-foreground antialiased',
+        'flex flex-col' => ! $shell,
         $bodyClass,
     ])
     @if ($workspace) data-workspace @endif
@@ -79,13 +82,31 @@
          grading, milestones), so assistive tech gets one predictable channel. --}}
     <div id="dth-live" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 
-    <x-frontend.navbar :peripheral="$workspace" />
+    @if ($shell)
+        {{-- App chrome. The sidebar is the navigation, so the bar above the
+             content carries only account controls — one place per job. --}}
+        <x-frontend.sidebar />
 
-    <main id="dth-main" class="relative z-10 flex-1">
-        {{ $slot }}
-    </main>
+        <div class="flex min-h-screen min-w-0 flex-col lg:pl-[17.5rem]">
+            <x-frontend.navbar shell :peripheral="$workspace" />
 
-    <x-frontend.footer :peripheral="$workspace" />
+            <main id="dth-main" class="relative z-10 flex-1">
+                {{ $slot }}
+            </main>
+
+            @if ($marketing)
+                <x-frontend.footer />
+            @endif
+        </div>
+    @else
+        <x-frontend.navbar :peripheral="$workspace" />
+
+        <main id="dth-main" class="relative z-10 flex-1">
+            {{ $slot }}
+        </main>
+
+        <x-frontend.footer :peripheral="$workspace" />
+    @endif
 
     <x-frontend.flash />
 
