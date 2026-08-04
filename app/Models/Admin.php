@@ -17,6 +17,7 @@ class Admin extends Authenticatable
 
     public const array ROLES = ['main-admin', 'manager', 'developer'];
 
+    const string MAIN_ADMIN_ROLE='main-admin';
     public const array LOGIN_METHODS = ['credentials', 'google', 'github', 'facebook'];
 
     public const string CREDENTIALS_LOGIN_METHOD = 'credentials';
@@ -67,5 +68,9 @@ class Admin extends Authenticatable
             ->take(2)
             ->map(fn (string $part) => Str::upper(Str::substr($part, 0, 1)))
             ->implode('');
+    }
+    public function isMainAdmin(): bool
+    {
+        return $this->role === self::MAIN_ADMIN_ROLE;
     }
 }
