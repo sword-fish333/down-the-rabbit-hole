@@ -64,16 +64,20 @@
                     minlength="2"
                     maxlength="500"
                     data-autogrow
-                    data-submit-on-enter
-                    aria-describedby="dth-prompt-hint"
+                    data-submit-shortcut
+                    aria-keyshortcuts="Meta+Enter Control+Enter Alt+Enter"
+                    aria-describedby="dth-prompt-hint dth-prompt-shortcut"
                     placeholder="{{ __('frontend.home.placeholder') }}"
                     class="dth-autogrow block w-full resize-none border-0 bg-transparent px-4 py-3 text-base text-foreground placeholder:text-foreground-muted/70 focus:outline-none">{{ old('prompt') }}</textarea>
 
                 <div class="flex flex-col gap-3 px-2 pb-1 pt-2 sm:flex-row sm:items-center sm:justify-between">
-                    <p id="dth-prompt-hint" class="flex items-center gap-1.5 text-left font-mono text-xs text-foreground-muted/70">
-                        <span class="material-symbols-outlined text-[1rem] text-success" aria-hidden="true">link</span>
-                        {{ __('frontend.home.composer-hint') }}
-                    </p>
+                    <div class="min-w-0 text-left">
+                        <p id="dth-prompt-hint" class="flex items-center gap-1.5 font-mono text-xs text-foreground-muted/70">
+                            <span class="material-symbols-outlined text-[1rem] text-success" aria-hidden="true">link</span>
+                            {{ __('frontend.home.composer-hint') }}
+                        </p>
+                        <x-frontend.submit-shortcut id="dth-prompt-shortcut" />
+                    </div>
 
                     <button type="submit" data-descend-cta
                             data-loading-label="{{ __('frontend.home.cta-loading') }}"

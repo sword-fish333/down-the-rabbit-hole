@@ -267,12 +267,29 @@
         });
     }
 
-    /* --- Composer: submit on Cmd/Ctrl+Enter -------------------------------- */
-    document.addEventListener('keydown', function (event) {
-        if (!(event.metaKey || event.ctrlKey) || event.key !== 'Enter') return;
+    /* --- Composer: submit on modifier + Enter ------------------------------ */
+    function isSubmitShortcut(event) {
+        var hasModifier = event.metaKey || event.ctrlKey || event.altKey;
+        var usesAltGraph = event.getModifierState && event.getModifierState('AltGraph');
 
-        var field = event.target.closest('textarea[data-submit-on-enter]');
-        if (field && field.form) field.form.requestSubmit();
+        return event.key === 'Enter' && hasModifier && !usesAltGraph && !event.isComposing;
+    }
+
+    document.addEventListener('keydown', function (event) {
+        if (event.defaultPrevented || !isSubmitShortcut(event)) return;
+
+        var field = event.target.closest('textarea[data-submit-shortcut]');
+        if (!field || !field.form) return;
+
+        /* A shortcut is one deliberate submit: do not also insert a line break,
+           and do not submit repeatedly if the keys are held down. */
+        event.preventDefault();
+        if (event.repeat) return;
+
+        var submitter = field.form.querySelector('button[type="submit"], input[type="submit"]');
+        if (submitter && submitter.disabled) return;
+
+        field.form.requestSubmit(submitter || undefined);
     });
 
     /* --- Auto-growing textareas -------------------------------------------- */

@@ -112,6 +112,24 @@ class PageRenderTest extends TestCase
         $this->actingAs($this->user)->get('/')->assertOk()->assertSee('Resume');
     }
 
+    public function test_multiline_composers_advertise_the_submit_shortcut(): void
+    {
+        $shortcut = 'aria-keyshortcuts="Meta+Enter Control+Enter Alt+Enter"';
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('data-submit-shortcut', false)
+            ->assertSee($shortcut, false)
+            ->assertSee(__('frontend.general.submit-shortcut'));
+
+        $this->actingAs($this->user)
+            ->get(route('subject.show', $this->hole))
+            ->assertOk()
+            ->assertSee('data-submit-shortcut', false)
+            ->assertSee($shortcut, false)
+            ->assertSee(__('frontend.general.submit-shortcut'));
+    }
+
     public static function adminPages(): array
     {
         return [

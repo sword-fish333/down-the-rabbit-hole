@@ -200,9 +200,13 @@
 
                             <div class="dth-composer rounded-2xl border border-border-strong bg-surface/70 p-2 shadow-xl backdrop-blur-md">
                                 <textarea id="dth-proof" name="message" rows="2" required minlength="2" maxlength="4000"
-                                          data-autogrow data-submit-on-enter
+                                          data-autogrow data-submit-shortcut
+                                          aria-keyshortcuts="Meta+Enter Control+Enter Alt+Enter"
+                                          aria-describedby="dth-proof-shortcut"
                                           placeholder="{{ __('frontend.chat.proof-placeholder') }}"
                                           class="dth-autogrow block w-full resize-none border-0 bg-transparent px-3 py-2 text-base text-foreground placeholder:text-foreground-muted/70 focus:outline-none"></textarea>
+
+                                <x-frontend.submit-shortcut id="dth-proof-shortcut" class="px-3 pt-1" />
 
                                 <div class="flex flex-col gap-3 px-1 pb-1 pt-2 sm:flex-row sm:items-end sm:justify-between">
                                     {{-- Optional self-rating before submitting. Calibration

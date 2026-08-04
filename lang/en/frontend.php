@@ -11,6 +11,8 @@ return [
         'dismiss' => 'Dismiss',
         'required' => 'required',
         'cancel' => 'Cancel',
+        'submit-shortcut' => 'Enter starts a new line. Command, Control, or Option plus Enter submits the form.',
+        'submit-shortcut-visual' => 'Enter = new line · ⌘ / Ctrl / Option + Enter = submit',
     ],
 
     'navbar' => [
