@@ -370,6 +370,7 @@ return [
         'verdict-pass' => 'Layer cleared',
         'verdict-incomplete' => 'Not quite there yet',
         'verdict-misconception' => 'Something to correct first',
+        'verdict-toggle' => 'Show or hide verdict details',
         'score' => 'Score',
         'criterion-met' => 'shown',
         'criterion-unmet' => 'not shown yet',

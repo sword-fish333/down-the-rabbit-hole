@@ -441,16 +441,19 @@
         var parts = [];
 
         parts.push(
-            '<div class="flex items-start justify-between gap-4">' +
-            '<p class="flex items-center gap-2 font-display text-sm font-semibold ' +
+            '<summary data-verdict-toggle class="-m-1 flex cursor-pointer select-none list-none items-center gap-2 rounded-xl p-1 transition-colors duration-(--motion-feedback) ease-(--ease-snap) hover:bg-surface-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:gap-3">' +
+            '<span class="flex min-w-0 flex-1 items-center gap-2 font-display text-sm font-semibold ' +
             (passed ? 'text-success' : 'text-accent') + '">' +
             '<span class="material-symbols-outlined text-[1.15rem]" aria-hidden="true">' +
             (passed ? 'check_circle' : (attempt.misconceptions.length ? 'error' : 'incomplete_circle')) +
             '</span>' +
             md.escape(passed ? text.verdictPass : (attempt.misconceptions.length ? text.verdictMisconception : text.verdictIncomplete)) +
-            '</p>' +
-            '<p class="dth-coord shrink-0">' + md.escape(text.scoreLabel || '') + ' ' + attempt.score + '/100</p>' +
-            '</div>'
+            '</span>' +
+            '<span class="dth-coord shrink-0">' + md.escape(text.scoreLabel || '') + ' ' + attempt.score + '/100</span>' +
+            '<span class="material-symbols-outlined shrink-0 text-[1.1rem] text-foreground-muted transition-transform duration-(--motion-state) ease-(--ease-out) group-open/verdict:rotate-180" aria-hidden="true">expand_more</span>' +
+            '<span class="sr-only">' + md.escape(text.verdictToggle || '') + '</span>' +
+            '</summary>' +
+            '<div class="pt-3 [&>*:first-child]:mt-0">'
         );
 
         if (attempt.feedback) {
@@ -489,7 +492,10 @@
             parts.push('<p class="dth-coord mt-4">' + md.escape(label || '') + '</p>');
         }
 
+        parts.push('</div>');
         verdictPanel.innerHTML = parts.join('');
+        // Never leave newly arrived feedback hidden by an earlier choice.
+        verdictPanel.open = true;
         verdictPanel.classList.remove('dth-cleared', 'dth-held');
         verdictPanel.classList.add(passed ? 'dth-cleared' : 'dth-held');
         show(verdictPanel);

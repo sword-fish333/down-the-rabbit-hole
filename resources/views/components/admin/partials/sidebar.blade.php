@@ -52,6 +52,11 @@
                           :active="request()->routeIs('admin.profile.*')">
             {{ __('admin/frontend.nav.profile') }}
         </x-admin.nav-link>
+        <x-admin.nav-link :href="url('admin/view-logs')" icon="database_search"
+                          :label="__('admin/frontend.nav.logs')"
+                         target="_blank">
+            {{ __('admin/frontend.nav.logs') }}
+        </x-admin.nav-link>
     </nav>
 
     {{-- Account summary --}}

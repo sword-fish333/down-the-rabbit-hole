@@ -19,6 +19,7 @@
         'verdictPass' => __('frontend.chat.verdict-pass'),
         'verdictIncomplete' => __('frontend.chat.verdict-incomplete'),
         'verdictMisconception' => __('frontend.chat.verdict-misconception'),
+        'verdictToggle' => __('frontend.chat.verdict-toggle'),
         'scoreLabel' => __('frontend.chat.score'),
         'youThought' => __('frontend.chat.you-thought'),
         'calibrationGood' => __('frontend.chat.calibration-good'),
@@ -183,10 +184,11 @@
             <div class="sticky bottom-0 z-20 -mx-4 border-t border-border/60 bg-background/90 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur-xl sm:-mx-6 sm:px-6">
                 <div class="measure mx-auto w-full">
 
-                    {{-- The graded verdict lands here first, above the composer. --}}
-                    <div id="dth-verdict" hidden
-                         class="mb-4 rounded-2xl border border-border-strong bg-surface/70 p-4 backdrop-blur-md"
-                         role="status" aria-live="polite"></div>
+                    {{-- New feedback opens above the composer. Its native summary
+                         then keeps the outcome visible while the learner collapses
+                         the detail; chat.js announces it through the layout region. --}}
+                    <details id="dth-verdict" hidden open
+                             class="group/verdict mb-4 rounded-2xl border border-border-strong bg-surface/70 p-4 backdrop-blur-md"></details>
 
                     {{-- Prove it. The form posts for real without JS; chat.js
                          intercepts the submit to grade in place instead. --}}

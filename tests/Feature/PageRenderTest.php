@@ -130,6 +130,16 @@ class PageRenderTest extends TestCase
             ->assertSee(__('frontend.general.submit-shortcut'));
     }
 
+    public function test_verdict_feedback_is_an_accessible_disclosure(): void
+    {
+        $this->actingAs($this->user)
+            ->get(route('subject.show', $this->hole))
+            ->assertOk()
+            ->assertSee('<details id="dth-verdict" hidden open', false)
+            ->assertSee('data-verdict-toggle', false)
+            ->assertSee(__('frontend.chat.verdict-toggle'));
+    }
+
     public static function adminPages(): array
     {
         return [

@@ -36,6 +36,7 @@ return [
         'account' => 'Account',
         'dashboard' => 'Dashboard',
         'profile' => 'Profile',
+        'logs' => 'Loguri',
         'users' => 'Learners',
         'conversations' => 'Subjects',
         'learning-modes' => 'Learning modes',

@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\View\View as ViewInstance;
+use Opcodes\LogViewer\Facades\LogViewer;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,7 +25,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         // The single seam over the LLM provider — CHAT_PROVIDER picks the client.
-        $this->app->bind(LlmClient::class, fn ($app) => match (config('platform.chat.provider')) {
+        $this->app->bind(LlmClient::class, fn($app) => match (config('platform.chat.provider')) {
             'anthropic' => $app->make(AnthropicClient::class),
             default => $app->make(GeminiClient::class),
         });
@@ -35,6 +36,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        LogViewer::auth(function () {
+            return isMainAdmin();
+        });
         $this->configureRateLimiters();
         $this->composeSidebar();
 
@@ -58,7 +62,7 @@ class AppServiceProvider extends ServiceProvider
 
             $view->with([
                 'folderView' => $folderView,
-                'recents' => $userId && ! $folderView
+                'recents' => $userId && !$folderView
                     ? app(SubjectLibraryService::class)->recent($userId)
                     : new Collection,
                 'tree' => $userId && $folderView
@@ -74,16 +78,16 @@ class AppServiceProvider extends ServiceProvider
      */
     private function configureRateLimiters(): void
     {
-        RateLimiter::for('login', fn (Request $request) => Limit::perMinute(5)
-            ->by(Str::lower((string) $request->input('email')).'|'.$request->ip()));
+        RateLimiter::for('login', fn(Request $request) => Limit::perMinute(5)
+            ->by(Str::lower((string)$request->input('email')) . '|' . $request->ip()));
 
-        RateLimiter::for('register', fn (Request $request) => Limit::perMinute(5)->by($request->ip()));
+        RateLimiter::for('register', fn(Request $request) => Limit::perMinute(5)->by($request->ip()));
 
-        RateLimiter::for('oauth', fn (Request $request) => Limit::perMinute(15)->by($request->ip()));
+        RateLimiter::for('oauth', fn(Request $request) => Limit::perMinute(15)->by($request->ip()));
 
         // Opening a subject is the one unauthenticated action that costs money —
         // and with a URL in the composer it also costs an outbound fetch.
-        RateLimiter::for('descend', fn (Request $request) => Limit::perMinute(10)
+        RateLimiter::for('descend', fn(Request $request) => Limit::perMinute(10)
             ->by($request->user()?->id ?: $request->ip()));
     }
 }
