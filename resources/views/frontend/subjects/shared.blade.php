@@ -33,7 +33,7 @@
                 @if ($conversation->learningMode)
                     <span class="inline-flex items-center gap-1.5">
                         <span class="material-symbols-outlined text-[0.95rem]" aria-hidden="true">{{ $conversation->learningMode->icon }}</span>
-                        {{ $conversation->learningMode->name }}
+                        {{ $conversation->learningMode->label('name') }}
                     </span>
                 @endif
 

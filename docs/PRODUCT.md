@@ -194,6 +194,46 @@ surface at the same time.
 
 ---
 
+## 5b. Language — the interface and the guide
+
+**Two languages, and they are not the same language.** The *interface* is localised the usual way. The
+*teaching* language is a property of the subject, because it is content: a learner can read the app in
+English and descend through a Romanian subject, and the descent must not change language at layer 4.
+
+| Layer | Where it lives | How it is decided |
+|---|---|---|
+| Interface | `lang/{en,ro}`, `SetLocale` | session → `users.locale` → 1-year cookie → `Accept-Language` |
+| Teaching + verdicts | `conversations.locale` | the locale the subject was opened in, re-asserted every turn |
+
+**Why the browser gets the first guess.** Most visitors never open a language menu. `Accept-Language`
+negotiation is what makes a Romanian visitor land on a Romanian page, and it is the single biggest
+conversion lever in this feature — the switcher is the fallback, not the mechanism. Signing in copies the
+choice onto the account so it travels to the next device; `admin*` is excluded and stays English.
+
+**Why a per-turn directive and not a system prompt line.** The system prompt is frozen for cache
+stability, and a model obeys the instruction it saw *last*. Left implicit, a model drifts back to the
+language of its instructions — English — around layer 3, and drifting mid-descent reads as a bug.
+`DescentPrompt::languageNote()` therefore re-sends `[LANGUAGE] …` on every teaching and reframe turn, and
+`GradingRequest::$language` carries the same instruction into the verdict, which is prose the learner
+reads. The guide is told to follow the learner over the directive if they write in another language: the
+stored locale is the opening bid, not a lock.
+
+**The one thing that must never translate** is the literal `**Checkpoint:**` marker —
+`DescentService::currentCheckpoint()` splits on it and `markdown.js` styles it, so a helpfully translated
+marker would silently break checkpoint grading. It is pinned in the system prompt alongside code.
+
+Adding a language is one entry in `config/platform.php` → `locales` plus a `lang/{code}` directory.
+`LocaleTest` asserts **key parity and placeholder parity** across locales, because `fallback_locale`
+means a missing key renders the English string — a half-translated page looks deliberate and ships.
+Learner-facing copy from the database (learning modes) resolves through `LearningMode::label()`: only
+non-default locales carry `frontend.modes.*` keys, so English keeps following what an admin types.
+
+**Deliberately not done:** locale-prefixed URLs. Language lives in a cookie, so the landing page is
+indexed in one language only. `/{locale}/…` route prefixes plus `hreflang` are the upgrade, and the
+trigger for it is organic non-English traffic being worth the churn through every `route()` call.
+
+---
+
 ## 6. Frontend architecture
 
 Blade + vanilla JS, no SPA framework. Server-rendered throughout, so every public page is crawlable
@@ -324,7 +364,7 @@ learner starts reading or writing.
 
 ## 9. Status & roadmap
 
-Legend: ✅ done · 🟡 in progress · ⬜ todo. **83 tests, all offline** (`FakeLlmClient`, `Http::fake`) —
+Legend: ✅ done · 🟡 in progress · ⬜ todo. **94 tests, all offline** (`FakeLlmClient`, `Http::fake`) —
 no test touches the network.
 
 ### Stage 0 — the descent loop
@@ -355,6 +395,8 @@ no test touches the network.
 | ✅ | Organisation — `subject_folders` tree, drag-and-drop filing, nested folders, filter |
 | ✅ | Persistent subject rail — recents or folder tree, on every app screen |
 | ✅ | Source-grounded learning, URL half — SSRF-guarded fetch, extraction, grounded teaching |
+| ✅ | Localisation — EN + RO interface, `Accept-Language` negotiation, per-subject teaching language |
+| ⬜ | Locale-prefixed URLs + `hreflang`, when non-English organic traffic justifies it |
 | 🟡 | Source chunking + citations — `source_chunks`, locators, FTS retrieval, `evidence` in the schema |
 | ⬜ | Document/PDF upload |
 | ⬜ | Flashcards from the mastery map · notes & highlights · end-of-subject synthesis · export |

@@ -17,6 +17,7 @@ return [
 
     'navbar' => [
         'primary' => 'Primary',
+        'language' => 'Language',
         'theme-toggle' => 'Toggle light / dark',
         'sign-in' => 'Sign in',
         'start' => 'Start a descent',

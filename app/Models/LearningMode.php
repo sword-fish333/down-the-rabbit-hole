@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Str;
 
 /**
@@ -47,6 +48,22 @@ class LearningMode extends Model
     protected function ordered(Builder $query): void
     {
         $query->orderBy('position')->orderBy('name');
+    }
+
+    /**
+     * A learner-facing string for this mode, translated where a translation
+     * exists and taken from the database where it doesn't.
+     *
+     * The rows are content-managed, so the database stays the source of truth:
+     * only `lang/{non-default}/frontend.php` carries `modes.*` keys. English
+     * therefore follows whatever an admin types, and a mode added in the panel
+     * shows up immediately in every language rather than as a raw key.
+     */
+    public function label(string $attribute): string
+    {
+        $key = "frontend.modes.{$this->slug}.{$attribute}";
+
+        return Lang::has($key) ? __($key) : (string) $this->{$attribute};
     }
 
     /**

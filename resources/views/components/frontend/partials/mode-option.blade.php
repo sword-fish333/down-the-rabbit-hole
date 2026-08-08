@@ -10,9 +10,9 @@
     <span class="material-symbols-outlined mt-px shrink-0 text-[1.2rem] {{ $accents[$mode->accent] ?? 'text-primary' }}" aria-hidden="true">{{ $mode->icon }}</span>
 
     <span class="min-w-0">
-        <span class="block text-sm font-medium text-foreground">{{ $mode->name }}</span>
+        <span class="block text-sm font-medium text-foreground">{{ $mode->label('name') }}</span>
         @if ($mode->tagline)
-            <span class="mt-0.5 block text-xs leading-relaxed text-foreground-muted">{{ $mode->tagline }}</span>
+            <span class="mt-0.5 block text-xs leading-relaxed text-foreground-muted">{{ $mode->label('tagline') }}</span>
         @endif
     </span>
 

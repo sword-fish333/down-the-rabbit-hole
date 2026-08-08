@@ -16,6 +16,8 @@ final class GradingRequest
         public readonly string $answer,
         public readonly int $depth,
         public readonly int $maxTokens,
+        /** The language the feedback is written in — English name, e.g. "Romanian". */
+        public readonly string $language = 'English',
         /** The learner's own confidence, 0..100, or null when they skipped it. */
         public readonly ?int $selfRating = null,
     ) {}

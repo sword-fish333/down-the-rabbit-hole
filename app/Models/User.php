@@ -21,6 +21,7 @@ use Illuminate\Support\Str;
     'email',
     'password',
     'phone',
+    'locale',
     'salutation',
     'login_method',
     'profile_image',

@@ -55,7 +55,7 @@ class EmailVerificationController extends Controller
             return back()->with('success', __('frontend.auth.verify-already'));
         }
 
-        SendEmailVerificationEmail::dispatch($user->id);
+        SendEmailVerificationEmail::dispatch($user->id, app()->getLocale());
 
         return back()->with('success', __('frontend.auth.verify-sent'));
     }

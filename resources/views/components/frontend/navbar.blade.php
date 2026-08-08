@@ -71,6 +71,8 @@
                 @endif
             @endauth
 
+            <x-frontend.lang-switch class="hidden sm:flex" />
+
             <x-frontend.theme-switch class="shrink-0" />
 
             @auth

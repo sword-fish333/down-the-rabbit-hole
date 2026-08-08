@@ -22,6 +22,7 @@ use Illuminate\Support\Str;
     'folder_id',
     'learning_mode_id',
     'subject',
+    'locale',
     'title',
     'current_depth',
     'status',
@@ -166,6 +167,17 @@ class Conversation extends Model
     public function displayTitle(): string
     {
         return $this->title ?: $this->subject;
+    }
+
+    /**
+     * The language this subject is taught in, named in English ("Romanian") —
+     * that is the form a model resolves most reliably, and it is the only place
+     * the locale registry is turned into prompt text.
+     */
+    public function language(): string
+    {
+        return config("platform.locales.{$this->locale}.prompt")
+            ?? config('platform.locales.'.config('app.fallback_locale').'.prompt', 'English');
     }
 
     /**

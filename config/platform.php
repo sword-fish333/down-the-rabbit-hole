@@ -6,6 +6,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Languages
+    |--------------------------------------------------------------------------
+    |
+    | One registry, two jobs. `native` is what the learner picks in the language
+    | switcher (endonym — a Romanian looks for "Română", never "Romanian"), and
+    | `prompt` is the English exonym the guide is told to teach in, because that
+    | is the name a model resolves most reliably.
+    |
+    | Adding a language is this entry plus a `lang/{code}` directory. The first
+    | entry is the default when nothing else is known.
+    |
+    */
+
+    'locales' => [
+        'en' => ['native' => 'English', 'prompt' => 'English'],
+        'ro' => ['native' => 'Română', 'prompt' => 'Romanian'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Support
     |--------------------------------------------------------------------------
     |

@@ -35,6 +35,14 @@ class DescentPrompt
           strictly on the ones before, moving toward genuine expert-level mastery.
         - Teach exactly ONE layer per turn. Never dump the whole subject. Go deep, not wide.
 
+        LANGUAGE
+        - Every word the learner reads goes in the language named by the `[LANGUAGE]` directive.
+        - If the learner is plainly writing to you in a different language, follow the learner and
+          keep following them — they are telling you which language they think in.
+        - Keep established technical terms in the form the field actually uses, and gloss each one
+          once, in the learner's language, the first time it appears.
+        - Two things never translate: the literal marker `**Checkpoint:**`, and code.
+
         VOICE
         - Rigorous, vivid, and concise. No filler, no flattery, no "great question".
         - Favour intuition and concrete examples over jargon; define a term the first time you use it.
@@ -62,8 +70,11 @@ class DescentPrompt
     {
         $depth = $conversation->current_depth;
 
-        $parts = ["[GUIDE DIRECTIVE] Teach layer {$depth} of this subject now, building on everything "
-            .'already covered. Finish with the `**Checkpoint:**` line.'];
+        $parts = [
+            $this->languageNote($conversation),
+            "[GUIDE DIRECTIVE] Teach layer {$depth} of this subject now, building on everything "
+                .'already covered. Finish with the `**Checkpoint:**` line.',
+        ];
 
         if ($mode = $conversation->learningMode) {
             $parts[] = "Teach it in {$mode->name} mode: {$mode->prompt_directive}";
@@ -102,8 +113,25 @@ class DescentPrompt
                 .'established fact, which are interpretation, and which are genuinely uncertain.',
         ];
 
-        return "[GUIDE DIRECTIVE] {$directives[$intent]} "
+        return $this->languageNote($conversation)."\n\n[GUIDE DIRECTIVE] {$directives[$intent]} "
             .'Finish with the `**Checkpoint:**` line as usual.';
+    }
+
+    /**
+     * Names the language of this descent, every turn.
+     *
+     * It rides in the message list rather than the system block for two reasons:
+     * the system prompt must stay byte-stable for the cache, and a directive the
+     * model sees *last* is the one it obeys. Sent every turn because a model
+     * drifts back to the language of its instructions — which are English —
+     * somewhere around the third layer, and drifting mid-descent reads as a bug.
+     */
+    private function languageNote(Conversation $conversation): string
+    {
+        $language = $conversation->language();
+
+        return "[LANGUAGE] Write this entire turn in {$language}. "
+            ."If the learner's own messages are in another language, use theirs instead.";
     }
 
     /**

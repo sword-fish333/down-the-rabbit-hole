@@ -62,7 +62,7 @@
                         @if ($conversation->learningMode)
                             <span class="hidden items-center gap-1.5 rounded-full border border-border bg-surface/50 px-2.5 py-1 text-xs text-foreground-muted sm:inline-flex">
                                 <span class="material-symbols-outlined text-[0.95rem]" aria-hidden="true">{{ $conversation->learningMode->icon }}</span>
-                                {{ $conversation->learningMode->name }}
+                                {{ $conversation->learningMode->label('name') }}
                             </span>
                         @endif
 

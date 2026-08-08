@@ -23,7 +23,15 @@ class SendEmailVerificationEmail implements ShouldQueue
 
     public int $tries = 3;
 
-    public function __construct(private readonly int $userId) {}
+    /**
+     * The locale is captured here, in the request that dispatched the job — a
+     * queue worker has no locale of its own and would send every learner the
+     * English mail.
+     */
+    public function __construct(
+        private readonly int $userId,
+        private readonly string $locale = 'en',
+    ) {}
 
     public function handle(): void
     {
@@ -34,7 +42,8 @@ class SendEmailVerificationEmail implements ShouldQueue
         }
 
         try {
-            Mail::to($user->email)->send(new VerifyEmailMail($user, $this->signedUrl($user)));
+            Mail::to($user->email)->locale($this->locale)
+                ->send(new VerifyEmailMail($user, $this->signedUrl($user)));
         } catch (Throwable $e) {
             fullLog($e);
 

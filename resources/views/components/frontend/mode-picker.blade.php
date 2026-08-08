@@ -28,7 +28,7 @@
                 <span class="flex items-center gap-2">
                     <span class="material-symbols-outlined text-[1.1rem] text-primary/80" aria-hidden="true">tune</span>
                     {{ __('frontend.home.mode-label') }}
-                    <span class="font-medium text-foreground">{{ $modes->firstWhere('id', $selectedId)?->name }}</span>
+                    <span class="font-medium text-foreground">{{ $modes->firstWhere('id', $selectedId)?->label('name') }}</span>
                 </span>
                 <span class="material-symbols-outlined text-[1.15rem] transition-transform duration-(--motion-state) group-open/modes:rotate-180" aria-hidden="true">expand_more</span>
             </summary>

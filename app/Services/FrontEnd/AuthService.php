@@ -33,6 +33,9 @@ class AuthService
             'name' => $data['name'] ?? null,
             'email' => $data['email'],
             'password' => $data['password'],
+            // The language they signed up in is the language they want — carry it
+            // onto the account so it survives a new browser.
+            'locale' => app()->getLocale(),
             'login_method' => User::AUTH_LOGIN_METHOD,
         ]);
 
@@ -40,7 +43,7 @@ class AuthService
 
         Auth::guard('web')->login($user);
 
-        SendEmailVerificationEmail::dispatch($user->id);
+        SendEmailVerificationEmail::dispatch($user->id, app()->getLocale());
 
         return $validation->addValidatedItems(['user' => $user]);
     }
@@ -96,6 +99,7 @@ class AuthService
                 'last_name' => $existing?->last_name ?: $lastName,
                 'name' => $existing?->name ?: ($googleUser->getName() ?: Str::before($googleUser->getEmail(), '@')),
                 'login_method' => User::GOOGLE_LOGIN_METHOD,
+                'locale' => $existing?->locale ?: app()->getLocale(),
                 'profile_image' => $existing?->profile_image ?: $googleUser->getAvatar(),
             ],
         );

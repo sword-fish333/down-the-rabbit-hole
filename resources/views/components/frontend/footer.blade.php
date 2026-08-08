@@ -87,7 +87,12 @@
             <p class="text-xs text-foreground-muted/70">
                 &copy; {{ date('Y') }} {{ config('app.name') }}. {{ __('frontend.footer.rights') }}
             </p>
-            <p class="dth-coord">{{ __('frontend.footer.tagline') }}</p>
+            <div class="flex items-center gap-4">
+                <p class="dth-coord">{{ __('frontend.footer.tagline') }}</p>
+                {{-- The navbar hides the switcher on the narrowest screens to keep
+                     the primary action clear; here it is, at every width. --}}
+                <x-frontend.lang-switch class="sm:hidden" />
+            </div>
         </div>
     </div>
 </footer>

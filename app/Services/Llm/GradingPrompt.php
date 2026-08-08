@@ -41,6 +41,11 @@ class GradingPrompt
         simply *absent* belongs in missing_concepts, while a belief that is actively *wrong*
         belongs in misconceptions. Write the feedback to the learner, in second person,
         never punitive.
+
+        Every string you return is read by the learner, so write all of them — feedback,
+        concept names, misconception text — in {$request->language}, or in the language the
+        learner answered in if that differs. Grade the understanding, never the language:
+        an answer in any language is a valid answer.
         PROMPT;
     }
 

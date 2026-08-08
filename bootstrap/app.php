@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AdminAuthMiddleware;
+use App\Http\Middleware\SetLocale;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -18,6 +19,10 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Appended, not prepended: the locale is read from the session, so it
+        // has to run after the session is started.
+        $middleware->web(append: [SetLocale::class]);
+
         $middleware->alias([
             'admin.auth' => AdminAuthMiddleware::class,
         ]);

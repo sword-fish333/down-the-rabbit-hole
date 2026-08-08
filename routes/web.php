@@ -7,9 +7,37 @@ use App\Http\Controllers\FrontEnd\HomeController;
 use App\Http\Controllers\FrontEnd\ProfileController;
 use App\Http\Controllers\FrontEnd\SubjectController;
 use App\Http\Controllers\FrontEnd\SubjectFolderController;
+use App\Http\Middleware\SetLocale;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+/*
+|--------------------------------------------------------------------------
+| Language
+|--------------------------------------------------------------------------
+|
+| A GET link, not a form, so the switcher works with JavaScript off and can sit
+| anywhere in the chrome. The choice is kept for the visit and for the next one;
+| an unknown code 404s rather than silently doing nothing.
+|
+| Note this changes the language of the *interface*. What language the guide
+| teaches in follows the subject (conversations.locale) — see DescentService.
+|
+*/
+
+Route::get('/language/{locale}', function (string $locale) {
+    abort_unless(SetLocale::isSupported($locale), 404);
+
+    session(['locale' => $locale]);
+    cookie()->queue(cookie()->forever('locale', $locale));
+
+    // Signed in, the choice belongs to the account, not to this browser — it is
+    // waiting for them on the next device they open.
+    auth()->user()?->update(['locale' => $locale]);
+
+    return back(fallback: route('home'));
+})->name('locale.switch');
 
 /*
 |--------------------------------------------------------------------------

@@ -100,6 +100,11 @@ class DescentService
 
     /**
      * Open a new subject. The first user message is the subject itself.
+     *
+     * The subject is pinned to the language the learner is reading the app in,
+     * and keeps it for the whole descent. The guide is told to follow the
+     * learner over this if they write in something else — the stored locale is
+     * the opening bid, not a lock.
      */
     public function start(?User $user, string $subject, ?LearningMode $mode = null): Conversation
     {
@@ -109,6 +114,7 @@ class DescentService
             'user_id' => $user?->id,
             'learning_mode_id' => ($mode ?? LearningMode::default())?->id,
             'subject' => $subject,
+            'locale' => app()->getLocale(),
             'title' => Str::limit($subject, 60),
             'current_depth' => 0,
             'status' => Conversation::STATUS_EXPLORING,
@@ -298,6 +304,7 @@ class DescentService
                 answer: $answer,
                 depth: $depth,
                 maxTokens: (int) config('platform.chat.grade_max_tokens'),
+                language: $conversation->language(),
                 selfRating: $selfRating,
             ));
         } catch (Throwable $e) {
