@@ -148,7 +148,7 @@ return [
 
     'home' => [
         'kicker' => 'Begin the descent',
-        'title' => 'Go deep to understand truly',
+        'title' => 'Think deeper',
         'subtitle' => 'Name a subject or paste a link. Each layer asks you to prove you got it before the next one opens — until you surface an expert.',
         'placeholder' => 'Transformers · the French Revolution · https://a-page-you-want-to-understand.com …',
         'placeholder-label' => 'The subject or link you want to understand',

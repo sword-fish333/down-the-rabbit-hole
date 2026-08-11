@@ -13,7 +13,7 @@ return new class extends Migration
             $table->id();
             // Null = an anonymous guest hole, claimed when the visitor signs up.
             $table->foreignId('user_id')->nullable()->constrained()->cascadeOnDelete();
-            $table->string('subject');
+            $table->string('subject',500);
             $table->string('title')->nullable();
             $table->unsignedTinyInteger('current_depth')->default(0);
             $table->enum('status', Conversation::STATUSES)->default(Conversation::STATUS_EXPLORING);

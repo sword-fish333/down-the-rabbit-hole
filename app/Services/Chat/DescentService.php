@@ -51,11 +51,12 @@ class DescentService
     ];
 
     public function __construct(
-        private readonly DescentPrompt $prompt,
+        private readonly DescentPrompt  $prompt,
         private readonly MasteryService $mastery,
-        private readonly SourceFetcher $sources,
-        private readonly LlmClient $llm,
-    ) {
+        private readonly SourceFetcher  $sources,
+        private readonly LlmClient      $llm,
+    )
+    {
         $this->initializeValidator();
     }
 
@@ -80,7 +81,7 @@ class DescentService
 
         $fetch = $this->sources->fetch($url);
 
-        if (! $fetch->isSuccessfulCheck()) {
+        if (!$fetch->isSuccessfulCheck()) {
             return $fetch;
         }
 
@@ -109,7 +110,6 @@ class DescentService
     public function start(?User $user, string $subject, ?LearningMode $mode = null): Conversation
     {
         $subject = Str::of($subject)->trim()->limit(500, '')->value();
-
         $conversation = Conversation::create([
             'user_id' => $user?->id,
             'learning_mode_id' => ($mode ?? LearningMode::default())?->id,
@@ -143,7 +143,7 @@ class DescentService
             system: $this->prompt->system(),
             messages: $messages,
             depth: $conversation->current_depth,
-            maxTokens: (int) config('platform.chat.max_tokens'),
+            maxTokens: (int)config('platform.chat.max_tokens'),
         );
     }
 
@@ -201,10 +201,10 @@ class DescentService
         );
 
         $attempt = $conversation->checkpointAttempts()->create($result->toAttributes() + [
-            'message_id' => $answerMessage->id,
-            'depth' => $depth,
-            'self_rating' => $selfRating,
-        ]);
+                'message_id' => $answerMessage->id,
+                'depth' => $depth,
+                'self_rating' => $selfRating,
+            ]);
 
         $this->mastery->record($conversation, $result, $depth);
 
@@ -225,20 +225,20 @@ class DescentService
      */
     public function pickModel(int $depth, string $phase): string
     {
-        $models = config('platform.chat.models.'.config('platform.chat.provider'));
+        $models = config('platform.chat.models.' . config('platform.chat.provider'));
 
         if ($phase === Message::PHASE_GRADE) {
             return $models['cheap'];
         }
 
-        return $depth >= (int) config('platform.chat.deep_threshold') ? $models['deep'] : $models['mid'];
+        return $depth >= (int)config('platform.chat.deep_threshold') ? $models['deep'] : $models['mid'];
     }
 
     public function dailyLimitReached(?User $user, string $guestKey): bool
     {
         [$cacheKey, $limit] = $this->limitFor($user, $guestKey);
 
-        return (int) Cache::get($cacheKey, 0) >= $limit;
+        return (int)Cache::get($cacheKey, 0) >= $limit;
     }
 
     /**
@@ -265,7 +265,7 @@ class DescentService
             ->latest('id')
             ->value('content');
 
-        if (! $teaching) {
+        if (!$teaching) {
             return '';
         }
 
@@ -282,7 +282,7 @@ class DescentService
         return [
             'status' => $conversation->status,
             'depth' => $conversation->current_depth,
-            'max_depth' => (int) config('platform.chat.max_depth'),
+            'max_depth' => (int)config('platform.chat.max_depth'),
             'passed' => $passed,
             'surfaced' => $conversation->isSurfaced(),
             'mastery' => $this->mastery->tally($conversation),
@@ -303,7 +303,7 @@ class DescentService
                 checkpoint: $this->currentCheckpoint($conversation),
                 answer: $answer,
                 depth: $depth,
-                maxTokens: (int) config('platform.chat.grade_max_tokens'),
+                maxTokens: (int)config('platform.chat.grade_max_tokens'),
                 language: $conversation->language(),
                 selfRating: $selfRating,
             ));
@@ -319,7 +319,7 @@ class DescentService
      */
     private function clearLayer(Conversation $conversation, int $passedDepth): void
     {
-        $surfaced = ($passedDepth + 1) >= (int) config('platform.chat.max_depth');
+        $surfaced = ($passedDepth + 1) >= (int)config('platform.chat.max_depth');
 
         $conversation->update([
             'current_depth' => $surfaced ? $passedDepth : $passedDepth + 1,
@@ -332,7 +332,7 @@ class DescentService
             event(new LayerCompleted($conversation->user, $conversation, $passedDepth));
         }
 
-        if ($conversation->message_count > (int) config('platform.chat.summarize_after')) {
+        if ($conversation->message_count > (int)config('platform.chat.summarize_after')) {
             CompactConversationContext::dispatch($conversation->id);
         }
     }
@@ -348,14 +348,14 @@ class DescentService
     {
         $messages = $conversation->messages()
             ->latest('id')
-            ->take((int) config('platform.chat.history_limit'))
+            ->take((int)config('platform.chat.history_limit'))
             ->get()
             ->sortBy('id')
-            ->map(fn (Message $message) => ['role' => $message->role, 'content' => $message->content])
+            ->map(fn(Message $message) => ['role' => $message->role, 'content' => $message->content])
             ->values()
             ->all();
 
-        if (! $conversation->summary) {
+        if (!$conversation->summary) {
             return $messages;
         }
 
@@ -369,12 +369,13 @@ class DescentService
 
     private function appendMessage(
         Conversation $conversation,
-        string $role,
-        string $content,
-        ?string $phase = null,
-        ?string $model = null,
-        ?LlmUsage $usage = null,
-    ): Message {
+        string       $role,
+        string       $content,
+        ?string      $phase = null,
+        ?string      $model = null,
+        ?LlmUsage    $usage = null,
+    ): Message
+    {
         $message = $conversation->messages()->create([
             'role' => $role,
             'content' => $content,
@@ -397,7 +398,7 @@ class DescentService
      */
     private function firstUrl(string $prompt): ?string
     {
-        if (! preg_match('~https?://[^\s<>"\'\)\]]+~i', $prompt, $match)) {
+        if (!preg_match('~https?://[^\s<>"\'\)\]]+~i', $prompt, $match)) {
             return null;
         }
 
@@ -412,9 +413,9 @@ class DescentService
         $today = now()->toDateString();
 
         if ($user) {
-            return ["dth:turns:user:{$user->id}:{$today}", (int) config('platform.chat.user_daily_limit')];
+            return ["dth:turns:user:{$user->id}:{$today}", (int)config('platform.chat.user_daily_limit')];
         }
 
-        return ["dth:turns:guest:{$guestKey}:{$today}", (int) config('platform.chat.guest_daily_limit')];
+        return ["dth:turns:guest:{$guestKey}:{$today}", (int)config('platform.chat.guest_daily_limit')];
     }
 }
