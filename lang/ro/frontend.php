@@ -95,7 +95,7 @@ return [
         'switched-question' => 'De la stratul următor, verificarea vine prima.',
         'posed' => 'Întrebat înainte de a fi predat',
         'teach-cta' => 'Predă-mi acest strat',
-        'teach-hint' => 'Verificarea rămâne deschisă și adâncimea ta nu se schimbă — nu te costă nimic să citești acum.',
+        'teach-hint' => 'Adâncimea ta și verificarea deschisă rămân neatinse.',
     ],
 
     'auth' => [
@@ -280,7 +280,6 @@ return [
         'add-folder' => 'Adaugă',
         'folder-name' => 'Numele dosarului',
         'folder-root' => 'Mută la nivelul principal',
-        'folder-inside' => 'În :name',
         'new-subfolder' => 'Dosar nou în acesta',
         'rename' => 'Redenumește',
         'save' => 'Salvează',
@@ -293,7 +292,6 @@ return [
         'folder-missing' => 'Dosarul acesta nu mai există.',
         'folder-cycle' => 'Un dosar nu poate fi mutat în el însuși.',
         'folder-too-deep' => 'Mai adânc de atât nu merg dosarele. Mută-l mai sus.',
-        'move-failed' => 'Mutarea nu a rămas. Nu s-a schimbat nimic.',
     ],
 
     /*
@@ -392,7 +390,6 @@ return [
         'tab-password' => 'Parolă',
         'change-photo' => 'Schimbă poza',
         'xp' => ':xp XP',
-        'streak' => '{1} serie de o zi|[2,19] serie de :count zile|[20,*] serie de :count de zile',
         'details' => 'Detaliile tale',
         'details-hint' => 'Folosite în contul tău și în emailurile pe care ți le trimitem.',
         'phone' => 'Număr de telefon',
@@ -442,10 +439,8 @@ return [
 
         // Subiectul
         'subject-label' => 'Coborâm în',
-        'depth' => 'Adâncime',
         'depth-reached' => 'Adâncime atinsă: stratul :depth din :max',
         'layer' => 'Stratul',
-        'of' => 'din',
         'depth-rail' => 'Coborârea',
         'mastery' => 'Stăpânire',
         'concepts' => 'Concepte',

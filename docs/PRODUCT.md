@@ -20,6 +20,10 @@ challenge/skill balance).
 
 **The loop:** `name a subject → the guide teaches one layer → "prove it" checkpoint → pass → descend`.
 
+A learner can also invert it — **Question me first** poses the checkpoint cold, before any teaching, and
+the lesson is there only if they ask for it. Retrieval before instruction is the stronger way to learn
+and the faster way to quit, so it is a choice and `guided` is the default.
+
 ---
 
 ## 2. Product language
@@ -34,6 +38,7 @@ The words are fixed, because consistency across every touchpoint is what makes p
 | Comprehension gate | **Prove it** |
 | Progress | **Depth reached: Layer 4 of 9** |
 | Return mechanic | **12-day descent** — never "streak" in the UI |
+| How a layer opens | **Teach me first** / **Question me first** — never "test" or "quiz" |
 | Personal best | **Your deepest dive: [subject] — 7 layers** |
 | The thing being learned | **Subject** (the model is still `Conversation`; the product never says "hole") |
 
@@ -364,7 +369,7 @@ learner starts reading or writing.
 
 ## 9. Status & roadmap
 
-Legend: ✅ done · 🟡 in progress · ⬜ todo. **94 tests, all offline** (`FakeLlmClient`, `Http::fake`) —
+Legend: ✅ done · 🟡 in progress · ⬜ todo. **115 tests, all offline** (`FakeLlmClient`, `Http::fake`) —
 no test touches the network.
 
 ### Stage 0 — the descent loop
@@ -407,6 +412,9 @@ no test touches the network.
 | Status | Item |
 |---|---|
 | ✅ | Public shareable subject pages — `share_token` capability, `/s/{token}`, server-rendered |
+| ✅ | Question-first layers — `conversations.approach`, derived turn phase, lesson on demand |
+| ✅ | Behaviour-differentiated XP — depth-scaled layers, first-try, mastered concept, completed subject |
+| ✅ | Rankings — six boards × three windows over `xp_events`, opt-in, with public learner records |
 | ⬜ | Per-page OG images + sitemap for the shared pages |
 | ⬜ | Achievements on the same event stream |
 | ⬜ | Double-sided referral |
@@ -420,6 +428,12 @@ no test touches the network.
 **Deliberately delayed** until the metrics in §10 show learners clearing layers and returning to review:
 leagues, cosmetic stores, creator monetization.
 
+**On the rankings.** They rank *evidence* — rows in the `xp_events` ledger — never live state and never
+time spent, and standing on one is opt-in because it publishes a name and a picture. Six boards rather
+than one on purpose: a single ranking has one winner and a long tail who will never catch them, while
+six say there is more than one way to be good at this. Monthly and weekly windows exist so joining today
+is not joining a race decided a year ago.
+
 ---
 
 ## 10. Metrics that matter
@@ -427,6 +441,7 @@ leagues, cosmetic stores, creator monetization.
 Tracked or directly derivable today, surfaced on the admin dashboard:
 
 - **% clearing the first layer** — the activation number.
+- **% of subjects opened question-first**, and whether they clear layers at a different rate.
 - **Layers cleared** and **checkpoint pass rate** — retry-to-pass improvement over time.
 - **Average and maximum depth reached** per subject.
 - **Concepts mastered** vs **open misconceptions**.

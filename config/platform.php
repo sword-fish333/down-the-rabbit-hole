@@ -137,14 +137,13 @@ return [
     |--------------------------------------------------------------------------
     |
     | A concept moves to "mastered" once the learner has demonstrated it this
-    | many times; a corrected misconception resurfaces for review after
-    | `resurface_after_days`.
+    | many times. Below that it stays "developing", and a concept the grader
+    | caught a wrong belief about resurfaces every layer until it is re-proven.
     |
     */
 
     'mastery' => [
         'demonstrations_to_master' => (int) env('MASTERY_DEMONSTRATIONS', 2),
-        'resurface_after_days' => (int) env('MASTERY_RESURFACE_DAYS', 3),
     ],
 
     /*

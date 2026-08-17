@@ -1,17 +1,10 @@
 <?php
 
+/**
+ * Whether the admin currently signed in holds the top role. Global because the
+ * log-viewer gate is configured outside any class that could inject it.
+ */
 function isMainAdmin(): bool
 {
     return auth('admin')->check() && auth('admin')->user()->isMainAdmin();
-}
-
-function authUser(?string $field = null)
-{
-    if (! auth()->check()) {
-        return null;
-    }
-    $user = auth()->user();
-
-    return $field ? $user->{$field} : $user;
-
 }

@@ -19,8 +19,11 @@
 
     <p id="dth-approach-legend" class="dth-coord">{{ __('frontend.approach.next-label') }}</p>
 
+    {{-- Stacked on a phone, segmented from `sm`: two full labels side by side do
+         not fit at 320px, and neither option can lose its words — "which one am
+         I on" has to be readable, not inferred from an icon. --}}
     <div role="group" aria-labelledby="dth-approach-legend"
-         class="flex items-center gap-0.5 rounded-xl border border-border/70 bg-surface/40 p-0.5">
+         class="flex w-full flex-col gap-0.5 rounded-xl border border-border/70 bg-surface/40 p-0.5 sm:w-auto sm:flex-row sm:items-center">
         @foreach (\App\Models\Conversation::APPROACHES as $approach)
             @php($current = $conversation->approach === $approach)
 
@@ -28,7 +31,7 @@
                     aria-pressed="{{ $current ? 'true' : 'false' }}"
                     title="{{ __('frontend.approach.'.$approach.'-hint') }}"
                     @class([
-                        'inline-flex items-center gap-1.5 rounded-[0.6rem] px-3 py-1.5 text-xs font-medium transition duration-(--motion-feedback) ease-(--ease-snap) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        'inline-flex items-center justify-center gap-1.5 rounded-[0.6rem] px-3 py-1.5 text-xs font-medium transition duration-(--motion-feedback) ease-(--ease-snap) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                         'bg-primary/12 text-primary' => $current,
                         'text-foreground-muted hover:text-foreground' => ! $current,
                     ])>

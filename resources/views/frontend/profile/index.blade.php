@@ -149,7 +149,7 @@
                     <a href="{{ route('learners.show', $user) }}"
                        class="dth-coord mt-4 inline-flex items-center gap-1.5 rounded-lg text-primary transition hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                         <span class="material-symbols-outlined text-[1rem]" aria-hidden="true">visibility</span>
-                        {{ __('frontend.learners.title', ['name' => $user->fullName()]) }}
+                        {{ __('frontend.navbar.public-record') }}
                     </a>
                 @endif
             </div>

@@ -18,12 +18,10 @@ trait ValidationHelper
         $this->validator = new ValidationService;
     }
 
-    protected function isSuccessfulCheck(): bool
-    {
-        return $this->validator->isSuccessfulCheck();
-    }
-
-    protected function errorEncountered($message, $status = null): ValidationService
+    /**
+     * @param  string|array<int, string>  $message
+     */
+    protected function errorEncountered(string|array $message, ?int $status = null): ValidationService
     {
         return $this->validator->errorEncountered($message, $status);
     }

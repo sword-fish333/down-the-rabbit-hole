@@ -24,13 +24,6 @@ class XpEvent extends Model
     /** A subject carried all the way to the bottom. */
     public const string TYPE_SUBJECT_SURFACED = 'subject_surfaced';
 
-    public const array TYPES = [
-        self::TYPE_LAYER_COMPLETED,
-        self::TYPE_FIRST_TRY,
-        self::TYPE_CONCEPT_MASTERED,
-        self::TYPE_SUBJECT_SURFACED,
-    ];
-
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

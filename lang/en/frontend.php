@@ -83,7 +83,7 @@ return [
         'switched-question' => 'From the next layer on, the checkpoint comes first.',
         'posed' => 'Asked before it was taught',
         'teach-cta' => 'Teach me this layer',
-        'teach-hint' => 'The checkpoint stays open and your depth is unchanged — reading it now costs you nothing.',
+        'teach-hint' => 'Your depth and the open checkpoint are untouched.',
     ],
 
     'auth' => [
@@ -268,7 +268,6 @@ return [
         'add-folder' => 'Add',
         'folder-name' => 'Folder name',
         'folder-root' => 'Move to the top level',
-        'folder-inside' => 'Inside :name',
         'new-subfolder' => 'New folder inside this one',
         'rename' => 'Rename',
         'save' => 'Save',
@@ -281,7 +280,6 @@ return [
         'folder-missing' => 'That folder no longer exists.',
         'folder-cycle' => 'A folder can’t be moved inside itself.',
         'folder-too-deep' => 'That’s as deep as folders go. Move it somewhere higher up.',
-        'move-failed' => 'That move didn’t stick. Nothing was changed.',
     ],
 
     /*
@@ -380,7 +378,6 @@ return [
         'tab-password' => 'Password',
         'change-photo' => 'Change photo',
         'xp' => ':xp XP',
-        'streak' => '{1} :count day streak|[2,*] :count day streak',
         'details' => 'Your details',
         'details-hint' => 'Used on your account and in the emails we send you.',
         'phone' => 'Phone number',
@@ -430,10 +427,8 @@ return [
 
         // The subject
         'subject-label' => 'Descending into',
-        'depth' => 'Depth',
         'depth-reached' => 'Depth reached: Layer :depth of :max',
         'layer' => 'Layer',
-        'of' => 'of',
         'depth-rail' => 'The descent',
         'mastery' => 'Mastery',
         'concepts' => 'Concepts',

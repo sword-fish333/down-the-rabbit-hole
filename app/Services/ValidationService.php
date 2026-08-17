@@ -2,31 +2,45 @@
 
 namespace App\Services;
 
+use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * The result of a multi-step check: did it pass, what went wrong, what HTTP
+ * status that maps to, and whatever the check produced along the way.
+ *
+ * Services return one of these rather than throwing, so a controller can branch
+ * on the outcome and map it to a response without catching anything:
+ *
+ *     $result = $this->authService->attemptLogin($email, $password);
+ *     if (! $result->isSuccessfulCheck()) {
+ *         return back()->with('error', $result->getFirstError());
+ *     }
+ *
+ * Deliberately small. Every method here is on a live path — a result object
+ * with accessors nobody calls is just a second, unreliable description of what
+ * the check actually returns.
+ */
 class ValidationService
 {
-    private bool $success;
+    private bool $success = true;
 
+    /** @var array<int, string> */
     private array $errors = [];
 
+    /** @var array<string, mixed> */
     private array $validatedItems = [];
 
     private ?int $status = null;
 
-    private ?array $additional_data = [];
-
-    public function __construct()
-    {
-        $this->success = true;
-    }
-
-    public function errorEncountered(string|array $errors, $status = Response::HTTP_BAD_REQUEST, ?array $additional_data = []): static
+    /**
+     * @param  string|array<int, string>  $errors
+     */
+    public function errorEncountered(string|array $errors, ?int $status = Response::HTTP_BAD_REQUEST): static
     {
         $this->success = false;
-        $this->errors = is_array($errors) ? $errors : [$errors];
+        $this->errors = is_array($errors) ? array_values($errors) : [$errors];
         $this->status = $status;
-        $this->additional_data = $additional_data;
 
         return $this;
     }
@@ -38,40 +52,24 @@ class ValidationService
         return $this;
     }
 
-    public function status(): int
-    {
-        if ($this->status) {
-            return $this->status;
-        }
-
-        return $this->success ? Response::HTTP_OK : Response::HTTP_BAD_REQUEST;
-    }
-
-    public function getAdditionalData(): array
-    {
-        return $this->additional_data;
-    }
-
-    public function setStatus(int $status): void
-    {
-        $this->status = $status;
-    }
-
     public function isSuccessfulCheck(): bool
     {
         return $this->success;
     }
 
-    public function getErrors(): array
+    public function status(): int
     {
-        return $this->errors;
+        return $this->status ?? ($this->success ? Response::HTTP_OK : Response::HTTP_BAD_REQUEST);
     }
 
     public function getFirstError(): string
     {
-        return current($this->errors);
+        return (string) (reset($this->errors) ?: '');
     }
 
+    /**
+     * @param  array<string, mixed>  $items
+     */
     public function addValidatedItems(array $items): static
     {
         $this->validatedItems = array_merge($this->validatedItems, $items);
@@ -80,53 +78,17 @@ class ValidationService
         return $this;
     }
 
-    public function getArrayOfValidatedItems($keys): array
-    {
-        $foundItems = [];
-        foreach ($keys as $key) {
-            foreach ($this->validatedItems as $k => $validatedItem) {
-                if ($key === $k) {
-                    $foundItems[] = $validatedItem;
-
-                }
-            }
-        }
-
-        return $foundItems;
-    }
-
-    public function getAllValidatedItems(): array
-    {
-        return $this->validatedItems;
-    }
-
     /**
-     * @throws \Exception
+     * A key the check promised to produce. Missing means the caller and the
+     * service disagree about the contract, which is a bug rather than a state
+     * to handle — so it raises rather than quietly returning null.
      */
-    public function getValidatedItem($keys)
+    public function getValidatedItem(string $key): mixed
     {
-        if (is_array($keys)) {
-            $this->checkIfValidKeys($keys);
-
-            return $this->getArrayOfValidatedItems($keys);
-        } else {
-            if (! array_key_exists($keys, $this->validatedItems)) {
-                throw new \Exception('Invalid key in ValidationService. Keys passed:'.json_encode($keys));
-            }
-
-            return $this->validatedItems[$keys];
+        if (! array_key_exists($key, $this->validatedItems)) {
+            throw new RuntimeException("ValidationService has no validated item named [{$key}].");
         }
-    }
 
-    public function hasValidatedItem(string $key): bool
-    {
-        return isset($this->validatedItems[$key]) && $this->validatedItems[$key];
-    }
-
-    private function checkIfValidKeys($keys): void
-    {
-        if (array_diff_key(array_flip($keys), $this->validatedItems)) {
-            throw new \Exception('Invalid key in ValidationService. Keys passed:'.json_encode($keys));
-        }
+        return $this->validatedItems[$key];
     }
 }
