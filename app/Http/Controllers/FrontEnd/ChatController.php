@@ -50,12 +50,14 @@ class ChatController extends Controller
         $validated = $request->validate([
             'prompt' => 'required|string|min:2|max:500',
             'learning_mode_id' => ['nullable', Rule::exists('learning_modes', 'id')->where('enabled', true)],
+            'approach' => ['nullable', Rule::in(Conversation::APPROACHES)],
         ]);
 
         $opened = $this->descent->open(
             auth()->user(),
             $validated['prompt'],
             LearningMode::find($validated['learning_mode_id'] ?? null),
+            $validated['approach'] ?? null,
         );
 
         if (! $opened->isSuccessfulCheck()) {
@@ -83,7 +85,30 @@ class ChatController extends Controller
             'attempts' => $conversation->checkpointAttempts()->orderBy('id')->get()->keyBy('message_id'),
             'concepts' => $conversation->concepts()->orderBy('first_seen_depth')->orderBy('name')->get(),
             'mastery' => $this->mastery->tally($conversation),
+            // Whether the lesson for the open checkpoint is still on offer.
+            'awaitsTeaching' => $this->descent->awaitsTeaching($conversation),
         ]);
+    }
+
+    /**
+     * Switch how the *next* layer opens — taught, or asked cold. A real form
+     * post, so the choice works with JavaScript off; the layers already behind
+     * the learner are untouched either way.
+     */
+    public function approach(Request $request, Conversation $conversation): RedirectResponse
+    {
+        if (! $this->canAccess($request, $conversation)) {
+            return redirect()->route('home')->with('error', __('frontend.chat.no-access'));
+        }
+
+        $validated = $request->validate([
+            'approach' => ['required', Rule::in(Conversation::APPROACHES)],
+        ]);
+
+        $conversation->update($validated);
+        auth()->user()?->update(['preferred_approach' => $validated['approach']]);
+
+        return back()->with('success', __('frontend.chat.approach.switched-'.$validated['approach']));
     }
 
     /** SSE endpoint: streams the guide's teaching turn for the current layer. */

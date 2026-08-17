@@ -780,7 +780,47 @@ body.is-rail-open { overflow: hidden; }
 [data-saving] { cursor: progress; }
 
 /* =============================================================================
-   20. Reduced motion & reduced transparency.
+   20. The boards.
+
+   A ranking is a list of people, so it is styled as one: no bars, no medals
+   raining down, no animation on arrival. The only thing lit is the top three
+   and the row that is you, and both are marked twice over — the tone here, plus
+   an icon and a label in the markup — so the order survives a colour-vision
+   difference, a greyscale print and a screen reader alike.
+   ============================================================================= */
+.dth-board-row {
+    transition: background-color var(--motion-feedback) var(--ease-snap),
+                box-shadow var(--motion-feedback) var(--ease-snap);
+}
+.dth-board-row:hover { background: color-mix(in oklch, var(--color-surface-muted) 55%, transparent); }
+.dth-board-row:has(:focus-visible) { background: color-mix(in oklch, var(--color-surface-muted) 55%, transparent); }
+
+/* The podium: a lit left edge, drawn inside the row so nothing shifts. */
+.dth-board-row[data-podium] { box-shadow: inset 2px 0 0 var(--color-border-strong); }
+.dth-board-row[data-podium='1'] {
+    box-shadow: inset 2px 0 0 var(--color-accent);
+    background: color-mix(in oklch, var(--color-sand-500) 6%, transparent);
+}
+.dth-board-row[data-podium='2'] { box-shadow: inset 2px 0 0 color-mix(in oklch, var(--color-primary) 70%, transparent); }
+
+/* Your own row, wherever it lands. Reading a board is looking for this line. */
+.dth-board-row.is-you {
+    background: color-mix(in oklch, var(--color-primary) 9%, transparent);
+    box-shadow: inset 2px 0 0 var(--color-primary);
+}
+.dth-board-row.is-you:hover { background: color-mix(in oklch, var(--color-primary) 13%, transparent); }
+
+/* The row IS the link: the anchor is stretched over its cell so the hit target
+   is the whole line on a phone, without nesting anything interactive inside it. */
+.dth-board-row .dth-row-link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+}
+.dth-board-row td { position: relative; }
+
+/* =============================================================================
+   21. Reduced motion & reduced transparency.
 
    Motion-disabled must feel DESIGNED, not broken: every animation below has a
    meaningful static end state, so the interface still communicates the same

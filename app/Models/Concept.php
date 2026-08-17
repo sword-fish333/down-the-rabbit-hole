@@ -20,6 +20,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'first_seen_depth',
     'last_seen_depth',
     'note',
+    'reviewed_at',
+    'mastered_at',
 ])]
 class Concept extends Model
 {
@@ -54,6 +56,16 @@ class Concept extends Model
         return $this->state === self::STATE_MASTERED;
     }
 
+    /**
+     * Has this ever been proven mastered? Distinct from `isMastered()`, which is
+     * where it stands *now* — a concept fumbled later moves back to
+     * misunderstood, and the proof it once earned is not undone by that.
+     */
+    public function wasEverMastered(): bool
+    {
+        return $this->mastered_at !== null;
+    }
+
     public function isMisunderstood(): bool
     {
         return $this->state === self::STATE_MISUNDERSTOOD;
@@ -76,6 +88,7 @@ class Concept extends Model
             'demonstrations' => 'integer',
             'misconceptions' => 'integer',
             'reviewed_at' => 'datetime',
+            'mastered_at' => 'datetime',
         ];
     }
 }

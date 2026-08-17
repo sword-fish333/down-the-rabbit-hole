@@ -222,19 +222,19 @@
     var initialTab = body.getAttribute('data-active-tab');
     if (initialTab) activateTab(initialTab);
 
-    /* --- Learning-mode picker ---------------------------------------------- */
-    /* A native radio group under the hood: the labels are real <label>s, so
+    /* --- Radio card groups (learning mode, how a layer opens) --------------- */
+    /* Native radio groups under the hood: the labels are real <label>s, so
        keyboard and screen-reader behaviour is the platform's, not ours. This
        only mirrors the checked state onto the card for styling. */
-    function syncModePicker() {
-        document.querySelectorAll('[data-mode-option] input[type="radio"]').forEach(function (input) {
-            input.closest('[data-mode-option]').setAttribute('data-selected', String(input.checked));
+    function syncOptionCards() {
+        document.querySelectorAll('[data-option-card] input[type="radio"]').forEach(function (input) {
+            input.closest('[data-option-card]').setAttribute('data-selected', String(input.checked));
         });
     }
     document.addEventListener('change', function (event) {
-        if (event.target.matches('[data-mode-option] input[type="radio"]')) syncModePicker();
+        if (event.target.matches('[data-option-card] input[type="radio"]')) syncOptionCards();
     });
-    syncModePicker();
+    syncOptionCards();
 
     /* --- The descent transition -------------------------------------------- */
     /* The typed topic becomes the session title via a shared-element View

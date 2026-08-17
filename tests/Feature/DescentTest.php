@@ -46,17 +46,22 @@ class DescentTest extends TestCase
         return end($messages)['content'];
     }
 
-    /** Runs one full teaching turn through the service. */
+    /**
+     * Runs one full opening turn through the service, deriving the phase exactly
+     * as ChatStreamingService does — so a test can never open a layer in a way
+     * the app itself cannot.
+     */
     private function teach(Conversation $conversation, ?string $reframe = null): void
     {
-        $request = $this->descent()->teachingRequest($conversation, $reframe);
+        $phase = $this->descent()->turnPhase($conversation, $reframe);
+        $request = $this->descent()->teachingRequest($conversation, $reframe, $phase);
         $stream = $this->llm->streamTeachingTurn($request);
 
         foreach ($stream as $chunk) {
             // Draining the stream is what makes text() and usage() available.
         }
 
-        $this->descent()->applyTeachingTurn($conversation, $stream);
+        $this->descent()->applyTeachingTurn($conversation, $stream, $phase);
         $conversation->refresh();
     }
 
@@ -255,9 +260,47 @@ class DescentTest extends TestCase
         $this->teach($conversation);
         $this->descent()->gradeCheckpoint($conversation, 'A sound explanation.');
 
-        $this->assertSame((int) config('platform.chat.layer_xp'), $user->fresh()->xp);
-        $this->assertSame(1, XpEvent::where('user_id', $user->id)->count());
+        // Layer 00 cleared without a failed attempt: the layer award plus the
+        // first-try bonus, each its own ledger row.
+        $expected = (int) config('platform.rewards.layer_xp') + (int) config('platform.rewards.first_try_xp');
+
+        $this->assertSame($expected, $user->fresh()->xp);
+        $this->assertSame(1, XpEvent::where('type', XpEvent::TYPE_LAYER_COMPLETED)->count());
+        $this->assertSame(1, XpEvent::where('type', XpEvent::TYPE_FIRST_TRY)->count());
         $this->assertSame(1, (int) $user->streak()->first()->current_count);
+    }
+
+    /** Deeper layers are worth more, and a retried layer forfeits the bonus. */
+    public function test_xp_scales_with_depth_and_rewards_a_clean_first_attempt(): void
+    {
+        config(['platform.chat.max_depth' => 9]);
+
+        $user = User::create(['first_name' => 'Bo', 'email' => 'bo@example.com', 'password' => 'secret-pass1']);
+        $conversation = $this->descent()->start($user, 'Topology');
+
+        // Layer 00: missed once, then cleared — no first-try bonus.
+        $this->teach($conversation);
+        $this->llm->verdict = CheckpointAttempt::VERDICT_RETRY;
+        $this->descent()->gradeCheckpoint($conversation->fresh(), 'Not quite.');
+        $this->llm->verdict = CheckpointAttempt::VERDICT_PASS;
+        $this->descent()->gradeCheckpoint($conversation->fresh(), 'Better.');
+
+        $this->assertSame(0, XpEvent::where('type', XpEvent::TYPE_FIRST_TRY)->count());
+        $this->assertSame((int) config('platform.rewards.layer_xp'), $user->fresh()->xp);
+
+        // Layer 01: cleared cleanly, worth one depth step more — and the second
+        // demonstration of the same concept carries it into mastery.
+        $this->teach($conversation->fresh());
+        $this->descent()->gradeCheckpoint($conversation->fresh(), 'A sound explanation.');
+
+        $this->assertSame(1, XpEvent::where('type', XpEvent::TYPE_CONCEPT_MASTERED)->count());
+        $this->assertSame(
+            (int) config('platform.rewards.layer_xp') * 2
+                + (int) config('platform.rewards.layer_depth_xp')
+                + (int) config('platform.rewards.first_try_xp')
+                + (int) config('platform.rewards.concept_xp'),
+            $user->fresh()->xp,
+        );
     }
 
     public function test_a_guest_pass_awards_nothing(): void

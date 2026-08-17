@@ -1,3 +1,13 @@
+@php
+    // Resolved once, here, so the disclosure summary and the checked cards
+    // inside it can never disagree about what is currently selected.
+    $selectedMode = $modes->firstWhere('id', (int) old('learning_mode_id'))
+        ?? $modes->firstWhere('is_default', true)
+        ?? $modes->first();
+
+    $selectedApproach = old('approach', $approach);
+@endphp
+
 <x-frontend.layout :description="__('frontend.meta.description')" shell :marketing="auth()->guest()">
     {{-- ===================================================================
          The composer — the front door and, for a returning learner, the whole
@@ -94,11 +104,30 @@
                 </p>
             @enderror
 
-            {{-- Mode picker, collapsed. The default is already correct, so this
-                 never blocks the primary action. --}}
-            <div class="mt-4 rounded-2xl border border-border/60 bg-surface/25 px-3 py-1.5">
-                <x-frontend.mode-picker :modes="$modes" />
-            </div>
+            {{-- Both teaching settings behind one disclosure: how a layer opens,
+                 and how the guide teaches it. Collapsed, because the defaults are
+                 already correct and nothing may stand between a visitor and
+                 typing a subject — but both current values are named on the
+                 summary, so the choice is visible without being in the way. --}}
+            <details class="group/settings mt-4 rounded-2xl border border-border/60 bg-surface/25 px-3 py-1.5 text-left">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-1 py-2 text-sm text-foreground-muted transition duration-(--motion-feedback) hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <span class="material-symbols-outlined shrink-0 text-[1.1rem] text-primary/80" aria-hidden="true">tune</span>
+                        <span class="hidden sm:inline">{{ __('frontend.home.settings-label') }}</span>
+                        <span class="font-medium text-foreground">{{ __('frontend.approach.'.$selectedApproach) }}</span>
+                        @if ($selectedMode)
+                            <span aria-hidden="true" class="text-foreground-muted/50">·</span>
+                            <span class="font-medium text-foreground">{{ $selectedMode->label('name') }}</span>
+                        @endif
+                    </span>
+                    <span class="material-symbols-outlined shrink-0 text-[1.15rem] transition-transform duration-(--motion-state) group-open/settings:rotate-180" aria-hidden="true">expand_more</span>
+                </summary>
+
+                <div class="space-y-5 pb-3 pt-3">
+                    <x-frontend.approach-picker :selected="$selectedApproach" />
+                    <x-frontend.mode-picker :modes="$modes" :selected="$selectedMode" />
+                </div>
+            </details>
         </form>
 
         {{-- One-tap subjects — the lowest-friction way to start at all. --}}

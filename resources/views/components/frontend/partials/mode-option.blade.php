@@ -1,6 +1,6 @@
 {{-- One learning-mode card. The whole card is the <label>, so the hit target is
      the card and not just the (visually hidden) radio inside it. --}}
-<label data-mode-option data-selected="{{ $mode->id === $selectedId ? 'true' : 'false' }}"
+<label data-option-card data-selected="{{ $mode->id === $selectedId ? 'true' : 'false' }}"
        style="--i: {{ $index }}"
        class="dth-stagger group/mode relative flex cursor-pointer items-start gap-2.5 rounded-xl border border-border bg-surface/40 p-3 transition duration-(--motion-feedback) ease-(--ease-snap) hover:border-primary/40 hover:bg-surface/70 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring data-[selected=true]:border-primary/60 data-[selected=true]:bg-primary/8">
     <input type="radio" name="learning_mode_id" value="{{ $mode->id }}"

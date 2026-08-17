@@ -3,10 +3,9 @@
 namespace App\Http\Controllers\FrontEnd;
 
 use App\Http\Controllers\Controller;
-use App\Models\Concept;
-use App\Models\Conversation;
 use App\Models\User;
-use App\Models\XpEvent;
+use App\Services\Gamification\LearningRecordService;
+use App\Services\Gamification\RankingService;
 use App\Services\ValidationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,6 +20,11 @@ use Illuminate\View\View;
  */
 class ProfileController extends Controller
 {
+    public function __construct(
+        private readonly LearningRecordService $records,
+        private readonly RankingService $rankings,
+    ) {}
+
     public function index(): View
     {
         $user = auth()->user();
@@ -28,13 +32,29 @@ class ProfileController extends Controller
         return view('frontend.profile.index', [
             'user' => $user,
             'streak' => $user->streak,
-            'record' => $this->record($user),
+            'record' => $this->records->for($user),
             // The one stat worth quoting out loud: "7 layers deep on Stoicism".
-            'deepestDive' => $user->conversations()
-                ->orderByDesc('current_depth')
-                ->latest('updated_at')
-                ->first(),
+            'deepestDive' => $this->records->deepestDive($user),
+            // Where they stand, whether or not they have joined the boards —
+            // for someone who has not, this is the invitation.
+            'standings' => $this->rankings->standings($user),
+            'participants' => $this->rankings->participants(),
         ]);
+    }
+
+    /**
+     * Join or leave the boards. The same switch publishes the learning record,
+     * so there is one decision to make and one promise attached to it.
+     */
+    public function updateRanking(Request $request): RedirectResponse
+    {
+        session()->flash('active_profile_tab', 'record');
+
+        $ranked = $request->boolean('ranked');
+
+        auth()->user()->update(['ranked' => $ranked]);
+
+        return back()->with('success', __('frontend.rankings.'.($ranked ? 'joined' : 'left')));
     }
 
     public function updateProfile(Request $request): RedirectResponse
@@ -109,27 +129,5 @@ class ProfileController extends Controller
 
             return back()->with('error', __('frontend.profile.error'));
         }
-    }
-
-    /**
-     * What the learner actually earned. Depth and mastery, never time on site.
-     *
-     * @return array<string, int>
-     */
-    private function record(User $user): array
-    {
-        $subjectIds = $user->conversations()->pluck('id');
-
-        return [
-            'subjects' => $subjectIds->count(),
-            'surfaced' => $user->conversations()->where('status', Conversation::STATUS_SURFACED)->count(),
-            'deepest' => (int) $user->conversations()->max('current_depth'),
-            'layers' => XpEvent::where('user_id', $user->id)
-                ->where('type', XpEvent::TYPE_LAYER_COMPLETED)->count(),
-            'mastered' => Concept::whereIn('conversation_id', $subjectIds)
-                ->where('state', Concept::STATE_MASTERED)->count(),
-            'to_review' => Concept::whereIn('conversation_id', $subjectIds)
-                ->where('state', Concept::STATE_MISUNDERSTOOD)->count(),
-        ];
     }
 }

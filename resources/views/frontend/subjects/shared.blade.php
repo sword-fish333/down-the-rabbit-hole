@@ -72,6 +72,13 @@
                             <x-frontend.markdown :content="$message->content" class="text-[0.95rem]" />
                         </div>
                     @else
+                        @if ($message->phase === Message::PHASE_QUESTION)
+                            <p class="dth-coord mb-3 flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[1rem] text-primary" aria-hidden="true">psychology_alt</span>
+                                {{ __('frontend.approach.posed') }}
+                            </p>
+                        @endif
+
                         <x-frontend.markdown :content="$message->content" />
                     @endif
                 </div>

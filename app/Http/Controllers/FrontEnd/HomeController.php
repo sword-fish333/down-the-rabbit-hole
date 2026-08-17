@@ -13,6 +13,8 @@ class HomeController extends Controller
     {
         return view('frontend.home.index', [
             'modes' => LearningMode::query()->enabled()->ordered()->get(),
+            // Their last choice, so nobody has to say "ask me first" twice.
+            'approach' => auth()->user()?->preferredApproach() ?? Conversation::APPROACH_GUIDED,
             // Signed-in learners see "resume" ahead of "start" — returning to an
             // unfinished hole is the behaviour worth optimising for.
             'resumable' => auth()->check()

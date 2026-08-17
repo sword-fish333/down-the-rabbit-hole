@@ -6,8 +6,9 @@
 
      Two shapes, one component. Off the app shell it is the whole navigation:
      brand left, destinations centre, account right. Inside the shell the rail
-     already owns navigation, so this thins out to the drawer trigger, the streak
-     and the account — one place per job, no duplicated links.
+     already owns *subject* navigation, so this thins out — but the boards are
+     not a subject, and they are the one destination that belongs up here in
+     both shapes rather than in the rail.
 
      On the learning workspace it carries .dth-peripheral, so deep-work mode can
      dim it without removing it: the way out of a focus mode must stay reachable,
@@ -60,6 +61,22 @@
 
         <div class="flex shrink-0 items-center gap-2 sm:gap-3">
             @auth
+                {{-- The boards. Icon-only where the bar is tight, but the label is
+                     never dropped for assistive tech. --}}
+                @php($onRankings = request()->routeIs('rankings.*', 'learners.*'))
+
+                <a href="{{ route('rankings.index') }}"
+                   @if ($onRankings) aria-current="page" @endif
+                   @class([
+                       'inline-flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm font-medium transition duration-(--motion-feedback) ease-(--ease-snap) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3',
+                       'bg-primary/10 text-primary' => $onRankings,
+                       'text-foreground-muted hover:text-foreground' => ! $onRankings,
+                   ])>
+                    <span class="material-symbols-outlined text-[1.15rem]" aria-hidden="true">leaderboard</span>
+                    <span class="hidden lg:inline">{{ __('frontend.navbar.rankings') }}</span>
+                    <span class="sr-only lg:hidden">{{ __('frontend.navbar.rankings') }}</span>
+                </a>
+
                 {{-- The descent: days in a row with a layer cleared. Shown only
                      when it is alive — no zero-state guilt, no loss anxiety. --}}
                 @if ($user->streak && $user->streak->current_count > 0)
@@ -100,6 +117,14 @@
                                     {{ __('frontend.navbar.subjects') }}
                                 </a>
                             @endunless
+
+                            {{-- Their own public record, reachable without going
+                                 through a board to find themselves on it. --}}
+                            <a href="{{ route('learners.show', $user) }}"
+                               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground-muted transition hover:bg-surface-muted hover:text-foreground">
+                                <span class="material-symbols-outlined text-[1.15rem]" aria-hidden="true">badge</span>
+                                {{ __('frontend.navbar.public-record') }}
+                            </a>
                             <a href="{{ route('profile.index') }}"
                                class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground-muted transition hover:bg-surface-muted hover:text-foreground">
                                 <span class="material-symbols-outlined text-[1.15rem]" aria-hidden="true">manage_accounts</span>

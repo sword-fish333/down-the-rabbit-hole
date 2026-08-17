@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Gamification\LearningRecordService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -32,7 +33,7 @@ class UserController extends Controller
         return view('admin.users.index', compact('users'));
     }
 
-    public function edit(User $user): View
+    public function edit(User $user, LearningRecordService $records): View
     {
         $user->loadCount('conversations');
 
@@ -40,9 +41,17 @@ class UserController extends Controller
             'user' => $user,
             'subjects' => $user->conversations()->latest('updated_at')->limit(10)->get(),
             'streak' => $user->streak,
+            // The same ledger-derived record the learner sees, so oversight and
+            // the learner are never looking at two different sets of numbers.
+            'record' => $records->for($user),
         ]);
     }
 
+    /**
+     * `ranked` is here as moderation: a learner opts themselves onto the boards,
+     * but a name and a picture on a public ranking must be removable without
+     * disabling the whole account.
+     */
     public function update(Request $request, User $user): RedirectResponse
     {
         $validated = $request->validate([
@@ -52,7 +61,10 @@ class UserController extends Controller
             'phone' => 'nullable|string|max:20',
         ]);
 
-        $user->update($validated + ['enabled' => $request->boolean('enabled')]);
+        $user->update($validated + [
+            'enabled' => $request->boolean('enabled'),
+            'ranked' => $request->boolean('ranked'),
+        ]);
 
         return redirect()->route('admin.user.index')
             ->with('success', __('admin/backend.users.updated'));

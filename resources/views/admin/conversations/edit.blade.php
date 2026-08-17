@@ -57,6 +57,7 @@
                     @foreach ([
                         'learner' => $conversation->user?->name ?? __('admin/frontend.conversations.guest'),
                         'mode' => $conversation->learningMode?->name ?? '—',
+                        'approach' => __('admin/frontend.conversations.approach.'.$conversation->approach),
                         'depth' => $conversation->current_depth.' / '.$maxDepth,
                         'status' => __('admin/frontend.conversations.status.'.$conversation->status),
                         'folder' => $conversation->folder?->name ?? '—',

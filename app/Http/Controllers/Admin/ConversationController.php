@@ -23,6 +23,7 @@ class ConversationController extends Controller
             ->when($request->filled('search'), fn ($query) => $query->where('subject', 'like', '%'.$request->string('search').'%'))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
             ->when($request->filled('mode'), fn ($query) => $query->where('learning_mode_id', $request->integer('mode')))
+            ->when($request->filled('approach'), fn ($query) => $query->where('approach', $request->string('approach')))
             ->latest('updated_at')
             ->paginate(20)
             ->withQueryString();
@@ -62,11 +63,16 @@ class ConversationController extends Controller
         $total = Conversation::count();
         $pastFirstLayer = Conversation::where('current_depth', '>=', 1)->count();
 
+        $asked = Conversation::where('approach', Conversation::APPROACH_QUESTION)->count();
+
         return [
             'total' => $total,
             'surfaced' => Conversation::where('status', Conversation::STATUS_SURFACED)->count(),
             'first_layer_rate' => $total > 0 ? round($pastFirstLayer / $total * 100) : 0,
             'average_depth' => round((float) Conversation::avg('current_depth'), 1),
+            // How many learners choose to be tested before they are taught. The
+            // number that says whether the second path is worth keeping.
+            'question_first_rate' => $total > 0 ? round($asked / $total * 100) : 0,
         ];
     }
 }

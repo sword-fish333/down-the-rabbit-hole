@@ -31,7 +31,12 @@ class ChatStreamingService
 
     public function stream(Conversation $conversation, ?string $reframe = null): StreamedResponse
     {
-        return response()->stream(function () use ($conversation, $reframe) {
+        // Decided once, before a byte is written: the same phase names the stage
+        // the learner reads, shapes the directive, and is what the turn is stored
+        // as. Deriving it twice is how those three drift apart.
+        $phase = $this->descent->turnPhase($conversation, $reframe);
+
+        return response()->stream(function () use ($conversation, $reframe, $phase) {
             try {
                 foreach ($this->preflight($conversation) as [$key, $label]) {
                     $this->send('stage', ['key' => $key, 'label' => $label]);
@@ -39,11 +44,11 @@ class ChatStreamingService
 
                 // Built inside the stream so the browser already has the first
                 // stages on screen while the history query runs.
-                $request = $this->descent->teachingRequest($conversation, $reframe);
+                $request = $this->descent->teachingRequest($conversation, $reframe, $phase);
 
                 $this->send('stage', [
                     'key' => 'composing',
-                    'label' => __('frontend.chat.stage.composing', [
+                    'label' => __("frontend.chat.stage.composing-{$phase}", [
                         'layer' => str_pad((string) $conversation->current_depth, 2, '0', STR_PAD_LEFT),
                     ]),
                 ]);
@@ -68,7 +73,7 @@ class ChatStreamingService
 
             // Persist + advance even if the learner disconnected mid-stream: the
             // stream stops early and hands back everything received so far.
-            $this->send('done', $this->descent->applyTeachingTurn($conversation, $stream));
+            $this->send('done', $this->descent->applyTeachingTurn($conversation, $stream, $phase));
         }, 200, $this->headers());
     }
 

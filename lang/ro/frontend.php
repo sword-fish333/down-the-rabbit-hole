@@ -41,6 +41,8 @@ return [
         'start' => 'Începe o coborâre',
         'sign-out' => 'Ieși din cont',
         'subjects' => 'Subiecte',
+        'rankings' => 'Clasamente',
+        'public-record' => 'Evidența ta publică',
         'profile' => 'Profil',
         'account' => 'Meniul contului',
         'streak-title' => 'Zile consecutive cu un strat încheiat',
@@ -70,6 +72,30 @@ return [
         'guest-title' => 'Păstrează ce înveți',
         'guest-body' => 'Intră în cont și subiectele, harta stăpânirii și coborârea ta sunt aici și mâine.',
         'guest-cta' => 'Intră în cont',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cum se deschide un strat
+    |--------------------------------------------------------------------------
+    |
+    | Aceeași alegere, fie că e făcută în compozitor sau în sesiune. Fiecare
+    | opțiune e numită după ce primești, nu după pedagogia din spate.
+    |
+    */
+
+    'approach' => [
+        'legend' => 'Cum să se deschidă fiecare strat?',
+        'next-label' => 'Cum se deschide stratul următor',
+        'guided' => 'Explică-mi întâi',
+        'guided-hint' => 'Ghidul predă stratul, apoi dovedești că l-ai înțeles.',
+        'question' => 'Întreabă-mă întâi',
+        'question-hint' => 'Verificarea vine direct. Răspunde din ce știi — sau documentează-te singur.',
+        'switched-guided' => 'De la stratul următor, ghidul predă înainte să întrebe.',
+        'switched-question' => 'De la stratul următor, verificarea vine prima.',
+        'posed' => 'Întrebat înainte de a fi predat',
+        'teach-cta' => 'Predă-mi acest strat',
+        'teach-hint' => 'Verificarea rămâne deschisă și adâncimea ta nu se schimbă — nu te costă nimic să citești acum.',
     ],
 
     'auth' => [
@@ -171,7 +197,7 @@ return [
         'cta-loading' => 'Coborâm…',
         'resume' => 'Reia',
         'topics-label' => 'Sau intră direct în',
-        'mode-label' => 'Cum să te învețe?',
+        'settings-label' => 'Cum să te învețe?',
         'mode-legend' => 'Alege un mod de predare',
         'topics' => [
             'Întricarea cuantică',
@@ -270,6 +296,94 @@ return [
         'move-failed' => 'Mutarea nu a rămas. Nu s-a schimbat nimic.',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Clasamentele
+    |--------------------------------------------------------------------------
+    |
+    | Șase măsuri ale aceluiași registru, fiecare cu trei ferestre de timp.
+    | Fiecare etichetă numește ce a fost *dovedit* — nu există clasament pentru
+    | timpul petrecut și nici nu va exista.
+    |
+    */
+
+    'rankings' => [
+        'title' => 'Clasamente',
+        'subtitle' => 'Clasat după ce ai dovedit, niciodată după cât ai stat.',
+        'boards-label' => 'Clasamente',
+        'period-label' => 'Interval de timp',
+        'period' => [
+            'all' => 'Din totdeauna',
+            'month' => 'Luna aceasta',
+            'week' => 'Săptămâna aceasta',
+        ],
+
+        'board' => [
+            'xp' => 'Total XP',
+            'xp-hint' => 'Tot ce ai câștigat: straturi încheiate, concepte stăpânite, reușite din prima, subiecte finalizate.',
+            'xp-unit' => ':count XP',
+            'layers' => 'Straturi încheiate',
+            'layers-hint' => 'Fiecare strat care a trecut o verificare, din toate subiectele.',
+            'layers-unit' => '{1} :count strat|[2,19] :count straturi|[20,*] :count de straturi',
+            'concepts' => 'Concepte stăpânite',
+            'concepts-hint' => 'Concepte demonstrate de mai multe ori — dovedite, nu declarate.',
+            'concepts-unit' => '{1} :count concept|[2,19] :count concepte|[20,*] :count de concepte',
+            'depth' => 'Cea mai adâncă coborâre',
+            'depth-hint' => 'Cele mai multe straturi dovedite într-un singur subiect.',
+            'depth-unit' => '{1} :count strat|[2,19] :count straturi|[20,*] :count de straturi',
+            'subjects' => 'Subiecte începute',
+            'subjects-hint' => 'Subiecte cu cel puțin un strat încheiat. Să deschizi unul nu costă nimic; aici se numără cele în care chiar ai intrat.',
+            'subjects-unit' => '{1} :count subiect|[2,19] :count subiecte|[20,*] :count de subiecte',
+            'surfaced' => 'Subiecte finalizate',
+            'surfaced-hint' => 'Coborâri duse până la capăt. Cel mai rar lucru de aici.',
+            'surfaced-unit' => '{1} :count subiect|[2,19] :count subiecte|[20,*] :count de subiecte',
+        ],
+
+        'rank' => 'Loc',
+        'learner' => 'Cursant',
+        'result' => 'Rezultat',
+        'you' => 'Tu',
+        'podium' => 'Primii trei',
+        'participants' => '{0} Încă nimeni în clasamente|{1} 1 cursant în clasamente|[2,19] :count cursanți în clasamente|[20,*] :count de cursanți în clasamente',
+        'view-profile' => 'Deschide evidența lui :name',
+        'empty-title' => 'Încă nimic în acest clasament',
+        'empty-body' => 'Se umple pe măsură ce cursanții dovedesc straturi. Încheie unul și primul nume de aici ar putea fi al tău.',
+
+        'your-standing' => 'Poziția ta',
+        'unranked-value' => 'Încă nimic aici',
+        'unranked-hint' => 'Încheie un strat și intri în acest clasament.',
+        'hidden-hint' => 'Doar tu vezi asta — nu ești în clasamente.',
+        'best-standings' => 'Cele mai bune poziții',
+        'no-standings' => 'Încă în niciun clasament.',
+
+        'join-title' => 'Intră în clasamente',
+        'join-body' => 'Intrarea îți publică numele, poza și evidența ta de învățare către ceilalți cursanți. Nimic altceva nu se schimbă și poți ieși oricând.',
+        'join-cta' => 'Intră în clasamente',
+        'leave-title' => 'Ești în clasamente',
+        'leave-body' => 'Ceilalți cursanți îți văd numele și evidența de învățare și îți pot deschide profilul din orice clasament.',
+        'leave-cta' => 'Ieși din clasamente',
+        'joined' => 'Ești în clasamente. Evidența ta este vizibilă celorlalți cursanți.',
+        'left' => 'Ai ieșit din clasamente. Evidența ta este din nou privată.',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Un cursant, așa cum îl văd ceilalți
+    |--------------------------------------------------------------------------
+    */
+
+    'learners' => [
+        'title' => 'Evidența lui :name',
+        'meta' => 'Ce a dovedit :name pe Down the Rabbit Hole — straturi încheiate, concepte stăpânite, subiecte finalizate.',
+        'since' => 'Coboară din :date',
+        'preview-title' => 'Doar tu vezi această pagină',
+        'preview-body' => 'Exact asta ar vedea ceilalți cursanți dacă ai intra în clasamente.',
+        'shared-title' => 'Coborâri publicate',
+        'shared-body' => 'Subiecte pe care :name a ales să le facă publice.',
+        'shared-empty' => ':name nu a publicat încă nicio coborâre.',
+        'back-to-rankings' => 'Înapoi la clasamente',
+    ],
+
     'profile' => [
         'title' => 'Contul tău',
         'tabs-label' => 'Secțiunile contului',
@@ -299,15 +413,15 @@ return [
             'layers-hint' => 'Fiecare a trecut o verificare.',
             'mastered' => 'Concepte stăpânite',
             'mastered-hint' => 'Demonstrate de mai multe ori.',
-            'deepest' => 'Cel mai adânc strat',
-            'deepest-hint' => 'Cea mai adâncă coborâre a ta.',
+            'deepest' => 'Cea mai adâncă coborâre',
+            'deepest-hint' => 'Straturi dovedite într-un singur subiect.',
             'deepest-dive' => 'Cea mai adâncă coborâre',
             'deepest-dive-value' => '{1} :subject — un strat|[2,19] :subject — :count straturi|[20,*] :subject — :count de straturi',
             'subjects' => 'Subiecte',
             'surfaced' => 'Încheiate',
             'to-review' => 'De reluat',
             'to-review-hint' => 'Concepte încă înțelese greșit.',
-            'note' => 'Acestea sunt singurele cifre pe care le păstrăm. Nu există clasament, nu există total de timp petrecut și nimic de aici nu te răsplătește pentru că ai deschis aplicația fără să înveți ceva.',
+            'note' => 'Acestea sunt singurele cifre pe care le păstrăm. Nu există total de timp petrecut și nimic de aici nu te răsplătește pentru că ai deschis aplicația fără să înveți ceva. Clasamentele măsoară exact aceleași cifre, și doar dacă le ceri tu.',
         ],
     ],
 
@@ -356,7 +470,8 @@ return [
             'reading' => 'Citește :title — :words de cuvinte',
             'recalling' => '{1} Își amintește un concept dovedit de tine|[2,19] Își amintește :count concepte dovedite de tine|[20,*] Își amintește :count de concepte dovedite de tine',
             'revisiting' => '{1} Reia un concept de revizuit|[2,19] Reia :count concepte de revizuit|[20,*] Reia :count de concepte de revizuit',
-            'composing' => 'Compune stratul :layer',
+            'composing-teach' => 'Compune stratul :layer',
+            'composing-question' => 'Pregătește verificarea pentru stratul :layer',
             'writing' => 'Îl scrie',
         ],
 

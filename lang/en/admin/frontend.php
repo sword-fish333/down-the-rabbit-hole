@@ -171,9 +171,16 @@ return [
         'section-subjects' => 'Recent subjects',
         'enabled' => 'Account active',
         'enabled-hint' => 'A disabled account cannot sign in; their descents are preserved.',
+        'ranked' => 'On the public rankings',
+        'ranked-hint' => 'Learners join the boards themselves. Switch this off to remove a name and picture from public view without disabling the account.',
+        'col-ranked' => 'Ranked',
         'record' => [
             'subjects' => 'Subjects',
             'xp' => 'XP',
+            'layers' => 'Layers cleared',
+            'mastered' => 'Concepts mastered',
+            'deepest' => 'Deepest dive',
+            'surfaced' => 'Subjects completed',
             'streak' => 'Current streak',
             'longest-streak' => 'Longest streak',
             'verified' => 'Email confirmed',
@@ -185,6 +192,7 @@ return [
         'subtitle' => 'Read-only oversight: how deep learners get, where they stall, and what each layer costs.',
         'search' => 'Search by subject',
         'all-modes' => 'All modes',
+        'all-approaches' => 'Taught or asked',
         'guest' => 'Guest',
         'layer' => 'Layer',
         'empty-title' => 'No descents yet',
@@ -211,6 +219,11 @@ return [
             'first-layer' => 'Reach layer 1',
             'average-depth' => 'Average depth',
             'surfaced' => 'Completed',
+            'question-first' => 'Asked before taught',
+        ],
+        'approach' => [
+            'guided' => 'Taught first',
+            'question' => 'Asked first',
         ],
         'status' => [
             'exploring' => 'In progress',
@@ -223,6 +236,7 @@ return [
         ],
         'phase' => [
             'teach' => 'Teaching',
+            'question' => 'Question first',
             'grade' => 'Grading',
         ],
         'verdict' => [
@@ -239,6 +253,7 @@ return [
         'field' => [
             'learner' => 'Learner',
             'mode' => 'Mode',
+            'approach' => 'Layers open by',
             'depth' => 'Depth',
             'status' => 'Status',
             'folder' => 'Folder',

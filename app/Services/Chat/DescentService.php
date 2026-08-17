@@ -8,15 +8,19 @@ use App\DTOs\Llm\GradingResult;
 use App\DTOs\Llm\LlmStream;
 use App\DTOs\Llm\LlmUsage;
 use App\DTOs\Llm\TeachingRequest;
+use App\Events\ConceptsMastered;
 use App\Events\LayerCompleted;
 use App\Jobs\CompactConversationContext;
 use App\Models\CheckpointAttempt;
+use App\Models\Concept;
 use App\Models\Conversation;
 use App\Models\LearningMode;
 use App\Models\Message;
 use App\Models\User;
 use App\Services\ValidationService;
 use App\Traits\ValidationHelper;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Throwable;
@@ -51,12 +55,11 @@ class DescentService
     ];
 
     public function __construct(
-        private readonly DescentPrompt  $prompt,
+        private readonly DescentPrompt $prompt,
         private readonly MasteryService $mastery,
-        private readonly SourceFetcher  $sources,
-        private readonly LlmClient      $llm,
-    )
-    {
+        private readonly SourceFetcher $sources,
+        private readonly LlmClient $llm,
+    ) {
         $this->initializeValidator();
     }
 
@@ -71,17 +74,19 @@ class DescentService
      *
      * @return ValidationService `conversation` on success.
      */
-    public function open(?User $user, string $prompt, ?LearningMode $mode = null): ValidationService
+    public function open(?User $user, string $prompt, ?LearningMode $mode = null, ?string $approach = null): ValidationService
     {
+        $this->remember($user, $approach);
+
         $url = $this->firstUrl($prompt);
 
         if ($url === null) {
-            return $this->addValidatedItems(['conversation' => $this->start($user, $prompt, $mode)]);
+            return $this->addValidatedItems(['conversation' => $this->start($user, $prompt, $mode, $approach)]);
         }
 
         $fetch = $this->sources->fetch($url);
 
-        if (!$fetch->isSuccessfulCheck()) {
+        if (! $fetch->isSuccessfulCheck()) {
             return $fetch;
         }
 
@@ -92,6 +97,7 @@ class DescentService
             $user,
             $aside !== '' ? $aside : ($attributes['title'] ?: $attributes['site']),
             $mode,
+            $approach,
         );
 
         $conversation->sources()->create($attributes);
@@ -106,13 +112,18 @@ class DescentService
      * and keeps it for the whole descent. The guide is told to follow the
      * learner over this if they write in something else — the stored locale is
      * the opening bid, not a lock.
+     *
+     * The approach is pinned the same way, and for the same reason: switching it
+     * later changes how the *next* layer opens, never how the ones already
+     * behind them did.
      */
-    public function start(?User $user, string $subject, ?LearningMode $mode = null): Conversation
+    public function start(?User $user, string $subject, ?LearningMode $mode = null, ?string $approach = null): Conversation
     {
         $subject = Str::of($subject)->trim()->limit(500, '')->value();
         $conversation = Conversation::create([
             'user_id' => $user?->id,
             'learning_mode_id' => ($mode ?? LearningMode::default())?->id,
+            'approach' => $this->resolveApproach($user, $approach),
             'subject' => $subject,
             'locale' => app()->getLocale(),
             'title' => Str::limit($subject, 60),
@@ -126,35 +137,68 @@ class DescentService
     }
 
     /**
+     * Which kind of turn opens the layer the learner is standing on.
+     *
+     * Derived from state rather than passed in, so there is exactly one rule and
+     * no way for the browser to ask for a turn the descent isn't due. A reframe
+     * always teaches; a question-first subject asks only for a layer nothing has
+     * opened yet, which is precisely what makes "teach me this one" a plain
+     * re-stream rather than a second endpoint.
+     */
+    public function turnPhase(Conversation $conversation, ?string $reframe = null): string
+    {
+        return $reframe === null
+            && $conversation->opensWithQuestion()
+            && ! $this->layerOpened($conversation)
+                ? Message::PHASE_QUESTION
+                : Message::PHASE_TEACH;
+    }
+
+    /**
+     * True while a checkpoint is open on a layer that has never been taught —
+     * the learner answered it cold, or is about to, and can still ask for the
+     * lesson. False the instant the layer has been taught, which is what stops
+     * the offer being made twice.
+     */
+    public function awaitsTeaching(Conversation $conversation): bool
+    {
+        return $conversation->isCheckpointPending() && ! $this->layerTaught($conversation);
+    }
+
+    /**
      * Build the request for the next teaching turn. Pure — no side effects.
      */
-    public function teachingRequest(Conversation $conversation, ?string $reframe = null): TeachingRequest
+    public function teachingRequest(Conversation $conversation, ?string $reframe = null, string $phase = Message::PHASE_TEACH): TeachingRequest
     {
+        $resurfacing = $this->mastery->resurfacing($conversation);
+
         $messages = $this->history($conversation);
         $messages[] = [
             'role' => Message::ROLE_USER,
-            'content' => $reframe
-                ? $this->prompt->reframeInstruction($conversation, $reframe)
-                : $this->prompt->teachInstruction($conversation, $this->mastery->resurfacing($conversation)),
+            'content' => match (true) {
+                $reframe !== null => $this->prompt->reframeInstruction($conversation, $reframe, $resurfacing),
+                $phase === Message::PHASE_QUESTION => $this->prompt->questionInstruction($conversation, $resurfacing),
+                default => $this->prompt->teachInstruction($conversation, $resurfacing),
+            },
         ];
 
         return new TeachingRequest(
-            model: $this->pickModel($conversation->current_depth, Message::PHASE_TEACH),
+            model: $this->pickModel($conversation->current_depth, $phase),
             system: $this->prompt->system(),
             messages: $messages,
             depth: $conversation->current_depth,
-            maxTokens: (int)config('platform.chat.max_tokens'),
+            maxTokens: (int) config('platform.chat.max_tokens'),
         );
     }
 
     /**
-     * Persist a streamed teaching turn and open its checkpoint. Called after the
+     * Persist a streamed opening turn and open its checkpoint. Called after the
      * stream closes — including when the learner disconnected mid-turn, in which
      * case the partial text is still worth keeping.
      *
      * @return array<string, mixed>
      */
-    public function applyTeachingTurn(Conversation $conversation, LlmStream $stream): array
+    public function applyTeachingTurn(Conversation $conversation, LlmStream $stream, string $phase = Message::PHASE_TEACH): array
     {
         $text = trim($stream->text());
 
@@ -166,12 +210,13 @@ class DescentService
             conversation: $conversation,
             role: Message::ROLE_ASSISTANT,
             content: $text,
-            phase: Message::PHASE_TEACH,
+            phase: $phase,
             model: $stream->model,
             usage: $stream->usage(),
         );
 
-        // A teaching turn always ends on a checkpoint awaiting the learner's proof.
+        // Taught or merely posed, the turn always ends on a checkpoint awaiting
+        // the learner's proof.
         $conversation->update(['status' => Conversation::STATUS_CHECKPOINT_PENDING]);
 
         return $this->state($conversation->refresh());
@@ -187,6 +232,10 @@ class DescentService
     {
         $depth = $conversation->current_depth;
 
+        // Counted before this attempt exists: "first try" means no earlier
+        // attempt at this layer, whether it was taught first or asked cold.
+        $earlierAttempts = $conversation->checkpointAttempts()->where('depth', $depth)->count();
+
         $answerMessage = $this->appendMessage($conversation, Message::ROLE_USER, trim($answer));
 
         $result = $this->grade($conversation, $answer, $selfRating, $depth);
@@ -201,15 +250,15 @@ class DescentService
         );
 
         $attempt = $conversation->checkpointAttempts()->create($result->toAttributes() + [
-                'message_id' => $answerMessage->id,
-                'depth' => $depth,
-                'self_rating' => $selfRating,
-            ]);
+            'message_id' => $answerMessage->id,
+            'depth' => $depth,
+            'self_rating' => $selfRating,
+        ]);
 
-        $this->mastery->record($conversation, $result, $depth);
+        $this->rewardMastery($conversation, $this->mastery->record($conversation, $result, $depth));
 
         if ($result->passed()) {
-            $this->clearLayer($conversation, $depth);
+            $this->clearLayer($conversation, $depth, firstTry: $earlierAttempts === 0);
         }
 
         return [
@@ -225,20 +274,20 @@ class DescentService
      */
     public function pickModel(int $depth, string $phase): string
     {
-        $models = config('platform.chat.models.' . config('platform.chat.provider'));
+        $models = config('platform.chat.models.'.config('platform.chat.provider'));
 
         if ($phase === Message::PHASE_GRADE) {
             return $models['cheap'];
         }
 
-        return $depth >= (int)config('platform.chat.deep_threshold') ? $models['deep'] : $models['mid'];
+        return $depth >= (int) config('platform.chat.deep_threshold') ? $models['deep'] : $models['mid'];
     }
 
     public function dailyLimitReached(?User $user, string $guestKey): bool
     {
         [$cacheKey, $limit] = $this->limitFor($user, $guestKey);
 
-        return (int)Cache::get($cacheKey, 0) >= $limit;
+        return (int) Cache::get($cacheKey, 0) >= $limit;
     }
 
     /**
@@ -259,17 +308,13 @@ class DescentService
      */
     public function currentCheckpoint(Conversation $conversation): string
     {
-        $teaching = $conversation->messages()
-            ->where('role', Message::ROLE_ASSISTANT)
-            ->where('phase', Message::PHASE_TEACH)
-            ->latest('id')
-            ->value('content');
+        $opening = $this->openingTurns($conversation)->latest('id')->value('content');
 
-        if (!$teaching) {
+        if (! $opening) {
             return '';
         }
 
-        return Str::of($teaching)->after('**Checkpoint:**')->trim()->value() ?: trim($teaching);
+        return Str::of($opening)->after('**Checkpoint:**')->trim()->value() ?: trim($opening);
     }
 
     /**
@@ -282,9 +327,10 @@ class DescentService
         return [
             'status' => $conversation->status,
             'depth' => $conversation->current_depth,
-            'max_depth' => (int)config('platform.chat.max_depth'),
+            'max_depth' => (int) config('platform.chat.max_depth'),
             'passed' => $passed,
             'surfaced' => $conversation->isSurfaced(),
+            'awaits_teaching' => $this->awaitsTeaching($conversation),
             'mastery' => $this->mastery->tally($conversation),
         ];
     }
@@ -303,7 +349,7 @@ class DescentService
                 checkpoint: $this->currentCheckpoint($conversation),
                 answer: $answer,
                 depth: $depth,
-                maxTokens: (int)config('platform.chat.grade_max_tokens'),
+                maxTokens: (int) config('platform.chat.grade_max_tokens'),
                 language: $conversation->language(),
                 selfRating: $selfRating,
             ));
@@ -317,9 +363,9 @@ class DescentService
     /**
      * A passed layer: descend (or surface), reward, and schedule compaction.
      */
-    private function clearLayer(Conversation $conversation, int $passedDepth): void
+    private function clearLayer(Conversation $conversation, int $passedDepth, bool $firstTry = false): void
     {
-        $surfaced = ($passedDepth + 1) >= (int)config('platform.chat.max_depth');
+        $surfaced = ($passedDepth + 1) >= (int) config('platform.chat.max_depth');
 
         $conversation->update([
             'current_depth' => $surfaced ? $passedDepth : $passedDepth + 1,
@@ -329,12 +375,75 @@ class DescentService
 
         // Guests earn nothing until they claim the subject — a natural sign-up hook.
         if ($conversation->user_id) {
-            event(new LayerCompleted($conversation->user, $conversation, $passedDepth));
+            event(new LayerCompleted($conversation->user, $conversation, $passedDepth, $firstTry, $surfaced));
         }
 
-        if ($conversation->message_count > (int)config('platform.chat.summarize_after')) {
+        if ($conversation->message_count > (int) config('platform.chat.summarize_after')) {
             CompactConversationContext::dispatch($conversation->id);
         }
+    }
+
+    /**
+     * @param  Collection<int, Concept>  $concepts
+     */
+    private function rewardMastery(Conversation $conversation, Collection $concepts): void
+    {
+        if ($concepts->isEmpty() || ! $conversation->user_id) {
+            return;
+        }
+
+        event(new ConceptsMastered($conversation->user, $conversation, $concepts));
+    }
+
+    /**
+     * The turns that open a layer — taught or merely posed. Both end on a
+     * `**Checkpoint:**`, which is why the checkpoint reader looks at either.
+     */
+    private function openingTurns(Conversation $conversation): HasMany
+    {
+        return $conversation->messages()
+            ->where('role', Message::ROLE_ASSISTANT)
+            ->whereIn('phase', Message::OPENING_PHASES);
+    }
+
+    private function layerOpened(Conversation $conversation): bool
+    {
+        return $this->openingTurns($conversation)->where('depth', $conversation->current_depth)->exists();
+    }
+
+    private function layerTaught(Conversation $conversation): bool
+    {
+        return $conversation->messages()
+            ->where('role', Message::ROLE_ASSISTANT)
+            ->where('phase', Message::PHASE_TEACH)
+            ->where('depth', $conversation->current_depth)
+            ->exists();
+    }
+
+    /**
+     * How a new subject opens: what the learner just picked, else what they
+     * picked last time, else the product default.
+     */
+    private function resolveApproach(?User $user, ?string $approach): string
+    {
+        if (in_array($approach, Conversation::APPROACHES, true)) {
+            return $approach;
+        }
+
+        return $user?->preferredApproach() ?? Conversation::APPROACH_GUIDED;
+    }
+
+    /**
+     * A deliberate choice at the composer becomes the default for the next
+     * subject — nobody should have to say "ask me first" every single time.
+     */
+    private function remember(?User $user, ?string $approach): void
+    {
+        if (! $user || ! in_array($approach, Conversation::APPROACHES, true) || $user->preferred_approach === $approach) {
+            return;
+        }
+
+        $user->update(['preferred_approach' => $approach]);
     }
 
     /**
@@ -348,14 +457,14 @@ class DescentService
     {
         $messages = $conversation->messages()
             ->latest('id')
-            ->take((int)config('platform.chat.history_limit'))
+            ->take((int) config('platform.chat.history_limit'))
             ->get()
             ->sortBy('id')
-            ->map(fn(Message $message) => ['role' => $message->role, 'content' => $message->content])
+            ->map(fn (Message $message) => ['role' => $message->role, 'content' => $message->content])
             ->values()
             ->all();
 
-        if (!$conversation->summary) {
+        if (! $conversation->summary) {
             return $messages;
         }
 
@@ -369,13 +478,12 @@ class DescentService
 
     private function appendMessage(
         Conversation $conversation,
-        string       $role,
-        string       $content,
-        ?string      $phase = null,
-        ?string      $model = null,
-        ?LlmUsage    $usage = null,
-    ): Message
-    {
+        string $role,
+        string $content,
+        ?string $phase = null,
+        ?string $model = null,
+        ?LlmUsage $usage = null,
+    ): Message {
         $message = $conversation->messages()->create([
             'role' => $role,
             'content' => $content,
@@ -398,7 +506,7 @@ class DescentService
      */
     private function firstUrl(string $prompt): ?string
     {
-        if (!preg_match('~https?://[^\s<>"\'\)\]]+~i', $prompt, $match)) {
+        if (! preg_match('~https?://[^\s<>"\'\)\]]+~i', $prompt, $match)) {
             return null;
         }
 
@@ -413,9 +521,9 @@ class DescentService
         $today = now()->toDateString();
 
         if ($user) {
-            return ["dth:turns:user:{$user->id}:{$today}", (int)config('platform.chat.user_daily_limit')];
+            return ["dth:turns:user:{$user->id}:{$today}", (int) config('platform.chat.user_daily_limit')];
         }
 
-        return ["dth:turns:guest:{$guestKey}:{$today}", (int)config('platform.chat.guest_daily_limit')];
+        return ["dth:turns:guest:{$guestKey}:{$today}", (int) config('platform.chat.guest_daily_limit')];
     }
 }

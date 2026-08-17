@@ -22,6 +22,11 @@ use Illuminate\Support\Str;
     'password',
     'phone',
     'locale',
+    'preferred_approach',
+    'ranked',
+    // Blocking a learner is an admin action performed through update(), so it
+    // has to be assignable — without it the console silently changed nothing.
+    'enabled',
     'salutation',
     'login_method',
     'profile_image',
@@ -99,6 +104,26 @@ class User extends Authenticatable implements MustVerifyEmail
         return (bool) $this->enabled;
     }
 
+    /**
+     * Standing on the boards is opt-in, and it is the same yes that makes this
+     * learner's record readable by other learners — one switch, one promise.
+     */
+    public function isRanked(): bool
+    {
+        return (bool) $this->ranked && $this->isEnabled();
+    }
+
+    /**
+     * How this learner's next subject should open. Null until they have chosen
+     * once, which is what lets the product default stay the product default.
+     */
+    public function preferredApproach(): string
+    {
+        return in_array($this->preferred_approach, Conversation::APPROACHES, true)
+            ? $this->preferred_approach
+            : Conversation::APPROACH_GUIDED;
+    }
+
     protected static function booted(): void
     {
         // `name` is a projection of first/last — never let the two drift apart.
@@ -120,6 +145,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'enabled' => 'boolean',
+            'ranked' => 'boolean',
             'xp' => 'integer',
         ];
     }

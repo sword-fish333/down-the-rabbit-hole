@@ -9,6 +9,7 @@ use App\Models\LearningMode;
 use App\Models\SubjectFolder;
 use App\Models\User;
 use App\Services\Chat\DescentService;
+use App\Services\Gamification\RankingService;
 use Database\Seeders\LearningModeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\FakeLlmClient;
@@ -34,7 +35,8 @@ class LangKeyTest extends TestCase
         $this->app->instance(LlmClient::class, new FakeLlmClient);
         $this->seed(LearningModeSeeder::class);
 
-        $user = User::factory()->create();
+        // On the boards, so the rankings and the public record have a row to render.
+        $user = User::factory()->create(['ranked' => true]);
         $admin = Admin::create([
             'name' => 'Master',
             'first_name' => 'Master',
@@ -45,14 +47,17 @@ class LangKeyTest extends TestCase
         ]);
 
         $subject = $this->subjectWithContent($user);
+        // A layer posed and not yet taught, so the "asked first" marker, the
+        // offer of a lesson and the admin phase badge all have something to render.
+        $asked = $this->subjectAwaitingProof($user);
         $unresolved = [];
 
-        foreach ($this->learnerPages($user, $subject) as [$uri, $actor]) {
+        foreach ([...$this->learnerPages($user, $subject), [route('subject.show', $asked), $user]] as [$uri, $actor]) {
             $response = $actor ? $this->actingAs($actor)->get($uri) : $this->get($uri);
             $unresolved = [...$unresolved, ...$this->keysIn($uri, $response->getContent())];
         }
 
-        foreach ($this->adminPages($user, $subject) as $uri) {
+        foreach ([...$this->adminPages($user, $subject), route('admin.conversation.edit', $asked)] as $uri) {
             $response = $this->actingAs($admin, 'admin')->get($uri);
             $unresolved = [...$unresolved, ...$this->keysIn($uri, $response->getContent())];
         }
@@ -98,6 +103,27 @@ class LangKeyTest extends TestCase
     }
 
     /**
+     * A question-first subject sitting on a posed, untaught layer — the state
+     * where the workspace shows the "asked before taught" marker and offers the
+     * lesson, and where the transcript carries a `question` phase.
+     */
+    private function subjectAwaitingProof(User $user): Conversation
+    {
+        $descent = app(DescentService::class);
+        $subject = $descent->start($user, 'Category theory', approach: Conversation::APPROACH_QUESTION);
+
+        $phase = $descent->turnPhase($subject);
+        $stream = app(LlmClient::class)->streamTeachingTurn($descent->teachingRequest($subject, null, $phase));
+
+        foreach ($stream as $chunk) {
+        }
+
+        $descent->applyTeachingTurn($subject, $stream, $phase);
+
+        return $subject->fresh();
+    }
+
+    /**
      * @return array<int, array{0: string, 1: ?User}>
      */
     private function learnerPages(User $user, Conversation $subject): array
@@ -112,7 +138,27 @@ class LangKeyTest extends TestCase
             [route('profile.index'), $user],
             [route('subject.show', $subject), $user],
             [route('subject.shared', $subject->share_token), null],
+            [route('learners.show', $user), $user],
+            // Every board and every window: the labels are per-board keys, so
+            // one of them going missing has to fail here rather than in review.
+            ...$this->rankingPages($user),
         ];
+    }
+
+    /**
+     * @return array<int, array{0: string, 1: User}>
+     */
+    private function rankingPages(User $user): array
+    {
+        $pages = [];
+
+        foreach (RankingService::BOARDS as $board) {
+            foreach (RankingService::PERIODS as $period) {
+                $pages[] = [route('rankings.index', compact('board', 'period')), $user];
+            }
+        }
+
+        return $pages;
     }
 
     /**

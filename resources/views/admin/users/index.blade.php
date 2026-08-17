@@ -52,6 +52,12 @@
                             @unless ($user->hasVerifiedEmail())
                                 <x-admin.ui.badge tone="warning" icon="mark_email_unread">{{ __('admin/frontend.users.unverified') }}</x-admin.ui.badge>
                             @endunless
+
+                            {{-- Only flagged when it is true: a public listing is
+                                 the state worth spotting from a list of hundreds. --}}
+                            @if ($user->ranked)
+                                <x-admin.ui.badge icon="leaderboard">{{ __('admin/frontend.users.col-ranked') }}</x-admin.ui.badge>
+                            @endif
                         </div>
 
                         <div class="mt-4 flex items-center gap-1 lg:mt-0 lg:justify-end">

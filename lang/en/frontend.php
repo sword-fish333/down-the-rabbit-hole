@@ -23,6 +23,8 @@ return [
         'start' => 'Start a descent',
         'sign-out' => 'Sign out',
         'subjects' => 'Subjects',
+        'rankings' => 'Rankings',
+        'public-record' => 'Your public record',
         'profile' => 'Profile',
         'account' => 'Account menu',
         'streak-title' => 'Days in a row with a layer cleared',
@@ -56,6 +58,32 @@ return [
         'guest-title' => 'Keep what you learn',
         'guest-body' => 'Sign in and your subjects, your mastery map and your descent are still here tomorrow.',
         'guest-cta' => 'Sign in',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | How a layer opens
+    |--------------------------------------------------------------------------
+    |
+    | Shared between the composer and the workspace, because it is one choice
+    | wherever it is made. Two options, each named for what arrives rather than
+    | for the pedagogy behind it — "retrieval practice" is the reason, not the
+    | offer.
+    |
+    */
+
+    'approach' => [
+        'legend' => 'How should each layer open?',
+        'next-label' => 'How the next layer opens',
+        'guided' => 'Teach me first',
+        'guided-hint' => 'The guide teaches the layer, then you prove you got it.',
+        'question' => 'Question me first',
+        'question-hint' => 'The checkpoint arrives cold. Answer from what you know — or go and find out.',
+        'switched-guided' => 'From the next layer on, the guide teaches before it asks.',
+        'switched-question' => 'From the next layer on, the checkpoint comes first.',
+        'posed' => 'Asked before it was taught',
+        'teach-cta' => 'Teach me this layer',
+        'teach-hint' => 'The checkpoint stays open and your depth is unchanged — reading it now costs you nothing.',
     ],
 
     'auth' => [
@@ -157,7 +185,7 @@ return [
         'cta-loading' => 'Descending…',
         'resume' => 'Resume',
         'topics-label' => 'Or fall straight into',
-        'mode-label' => 'How should it teach?',
+        'settings-label' => 'How should it teach?',
         'mode-legend' => 'Choose a learning mode',
         'topics' => [
             'Quantum entanglement',
@@ -256,6 +284,94 @@ return [
         'move-failed' => 'That move didn’t stick. Nothing was changed.',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | The boards
+    |--------------------------------------------------------------------------
+    |
+    | Six measures of the same ledger, three windows each. Every label names what
+    | was *proven*, because that is the only thing being ranked — there is no
+    | board for time spent, and there never will be.
+    |
+    */
+
+    'rankings' => [
+        'title' => 'Rankings',
+        'subtitle' => 'Ranked on what you proved, never on how long you stayed.',
+        'boards-label' => 'Boards',
+        'period-label' => 'Time window',
+        'period' => [
+            'all' => 'All time',
+            'month' => 'This month',
+            'week' => 'This week',
+        ],
+
+        'board' => [
+            'xp' => 'Total XP',
+            'xp-hint' => 'Everything earned: layers cleared, concepts mastered, clean first attempts, subjects completed.',
+            'xp-unit' => ':count XP',
+            'layers' => 'Layers cleared',
+            'layers-hint' => 'Every layer that passed a checkpoint, across every subject.',
+            'layers-unit' => '{1} :count layer|[2,*] :count layers',
+            'concepts' => 'Concepts mastered',
+            'concepts-hint' => 'Concepts demonstrated more than once — proven, never asserted.',
+            'concepts-unit' => '{1} :count concept|[2,*] :count concepts',
+            'depth' => 'Deepest dive',
+            'depth-hint' => 'The most layers proven inside one single subject.',
+            'depth-unit' => '{1} :count layer|[2,*] :count layers',
+            'subjects' => 'Subjects underway',
+            'subjects-hint' => 'Subjects with at least one layer cleared. Opening one costs nothing; this counts the ones you got into.',
+            'subjects-unit' => '{1} :count subject|[2,*] :count subjects',
+            'surfaced' => 'Subjects completed',
+            'surfaced-hint' => 'Descents carried all the way to the bottom. The rarest thing here.',
+            'surfaced-unit' => '{1} :count subject|[2,*] :count subjects',
+        ],
+
+        'rank' => 'Rank',
+        'learner' => 'Learner',
+        'result' => 'Result',
+        'you' => 'You',
+        'podium' => 'Top three',
+        'participants' => '{0} Nobody on the boards yet|{1} 1 learner on the boards|[2,*] :count learners on the boards',
+        'view-profile' => 'Open :name’s record',
+        'empty-title' => 'Nothing on this board yet',
+        'empty-body' => 'It fills as learners prove layers. Clear one and the first name on it could be yours.',
+
+        'your-standing' => 'Your standing',
+        'unranked-value' => 'Nothing here yet',
+        'unranked-hint' => 'Clear a layer and you are on this board.',
+        'hidden-hint' => 'Only you can see this — you are not on the boards.',
+        'best-standings' => 'Best standings',
+        'no-standings' => 'Not on any board yet.',
+
+        'join-title' => 'Stand on the boards',
+        'join-body' => 'Joining publishes your name, your picture and your learning record to other learners. Nothing else changes, and you can leave whenever you like.',
+        'join-cta' => 'Join the rankings',
+        'leave-title' => 'You are on the boards',
+        'leave-body' => 'Other learners can see your name and your learning record, and open your profile from any ranking.',
+        'leave-cta' => 'Leave the rankings',
+        'joined' => 'You are on the boards. Your record is visible to other learners.',
+        'left' => 'You have left the boards. Your record is private again.',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | One learner, as other learners see them
+    |--------------------------------------------------------------------------
+    */
+
+    'learners' => [
+        'title' => ':name’s record',
+        'meta' => 'What :name has proven on Down the Rabbit Hole — layers cleared, concepts mastered, subjects completed.',
+        'since' => 'Descending since :date',
+        'preview-title' => 'Only you can see this page',
+        'preview-body' => 'This is exactly what other learners would see if you joined the boards.',
+        'shared-title' => 'Published descents',
+        'shared-body' => 'Subjects :name chose to make readable.',
+        'shared-empty' => ':name has not published a descent yet.',
+        'back-to-rankings' => 'Back to the rankings',
+    ],
+
     'profile' => [
         'title' => 'Your account',
         'tabs-label' => 'Account sections',
@@ -285,15 +401,15 @@ return [
             'layers-hint' => 'Each one passed a checkpoint.',
             'mastered' => 'Concepts mastered',
             'mastered-hint' => 'Demonstrated more than once.',
-            'deepest' => 'Deepest layer',
-            'deepest-hint' => 'Your furthest descent.',
+            'deepest' => 'Deepest dive',
+            'deepest-hint' => 'Layers proven inside one subject.',
             'deepest-dive' => 'Your deepest dive',
             'deepest-dive-value' => '{1} :subject — 1 layer|[2,*] :subject — :count layers',
             'subjects' => 'Subjects',
             'surfaced' => 'Completed',
             'to-review' => 'To revisit',
             'to-review-hint' => 'Concepts still misunderstood.',
-            'note' => 'These are the only numbers we keep. There is no leaderboard, no time-on-site total, and nothing here rewards opening the app without learning something.',
+            'note' => 'These are the only numbers we keep. There is no time-on-site total, and nothing here rewards opening the app without learning something. The rankings measure these same numbers, and only if you ask them to.',
         ],
     ],
 
@@ -342,7 +458,8 @@ return [
             'reading' => 'Reading :title — :words words',
             'recalling' => '{1} Recalling 1 concept you’ve proven|[2,*] Recalling :count concepts you’ve proven',
             'revisiting' => '{1} Weaving back 1 concept to revisit|[2,*] Weaving back :count concepts to revisit',
-            'composing' => 'Composing Layer :layer',
+            'composing-teach' => 'Composing Layer :layer',
+            'composing-question' => 'Setting the checkpoint for Layer :layer',
             'writing' => 'Writing it out',
         ],
 

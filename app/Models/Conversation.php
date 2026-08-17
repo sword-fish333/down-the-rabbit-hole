@@ -21,6 +21,7 @@ use Illuminate\Support\Str;
     'user_id',
     'folder_id',
     'learning_mode_id',
+    'approach',
     'subject',
     'locale',
     'title',
@@ -34,6 +35,22 @@ use Illuminate\Support\Str;
 ])]
 class Conversation extends Model
 {
+    /**
+     * How a layer opens.
+     *
+     * `guided` teaches the layer and then asks for proof. `question` poses the
+     * checkpoint cold — the learner answers from what they already know, or goes
+     * and finds out — and the layer is taught afterwards only if they ask for it.
+     * Retrieval before instruction is the stronger way to learn; being made to
+     * do it is the faster way to quit. So it is a choice, and `guided` is the
+     * default.
+     */
+    public const string APPROACH_GUIDED = 'guided';
+
+    public const string APPROACH_QUESTION = 'question';
+
+    public const array APPROACHES = [self::APPROACH_GUIDED, self::APPROACH_QUESTION];
+
     public const string STATUS_EXPLORING = 'exploring';
 
     public const string STATUS_CHECKPOINT_PENDING = 'checkpoint_pending';
@@ -129,6 +146,20 @@ class Conversation extends Model
             ->orWhereRaw("title LIKE ?{$escape}", [$like]));
     }
 
+    /**
+     * Deepest descent first.
+     *
+     * `current_depth` is the layer they are standing on, which is also the count
+     * of layers they cleared to get there — except at the bottom, where it stops
+     * advancing so the depth rail still has a node to point at. The `+ 1` puts a
+     * completed subject back where it belongs.
+     */
+    #[Scope]
+    protected function deepestFirst(Builder $query): void
+    {
+        $query->orderByRaw('(current_depth + case when status = ? then 1 else 0 end) desc', [self::STATUS_SURFACED]);
+    }
+
     #[Scope]
     protected function filtered(Builder $query, ?string $filter): void
     {
@@ -145,6 +176,12 @@ class Conversation extends Model
         return $this->status === self::STATUS_CHECKPOINT_PENDING;
     }
 
+    /** True when a new layer arrives as its checkpoint rather than as a lesson. */
+    public function opensWithQuestion(): bool
+    {
+        return $this->approach === self::APPROACH_QUESTION;
+    }
+
     public function isSurfaced(): bool
     {
         return $this->status === self::STATUS_SURFACED;
@@ -153,6 +190,16 @@ class Conversation extends Model
     public function isShared(): bool
     {
         return $this->share_token !== null;
+    }
+
+    /**
+     * How many layers were actually proven here — the number the product quotes
+     * ("7 layers deep on Stoicism"). See the `deepestFirst` scope for why the
+     * bottom layer needs adding back on.
+     */
+    public function layersCleared(): int
+    {
+        return $this->isSurfaced() ? $this->current_depth + 1 : $this->current_depth;
     }
 
     /** Depth as a 0..1 fraction — drives the atmosphere and the depth rail. */

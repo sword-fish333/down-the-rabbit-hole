@@ -30,6 +30,7 @@
         'stopped' => __('frontend.chat.stopped'),
         'copied' => __('frontend.chat.copied'),
         'copy' => __('frontend.chat.copy'),
+        'posed' => __('frontend.approach.posed'),
     ];
 @endphp
 
@@ -147,6 +148,16 @@
                             @endif
                         @elseif ($message->phase !== Message::PHASE_GRADE)
                             <div class="group/turn relative">
+                                {{-- A layer that was posed rather than taught says so.
+                                     Without this the learner reads a checkpoint with no
+                                     lesson above it and assumes something failed. --}}
+                                @if ($message->phase === Message::PHASE_QUESTION)
+                                    <p class="dth-coord mb-3 flex items-center gap-1.5">
+                                        <span class="material-symbols-outlined text-[1rem] text-primary" aria-hidden="true">psychology_alt</span>
+                                        {{ __('frontend.approach.posed') }}
+                                    </p>
+                                @endif
+
                                 <x-frontend.markdown :content="$message->content" />
                                 <button type="button" data-copy-turn
                                         title="{{ __('frontend.chat.copy') }}"
@@ -237,6 +248,21 @@
                             </div>
                         </form>
 
+                        {{-- The lesson, on request. Only exists while the open
+                             checkpoint was posed and never taught, so it is an
+                             escape hatch from a cold question rather than a way
+                             to be told the answer to one you already read. It
+                             never closes the checkpoint: the layer is taught, a
+                             fresh checkpoint opens, and the depth is unchanged. --}}
+                        <div id="dth-teach-layer" class="mt-3" @unless ($awaitsTeaching) hidden @endunless>
+                            <button type="button" data-teach-layer
+                                    class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-primary/35 bg-primary/8 px-4 py-2.5 text-sm font-medium text-primary transition duration-(--motion-feedback) ease-(--ease-snap) hover:border-primary/55 hover:bg-primary/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-auto">
+                                <span class="material-symbols-outlined text-[1.15rem]" aria-hidden="true">auto_stories</span>
+                                {{ __('frontend.approach.teach-cta') }}
+                            </button>
+                            <p class="mt-1.5 text-xs text-foreground-muted/80">{{ __('frontend.approach.teach-hint') }}</p>
+                        </div>
+
                         {{-- Progressive disclosure: stuck? These re-teach the SAME
                              layer from a different angle. Nothing here gives the
                              answer away, and nothing skips the checkpoint. --}}
@@ -258,7 +284,9 @@
                         </details>
                     </div>
 
-                    {{-- Go deeper --}}
+                    {{-- Go deeper. The only place the approach can be changed:
+                         between layers, where a settings decision interrupts
+                         nothing, and where "the next layer" is unambiguous. --}}
                     <div id="dth-control-deeper" hidden>
                         <div class="flex flex-col items-center gap-3 text-center">
                             <button type="button" data-descend-deeper
@@ -267,6 +295,8 @@
                                 <span class="dth-cta-arrow material-symbols-outlined text-[1.2rem]" aria-hidden="true">south_east</span>
                             </button>
                             <p class="dth-coord">{{ __('frontend.chat.next-layer', ['depth' => $conversation->current_depth]) }}</p>
+
+                            <x-frontend.approach-switch :conversation="$conversation" class="mt-2" />
                         </div>
                     </div>
 
@@ -348,6 +378,7 @@
          data-depth="{{ $conversation->current_depth }}"
          data-max-depth="{{ $maxDepth }}"
          data-autostream="{{ $autostream ? '1' : '0' }}"
+         data-awaits-teaching="{{ $awaitsTeaching ? '1' : '0' }}"
          data-strings="{{ json_encode($strings) }}"></div>
 
     @push('scripts')

@@ -46,6 +46,7 @@
     var verdictPanel = document.getElementById('dth-verdict');
     var proofField = document.getElementById('dth-proof');
     var proofForm = document.getElementById('dth-proof-form');
+    var teachLayer = document.getElementById('dth-teach-layer');
     var busy = false;
     var aborter = null;
 
@@ -160,6 +161,11 @@
         }
 
         if (state.status === 'checkpoint_pending') {
+            /* The offer of a lesson belongs to a checkpoint that was posed and
+               never taught, so it is read from server state every time rather
+               than left as it was rendered — one teach turn retires it. */
+            if (teachLayer) teachLayer.hidden = !state.awaits_teaching;
+
             show(controls.checkpoint);
             // Only measurable now that it is on screen — see DTH.autoGrow.
             if (window.DTH) window.DTH.autoGrow(proofField);
@@ -267,6 +273,10 @@
                 busy = false;
                 paint(true);
                 closeThinking();
+                /* A layer that arrived as its checkpoint says so, or the learner
+                   reads a question with no lesson above it and assumes the turn
+                   broke. Only a posed layer leaves teaching still on offer. */
+                if (data.awaits_teaching) markPosed(turn);
                 paintRail(data.depth, false);
                 reveal(data);
                 return;
@@ -295,6 +305,16 @@
             }
             fail(text.connectionLost || '');
         });
+    }
+
+    /* Mirrors the server-rendered marker on a question-first turn, so a layer
+       reloaded from the transcript and one just streamed look identical. */
+    function markPosed(turn) {
+        var mark = document.createElement('p');
+        mark.className = 'dth-coord mb-3 flex items-center gap-1.5';
+        mark.innerHTML = '<span class="material-symbols-outlined text-[1rem] text-primary" aria-hidden="true">psychology_alt</span>' +
+            md.escape(text.posed || '');
+        turn.insertBefore(mark, turn.firstChild);
     }
 
     /* The furthest point in the buffer that is safe to freeze: the last blank
@@ -532,6 +552,15 @@
             return;
         }
 
+        /* Same stream, no argument: the server derives that a layer already
+           posed and not yet taught is due its lesson. One rule, one endpoint. */
+        var teach = event.target.closest('[data-teach-layer]');
+        if (teach) {
+            event.preventDefault();
+            startStream(null);
+            return;
+        }
+
         var reframe = event.target.closest('[data-reframe]');
         if (reframe) {
             event.preventDefault();
@@ -574,6 +603,7 @@
             status: config.getAttribute('data-status'),
             depth: initialDepth,
             surfaced: config.getAttribute('data-status') === 'surfaced',
+            awaits_teaching: config.getAttribute('data-awaits-teaching') === '1',
         });
     }
 })();

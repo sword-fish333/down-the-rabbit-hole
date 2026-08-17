@@ -31,9 +31,15 @@ class Message extends Model
 
     public const string PHASE_TEACH = 'teach';
 
+    /** A layer posed as its checkpoint alone — asked before it is ever taught. */
+    public const string PHASE_QUESTION = 'question';
+
     public const string PHASE_GRADE = 'grade';
 
-    public const array PHASES = [self::PHASE_TEACH, self::PHASE_GRADE];
+    /** The turns that open a layer, either of which leaves a checkpoint waiting. */
+    public const array OPENING_PHASES = [self::PHASE_TEACH, self::PHASE_QUESTION];
+
+    public const array PHASES = [self::PHASE_TEACH, self::PHASE_QUESTION, self::PHASE_GRADE];
 
     public function conversation(): BelongsTo
     {

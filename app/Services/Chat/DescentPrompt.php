@@ -70,11 +70,79 @@ class DescentPrompt
     {
         $depth = $conversation->current_depth;
 
-        $parts = [
-            $this->languageNote($conversation),
+        return $this->compose(
+            $conversation,
             "[GUIDE DIRECTIVE] Teach layer {$depth} of this subject now, building on everything "
                 .'already covered. Finish with the `**Checkpoint:**` line.',
+            $resurfacing,
+        );
+    }
+
+    /**
+     * The same layer, posed instead of taught — the learner asked to be tested
+     * before they are told anything.
+     *
+     * The hard part is the framing line: without it the checkpoint is
+     * unanswerable ("prove you understand layer 3" — of what?), and one sentence
+     * too many hands over the answer. Hence the explicit prohibitions: name the
+     * territory, never the content.
+     */
+    public function questionInstruction(Conversation $conversation, Collection $resurfacing): string
+    {
+        $depth = $conversation->current_depth;
+
+        return $this->compose(
+            $conversation,
+            "[GUIDE DIRECTIVE] Do NOT teach layer {$depth} yet — the learner has asked to be tested "
+                ."before being taught.\n\n"
+                .'Write at most two short sentences naming what this layer is about: the territory, '
+                .'not the content. Enough that the checkpoint is unambiguous, and nothing that answers '
+                ."it. Do not define the terms, do not give examples, do not explain the mechanism.\n\n"
+                .'Then the `**Checkpoint:**` line exactly as usual: ONE task that forces them to '
+                .'demonstrate this layer. Nothing comes after it. They may well not know this yet — '
+                .'that is the point, so pose it such that a wrong answer is revealing rather than '
+                .'merely wrong.',
+            $resurfacing,
+        );
+    }
+
+    /**
+     * A contextual action the learner asked for mid-layer ("explain differently",
+     * "give me an analogy", "challenge me"). Re-teaches the same layer; the
+     * checkpoint requirement is unchanged so the state machine still holds.
+     */
+    public function reframeInstruction(Conversation $conversation, string $intent, Collection $resurfacing): string
+    {
+        $directives = [
+            DescentService::REFRAME_DIFFERENT => 'Explain this same layer again from a completely different angle. '
+                .'Do not repeat your previous framing — change the entry point, not the difficulty.',
+            DescentService::REFRAME_ANALOGY => 'Explain this same layer through one extended, concrete analogy, '
+                .'then say plainly where the analogy breaks down.',
+            DescentService::REFRAME_CHALLENGE => 'Stay on this same layer but raise the difficulty: pose a harder, '
+                .'more applied version of the checkpoint that an expert would find interesting.',
+            DescentService::REFRAME_EVIDENCE => 'Show your evidence for this layer: name the specific results, '
+                .'papers, books or standards it rests on, and state plainly which parts are '
+                .'established fact, which are interpretation, and which are genuinely uncertain.',
         ];
+
+        return $this->compose(
+            $conversation,
+            "[GUIDE DIRECTIVE] {$directives[$intent]} Finish with the `**Checkpoint:**` line as usual.",
+            $resurfacing,
+        );
+    }
+
+    /**
+     * Everything every turn needs, around whichever directive this turn carries.
+     *
+     * One assembler rather than three: the language, the mode, the page being
+     * studied and the concepts still unresolved are true of the *descent*, not of
+     * one kind of turn — and a reframe that quietly dropped the source note was
+     * a guide improvising about a page it could no longer see.
+     */
+    private function compose(Conversation $conversation, string $directive, Collection $resurfacing): string
+    {
+        $parts = [$this->languageNote($conversation), $directive];
 
         if ($mode = $conversation->learningMode) {
             $parts[] = "Teach it in {$mode->name} mode: {$mode->prompt_directive}";
@@ -92,29 +160,6 @@ class DescentPrompt
         }
 
         return implode("\n\n", $parts);
-    }
-
-    /**
-     * A contextual action the learner asked for mid-layer ("explain differently",
-     * "give me an analogy", "challenge me"). Re-teaches the same layer; the
-     * checkpoint requirement is unchanged so the state machine still holds.
-     */
-    public function reframeInstruction(Conversation $conversation, string $intent): string
-    {
-        $directives = [
-            DescentService::REFRAME_DIFFERENT => 'Explain this same layer again from a completely different angle. '
-                .'Do not repeat your previous framing — change the entry point, not the difficulty.',
-            DescentService::REFRAME_ANALOGY => 'Explain this same layer through one extended, concrete analogy, '
-                .'then say plainly where the analogy breaks down.',
-            DescentService::REFRAME_CHALLENGE => 'Stay on this same layer but raise the difficulty: pose a harder, '
-                .'more applied version of the checkpoint that an expert would find interesting.',
-            DescentService::REFRAME_EVIDENCE => 'Show your evidence for this layer: name the specific results, '
-                .'papers, books or standards it rests on, and state plainly which parts are '
-                .'established fact, which are interpretation, and which are genuinely uncertain.',
-        ];
-
-        return $this->languageNote($conversation)."\n\n[GUIDE DIRECTIVE] {$directives[$intent]} "
-            .'Finish with the `**Checkpoint:**` line as usual.';
     }
 
     /**

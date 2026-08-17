@@ -9,12 +9,13 @@
 
     {{-- The metrics worth watching. Not messages sent, not session length:
          both can rise while learning quality falls. --}}
-    <div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         @foreach ([
             ['label' => 'total', 'value' => $stats['total'], 'icon' => 'forum'],
             ['label' => 'first-layer', 'value' => $stats['first_layer_rate'].'%', 'icon' => 'flag'],
             ['label' => 'average-depth', 'value' => $stats['average_depth'], 'icon' => 'south_east'],
             ['label' => 'surfaced', 'value' => $stats['surfaced'], 'icon' => 'workspace_premium'],
+            ['label' => 'question-first', 'value' => $stats['question_first_rate'].'%', 'icon' => 'psychology_alt'],
         ] as $stat)
             <div class="rounded-2xl border border-border bg-surface p-4 shadow-sm">
                 <div class="flex items-center gap-2">
@@ -37,6 +38,10 @@
         <x-admin.ui.select name="mode" class="sm:w-48" :value="request('mode')"
                            :placeholder="__('admin/frontend.conversations.all-modes')"
                            :options="LearningMode::query()->ordered()->pluck('name', 'id')->all()" />
+
+        <x-admin.ui.select name="approach" class="sm:w-48" :value="request('approach')"
+                           :placeholder="__('admin/frontend.conversations.all-approaches')"
+                           :options="collect(Conversation::APPROACHES)->mapWithKeys(fn ($a) => [$a => __('admin/frontend.conversations.approach.'.$a)])->all()" />
     </x-admin.ui.filters>
 
     @if ($conversations->isEmpty())
@@ -81,6 +86,15 @@
                                     <span class="inline-flex items-center gap-1.5 text-warning">
                                         <x-admin.icon name="public" class="text-sm" />
                                         {{ __('admin/frontend.conversations.public') }}
+                                    </span>
+                                @endif
+
+                                {{-- Only flagged when the learner chose to be asked
+                                     first — the default needs no label. --}}
+                                @if ($conversation->opensWithQuestion())
+                                    <span class="inline-flex items-center gap-1.5">
+                                        <x-admin.icon name="psychology_alt" class="text-sm" />
+                                        {{ __('admin/frontend.conversations.approach.question') }}
                                     </span>
                                 @endif
                             </p>

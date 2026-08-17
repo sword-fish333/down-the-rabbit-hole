@@ -87,7 +87,6 @@ return [
         'summary_max_tokens' => (int) env('CHAT_SUMMARY_MAX_TOKENS', 512),
         'guest_daily_limit' => (int) env('CHAT_GUEST_DAILY_LIMIT', 10),
         'user_daily_limit' => (int) env('CHAT_USER_DAILY_LIMIT', 80),
-        'layer_xp' => (int) env('CHAT_LAYER_XP', 50),
         'history_limit' => (int) env('CHAT_HISTORY_LIMIT', 40),
 
         // Turns kept verbatim before the older ones are folded into a running
@@ -146,5 +145,53 @@ return [
     'mastery' => [
         'demonstrations_to_master' => (int) env('MASTERY_DEMONSTRATIONS', 2),
         'resurface_after_days' => (int) env('MASTERY_RESURFACE_DAYS', 3),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rewards — what XP is actually for
+    |--------------------------------------------------------------------------
+    |
+    | Every value here buys a *different* behaviour, which is the whole point:
+    | a single flat award per layer makes "most XP" and "most layers cleared"
+    | the same ranking twice, and rewards volume over depth.
+    |
+    |   layer          a cleared layer, plus `layer_depth_xp` for each layer of
+    |                  depth already behind it — layer 06 is harder than layer 00
+    |                  and is worth more.
+    |   first_try      cleared without a failed attempt at that layer. Rewards
+    |                  reading properly rather than guessing at the checkpoint.
+    |   concept        a concept crossing into mastered (demonstrated twice).
+    |   surfaced       a subject carried all the way to the bottom — the single
+    |                  rarest thing a learner can do here, priced accordingly.
+    |
+    | These are ledger amounts. Changing one never rewrites history: xp_events
+    | is append-only and users.xp is its running sum.
+    |
+    */
+
+    'rewards' => [
+        'layer_xp' => (int) env('REWARD_LAYER_XP', 50),
+        'layer_depth_xp' => (int) env('REWARD_LAYER_DEPTH_XP', 10),
+        'first_try_xp' => (int) env('REWARD_FIRST_TRY_XP', 25),
+        'concept_xp' => (int) env('REWARD_CONCEPT_XP', 20),
+        'surfaced_xp' => (int) env('REWARD_SURFACED_XP', 200),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rankings
+    |--------------------------------------------------------------------------
+    |
+    | The boards are aggregates over the xp_events ledger, so they are cheap but
+    | not free — and nobody needs them to the second. `cache_ttl` is how long a
+    | computed board is served from cache; a learner's own standing is always
+    | computed live, because that is the number they are watching.
+    |
+    */
+
+    'ranking' => [
+        'per_board' => (int) env('RANKING_PER_BOARD', 25),
+        'cache_ttl' => (int) env('RANKING_CACHE_TTL', 300),
     ],
 ];

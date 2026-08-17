@@ -4,7 +4,9 @@ use App\Http\Controllers\FrontEnd\AuthController;
 use App\Http\Controllers\FrontEnd\ChatController;
 use App\Http\Controllers\FrontEnd\EmailVerificationController;
 use App\Http\Controllers\FrontEnd\HomeController;
+use App\Http\Controllers\FrontEnd\LearnerController;
 use App\Http\Controllers\FrontEnd\ProfileController;
+use App\Http\Controllers\FrontEnd\RankingController;
 use App\Http\Controllers\FrontEnd\SubjectController;
 use App\Http\Controllers\FrontEnd\SubjectFolderController;
 use App\Http\Middleware\SetLocale;
@@ -86,6 +88,26 @@ Route::middleware('auth')->prefix('profile')->as('profile.')->group(function () 
     Route::post('update-profile', [ProfileController::class, 'updateProfile'])->name('update-profile');
     Route::post('update-password', [ProfileController::class, 'updatePassword'])->name('update-password');
     Route::post('update-avatar', [ProfileController::class, 'updateAvatar'])->name('update-avatar');
+    Route::post('update-ranking', [ProfileController::class, 'updateRanking'])->name('update-ranking');
+});
+
+/*
+|--------------------------------------------------------------------------
+| The boards, and one learner's record
+|--------------------------------------------------------------------------
+|
+| Signed-in only, both of them. Standing on a board is opt-in, and "visible to
+| other learners" is a much easier yes than "visible to the open web" — a
+| promise worth keeping narrow, because it is what fills the boards at all.
+|
+| Board and window travel in the query string so a link lands where it was sent
+| from; the learner page is the row you clicked.
+|
+*/
+
+Route::middleware('auth')->group(function () {
+    Route::get('/rankings', [RankingController::class, 'index'])->name('rankings.index');
+    Route::get('/learners/{user}', [LearnerController::class, 'show'])->name('learners.show');
 });
 
 /*
@@ -105,6 +127,10 @@ Route::prefix('subject')->as('subject.')->group(function () {
     Route::get('{conversation}', [ChatController::class, 'show'])->name('show');
     Route::get('{conversation}/stream', [ChatController::class, 'stream'])->name('stream');
     Route::post('{conversation}/checkpoint', [ChatController::class, 'checkpoint'])->name('checkpoint');
+
+    // Taught first, or asked first. Ungated like the descent itself, and applied
+    // to the next layer rather than the one already open.
+    Route::patch('{conversation}/approach', [ChatController::class, 'approach'])->name('approach');
 
     // Owning a subject is what lets you file or publish it, so these are gated
     // where the descent itself is not.

@@ -25,6 +25,13 @@
 
                         <x-admin.ui.toggle name="enabled" :label="__('admin/frontend.users.enabled')"
                                            :checked="$user->enabled" :hint="__('admin/frontend.users.enabled-hint')" />
+
+                        {{-- Moderation, not a preference: standing on a public
+                             board publishes a name and a picture, so an admin
+                             needs a way to take one down without disabling the
+                             whole account. Learners opt in for themselves. --}}
+                        <x-admin.ui.toggle name="ranked" :label="__('admin/frontend.users.ranked')"
+                                           :checked="$user->ranked" :hint="__('admin/frontend.users.ranked-hint')" />
                     </div>
                 </x-admin.ui.card>
 
@@ -43,7 +50,11 @@
                 <dl class="space-y-3 text-sm">
                     @foreach ([
                         'subjects' => $user->conversations_count,
-                        'xp' => number_format($user->xp),
+                        'xp' => number_format($record['xp']),
+                        'layers' => $record['layers'],
+                        'mastered' => $record['mastered'],
+                        'deepest' => $record['deepest'],
+                        'surfaced' => $record['surfaced'],
                         'streak' => $streak?->current_count ?? 0,
                         'longest-streak' => $streak?->longest_count ?? 0,
                     ] as $key => $value)

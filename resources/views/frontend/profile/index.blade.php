@@ -79,16 +79,16 @@
 
             {{-- The one line worth screenshotting. Only shown once there is a
                  real dive behind it — a zero-layer "personal best" is a taunt. --}}
-            @if ($deepestDive && $deepestDive->current_depth > 0)
+            @if ($deepestDive && $deepestDive->layersCleared() > 0)
                 <a href="{{ route('subject.show', $deepestDive) }}"
                    class="dth-card group mt-6 flex items-center gap-3 rounded-2xl border border-accent/30 bg-accent/8 px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                     <span class="material-symbols-outlined shrink-0 text-[1.2rem] text-accent" aria-hidden="true">military_tech</span>
                     <span class="min-w-0">
                         <span class="dth-coord block">{{ __('frontend.profile.record.deepest-dive') }}</span>
                         <span class="block truncate text-sm font-medium text-foreground">
-                            {{ trans_choice('frontend.profile.record.deepest-dive-value', $deepestDive->current_depth, [
+                            {{ trans_choice('frontend.profile.record.deepest-dive-value', $deepestDive->layersCleared(), [
                                 'subject' => $deepestDive->displayTitle(),
-                                'count' => $deepestDive->current_depth,
+                                'count' => $deepestDive->layersCleared(),
                             ]) }}
                         </span>
                     </span>
@@ -96,8 +96,66 @@
                 </a>
             @endif
 
-            {{-- No leaderboard, no time-on-site number, no badge wall. This is
-                 the whole gamification surface, and it is all outcome-based. --}}
+            {{-- ---- The boards, opt-in ----------------------------------- --}}
+            {{-- Off by default, and the switch says exactly what saying yes
+                 publishes. Their standings are shown either way, because "you
+                 would be 4th" is a real invitation and an empty promise is not. --}}
+            <div @class([
+                'mt-6 rounded-2xl border p-4 sm:p-5',
+                'border-primary/30 bg-primary/8' => $user->isRanked(),
+                'border-border/70 bg-surface/40' => ! $user->isRanked(),
+            ])>
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div class="min-w-0 max-w-lg">
+                        <p class="flex items-center gap-2 font-display text-sm font-semibold text-foreground">
+                            <span class="material-symbols-outlined text-[1.15rem] text-primary" aria-hidden="true">leaderboard</span>
+                            {{ $user->isRanked() ? __('frontend.rankings.leave-title') : __('frontend.rankings.join-title') }}
+                        </p>
+                        <p class="mt-1.5 text-xs leading-relaxed text-foreground-muted">
+                            {{ $user->isRanked() ? __('frontend.rankings.leave-body') : __('frontend.rankings.join-body') }}
+                        </p>
+                    </div>
+
+                    <form method="POST" action="{{ route('profile.update-ranking') }}" class="shrink-0">
+                        @csrf
+                        <input type="hidden" name="ranked" value="{{ $user->isRanked() ? '0' : '1' }}">
+
+                        <button type="submit" @class([
+                            'inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition duration-(--motion-feedback) ease-(--ease-snap) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                            'border border-border-strong text-foreground-muted hover:border-danger/50 hover:text-foreground' => $user->isRanked(),
+                            'bg-primary text-primary-foreground hover:bg-primary/90' => ! $user->isRanked(),
+                        ])>
+                            <span class="material-symbols-outlined text-[1.1rem]" aria-hidden="true">{{ $user->isRanked() ? 'visibility_off' : 'groups' }}</span>
+                            {{ $user->isRanked() ? __('frontend.rankings.leave-cta') : __('frontend.rankings.join-cta') }}
+                        </button>
+                    </form>
+                </div>
+
+                @if ($standings->isNotEmpty())
+                    <ul class="mt-4 flex flex-wrap gap-2 border-t border-border/50 pt-4">
+                        @foreach ($standings as $standing)
+                            <li>
+                                <a href="{{ route('rankings.index', ['board' => $standing['board']]) }}"
+                                   class="dth-card flex items-center gap-2 rounded-xl border border-border bg-surface/40 px-3 py-2 text-xs text-foreground-muted transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                                    {{ __('frontend.rankings.board.'.$standing['board']) }}
+                                    <x-frontend.rank-badge :rank="$standing['rank']" />
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+
+                @if ($user->isRanked())
+                    <a href="{{ route('learners.show', $user) }}"
+                       class="dth-coord mt-4 inline-flex items-center gap-1.5 rounded-lg text-primary transition hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                        <span class="material-symbols-outlined text-[1rem]" aria-hidden="true">visibility</span>
+                        {{ __('frontend.learners.title', ['name' => $user->fullName()]) }}
+                    </a>
+                @endif
+            </div>
+
+            {{-- No time-on-site number and no badge wall. This is the whole
+                 gamification surface, and it is all outcome-based. --}}
             <p class="mt-6 text-xs leading-relaxed text-foreground-muted/80">{{ __('frontend.profile.record.note') }}</p>
         </div>
 

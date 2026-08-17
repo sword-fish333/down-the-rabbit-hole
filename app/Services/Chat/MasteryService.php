@@ -14,18 +14,32 @@ use Illuminate\Support\Str;
  * becomes `misunderstood` because the grader caught a wrong belief. Nothing here
  * is inferred from the learner asserting they understood.
  *
- * A concept never regresses out of `mastered`: proving something and later
- * fumbling it in passing shouldn't erase the proof.
+ * Two different questions, two different columns. `state` is where a concept
+ * stands *now*, and it does move backwards — a concept fumbled at layer 5 goes
+ * back to `misunderstood` so the guide resurfaces it, which is the entire point
+ * of the map. `mastered_at` is stamped the first time it was proven and is never
+ * cleared, because the learning record and the rankings ask a different
+ * question: what has this learner actually earned. A bad day does not unearn it.
  */
 class MasteryService
 {
     /**
      * Fold one graded checkpoint into the map.
+     *
+     * Returns the concepts that crossed into mastery on *this* evidence — the
+     * caller turns that into a reward. Returned rather than rewarded here so the
+     * map stays a map: what a mastery is worth is not this service's business.
+     *
+     * @return Collection<int, Concept>
      */
-    public function record(Conversation $conversation, GradingResult $result, int $depth): void
+    public function record(Conversation $conversation, GradingResult $result, int $depth): Collection
     {
+        $mastered = new Collection;
+
         foreach ($result->demonstratedConcepts as $name) {
-            $this->demonstrated($conversation, $name, $depth);
+            if ($concept = $this->demonstrated($conversation, $name, $depth)) {
+                $mastered->push($concept);
+            }
         }
 
         foreach ($result->missingConcepts as $name) {
@@ -35,6 +49,8 @@ class MasteryService
         foreach ($result->misconceptions as $misconception) {
             $this->misunderstood($conversation, $misconception, $depth);
         }
+
+        return $mastered;
     }
 
     /**
@@ -65,7 +81,11 @@ class MasteryService
             ->all();
     }
 
-    private function demonstrated(Conversation $conversation, string $name, int $depth): void
+    /**
+     * @return Concept|null the concept, but only if this is the evidence that
+     *                      first carried it over the mastery threshold
+     */
+    private function demonstrated(Conversation $conversation, string $name, int $depth): ?Concept
     {
         $concept = $this->upsert($conversation, $name, $depth);
 
@@ -73,12 +93,20 @@ class MasteryService
         $concept->refresh();
 
         $threshold = (int) config('platform.mastery.demonstrations_to_master');
+        $mastered = $concept->demonstrations >= $threshold;
+
+        // Stamped once and never cleared, so re-proving a concept that regressed
+        // cannot be counted — or rewarded — as a second mastery.
+        $crossed = $mastered && ! $concept->wasEverMastered();
 
         $concept->update([
-            'state' => $concept->demonstrations >= $threshold ? Concept::STATE_MASTERED : Concept::STATE_DEVELOPING,
+            'state' => $mastered ? Concept::STATE_MASTERED : Concept::STATE_DEVELOPING,
             'note' => null,
             'reviewed_at' => now(),
+            'mastered_at' => $crossed ? now() : $concept->mastered_at,
         ]);
+
+        return $crossed ? $concept : null;
     }
 
     private function encountered(Conversation $conversation, string $name, int $depth): void
