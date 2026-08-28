@@ -107,6 +107,42 @@ class DescentPrompt
     }
 
     /**
+     * The ground, before the first layer — SQ3R's Survey step, and only ever for
+     * a subject grounded in a page.
+     *
+     * The prohibitions are the feature. A survey that explains anything has
+     * quietly become layer 00 delivered early, and the learner walks into the
+     * descent holding answers instead of questions, which is the one thing this
+     * step exists to prevent. Hence: name the territory, never the content.
+     *
+     * It must also not write a checkpoint, and the system prompt tells every
+     * turn to end on one. If a model insists anyway nothing breaks — a survey is
+     * not an OPENING_PHASE, so `currentCheckpoint()` never reads it and the
+     * subject stays out of `checkpoint_pending`. The instruction is the intent;
+     * the phase is the guarantee.
+     */
+    public function surveyInstruction(Conversation $conversation, Collection $resurfacing): string
+    {
+        return $this->compose(
+            $conversation,
+            '[GUIDE DIRECTIVE] Survey this page before the descent begins. This is NOT a teaching '
+                ."turn, it opens no layer, and nothing is being proven.\n\n"
+                .'Map the ground: what this page is and who wrote it for whom, what it covers and in '
+                .'what order — follow its own structure and name its sections in its own words — what '
+                .'it takes for granted that the reader already knows, and where it is thin, one-sided '
+                ."or out of date. Say that last part now; it is material, not scripture.\n\n"
+                .'Explain none of it. No definitions, no examples, no mechanisms, no answers. Someone '
+                .'who reads this must still not know the subject — they should know only what they are '
+                ."about to walk into, and what is worth asking about it.\n\n"
+                .'At most 180 words. Do NOT write a `**Checkpoint:**` line. Close with the two or '
+                .'three questions this page is really answering — the page\'s questions, not questions '
+                .'put to the learner. Nothing comes after them: do not open the descent, do not set up '
+                .'a scenario, do not invite an answer.',
+            $resurfacing,
+        );
+    }
+
+    /**
      * A contextual action the learner asked for mid-layer ("explain differently",
      * "give me an analogy", "challenge me"). Re-teaches the same layer; the
      * checkpoint requirement is unchanged so the state machine still holds.

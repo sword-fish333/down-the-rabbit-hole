@@ -77,6 +77,8 @@
                                 <span class="material-symbols-outlined text-[1rem] text-primary" aria-hidden="true">psychology_alt</span>
                                 {{ __('frontend.approach.posed') }}
                             </p>
+                        @elseif ($message->phase === Message::PHASE_SURVEY)
+                            <x-frontend.survey-mark />
                         @endif
 
                         <x-frontend.markdown :content="$message->content" />

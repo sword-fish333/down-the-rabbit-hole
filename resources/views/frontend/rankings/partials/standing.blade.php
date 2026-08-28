@@ -27,6 +27,24 @@
                     </span>
                 </p>
 
+                {{-- The distance to one place up. A rank alone says where you
+                     are; this says whether the next place is an evening away or
+                     a season — which is the only part of a leaderboard that is
+                     any use to the person reading it. --}}
+                @if ($standing['gap'] !== null)
+                    <p class="mt-1 flex items-center gap-1.5 text-xs text-foreground-muted">
+                        <span class="material-symbols-outlined text-[0.95rem] text-primary" aria-hidden="true">trending_up</span>
+                        {{ __('frontend.rankings.gap', [
+                            'value' => trans_choice('frontend.rankings.board.'.$board.'-unit', $standing['gap'], ['count' => number_format($standing['gap'])]),
+                        ]) }}
+                    </p>
+                @elseif ($standing['rank'] === 1)
+                    <p class="mt-1 flex items-center gap-1.5 text-xs text-foreground-muted">
+                        <span class="material-symbols-outlined text-[0.95rem] text-accent" aria-hidden="true">workspace_premium</span>
+                        {{ __('frontend.rankings.leading') }}
+                    </p>
+                @endif
+
                 @unless ($user->isRanked())
                     <p class="mt-1 flex items-center gap-1.5 text-xs text-foreground-muted">
                         <span class="material-symbols-outlined text-[0.95rem]" aria-hidden="true">visibility_off</span>

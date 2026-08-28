@@ -6,6 +6,7 @@ use App\Contracts\LlmClient;
 use App\Models\Admin;
 use App\Models\Conversation;
 use App\Models\LearningMode;
+use App\Models\Message;
 use App\Models\SubjectFolder;
 use App\Models\User;
 use App\Services\Chat\DescentService;
@@ -52,7 +53,18 @@ class LangKeyTest extends TestCase
         $asked = $this->subjectAwaitingProof($user);
         $unresolved = [];
 
-        foreach ([...$this->learnerPages($user, $subject), [route('subject.show', $asked), $user]] as [$uri, $actor]) {
+        // A page still to be surveyed, and one already surveyed: the offer and
+        // the marker are different strings on different states of one screen.
+        $toSurvey = $this->groundedSubject($user, surveyed: false);
+        $surveyed = $this->groundedSubject($user, surveyed: true);
+
+        $extra = [
+            [route('subject.show', $asked), $user],
+            [route('subject.show', $toSurvey), $user],
+            [route('subject.show', $surveyed), $user],
+        ];
+
+        foreach ([...$this->learnerPages($user, $subject), ...$extra] as [$uri, $actor]) {
             $response = $actor ? $this->actingAs($actor)->get($uri) : $this->get($uri);
             $unresolved = [...$unresolved, ...$this->keysIn($uri, $response->getContent())];
         }
@@ -103,6 +115,36 @@ class LangKeyTest extends TestCase
     }
 
     /**
+     * A subject grounded in a page, either owing its survey or having had it.
+     */
+    private function groundedSubject(User $user, bool $surveyed): Conversation
+    {
+        $descent = app(DescentService::class);
+        $subject = $descent->start($user, $surveyed ? 'Surveyed page' : 'Page to survey');
+
+        $subject->sources()->create([
+            'url' => 'https://example.com/'.($surveyed ? 'surveyed' : 'to-survey'),
+            'title' => 'A page worth mapping',
+            'site' => 'example.com',
+            'text' => str_repeat('The page covers freshness, validation and invalidation. ', 30),
+            'words' => 300,
+        ]);
+
+        $subject = $subject->fresh();
+
+        if (! $surveyed) {
+            return $subject;
+        }
+
+        $stream = app(LlmClient::class)->streamTeachingTurn($descent->teachingRequest($subject, null, Message::PHASE_SURVEY));
+        foreach ($stream as $chunk) {
+        }
+        $descent->applyTeachingTurn($subject, $stream, Message::PHASE_SURVEY);
+
+        return $subject->fresh();
+    }
+
+    /**
      * A question-first subject sitting on a posed, untaught layer — the state
      * where the workspace shows the "asked before taught" marker and offers the
      * lesson, and where the transcript carries a `question` phase.
@@ -142,7 +184,24 @@ class LangKeyTest extends TestCase
             // Every board and every window: the labels are per-board keys, so
             // one of them going missing has to fail here rather than in review.
             ...$this->rankingPages($user),
+            // Every method entry, guest: the name and summary of each one are
+            // per-slug keys, and the registry is where a new method gets added.
+            ...$this->methodPages(),
         ];
+    }
+
+    /**
+     * @return array<int, array{0: string, 1: null}>
+     */
+    private function methodPages(): array
+    {
+        $pages = [[route('methods.index'), null]];
+
+        foreach (array_keys(config('platform.methods')) as $slug) {
+            $pages[] = [route('methods.show', $slug), null];
+        }
+
+        return $pages;
     }
 
     /**

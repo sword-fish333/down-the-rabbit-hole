@@ -7,6 +7,13 @@
     $source = $conversation->sources->first();
     $isOwner = auth()->check() && $conversation->user_id === auth()->id();
 
+    // A teaching mode whose slug also names a method entry turns its chip into
+    // the way to read about it. It is the only link out of the workspace, it
+    // adds no pixels, and it opens in a new tab — an open checkpoint is never
+    // the thing a curious click costs you.
+    $mode = $conversation->learningMode;
+    $modeMethod = $mode && config('platform.methods.'.$mode->slug) ? $mode->slug : null;
+
     // Strings chat.js needs. Passed as one JSON blob rather than a dozen data-*
     // attributes, so the localisation stays in lang/ and out of the JS.
     $strings = [
@@ -31,6 +38,9 @@
         'copied' => __('frontend.chat.copied'),
         'copy' => __('frontend.chat.copy'),
         'posed' => __('frontend.approach.posed'),
+        'survey' => __('frontend.chat.survey'),
+        'surveyLink' => __('frontend.methods.link', ['name' => __('frontend.methods.items.sq3r.name')]),
+        'surveyUrl' => route('methods.show', 'sq3r'),
     ];
 @endphp
 
@@ -60,11 +70,21 @@
                     </div>
 
                     <div class="flex shrink-0 items-center gap-2">
-                        @if ($conversation->learningMode)
-                            <span class="hidden items-center gap-1.5 rounded-full border border-border bg-surface/50 px-2.5 py-1 text-xs text-foreground-muted sm:inline-flex">
-                                <span class="material-symbols-outlined text-[0.95rem]" aria-hidden="true">{{ $conversation->learningMode->icon }}</span>
-                                {{ $conversation->learningMode->label('name') }}
-                            </span>
+                        @if ($mode)
+                            @if ($modeMethod)
+                                <a href="{{ route('methods.show', $modeMethod) }}" target="_blank" rel="noopener"
+                                   title="{{ __('frontend.methods.link', ['name' => $mode->label('name')]) }}"
+                                   class="hidden items-center gap-1.5 rounded-full border border-border bg-surface/50 px-2.5 py-1 text-xs text-foreground-muted transition duration-(--motion-feedback) hover:border-primary/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:inline-flex">
+                                    <span class="material-symbols-outlined text-[0.95rem]" aria-hidden="true">{{ $mode->icon }}</span>
+                                    {{ $mode->label('name') }}
+                                    <span class="sr-only">— {{ __('frontend.methods.link', ['name' => $mode->label('name')]) }}</span>
+                                </a>
+                            @else
+                                <span class="hidden items-center gap-1.5 rounded-full border border-border bg-surface/50 px-2.5 py-1 text-xs text-foreground-muted sm:inline-flex">
+                                    <span class="material-symbols-outlined text-[0.95rem]" aria-hidden="true">{{ $mode->icon }}</span>
+                                    {{ $mode->label('name') }}
+                                </span>
+                            @endif
                         @endif
 
                         @if ($isOwner)
@@ -85,8 +105,9 @@
                             </form>
                         @endif
 
-                        {{-- Deep-work mode: collapses the periphery and concentrates
-                             luminance on this column. Never blurs anything. --}}
+                        {{-- Deep-work mode: retracts the subject rail, dims the rest
+                             of the periphery and concentrates luminance on this
+                             column. Never blurs anything, and Escape leaves it. --}}
                         <button type="button" data-focus-toggle aria-pressed="false"
                                 class="grid h-9 w-9 place-items-center rounded-xl border border-border text-foreground-muted transition duration-(--motion-feedback) hover:border-primary/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                 title="{{ __('frontend.chat.focus-toggle') }}">
@@ -156,6 +177,8 @@
                                         <span class="material-symbols-outlined text-[1rem] text-primary" aria-hidden="true">psychology_alt</span>
                                         {{ __('frontend.approach.posed') }}
                                     </p>
+                                @elseif ($message->phase === Message::PHASE_SURVEY)
+                                    <x-frontend.survey-mark />
                                 @endif
 
                                 <x-frontend.markdown :content="$message->content" />
@@ -284,6 +307,24 @@
                         </details>
                     </div>
 
+                    {{-- Survey. The ground before the first layer, and only for a
+                         subject grounded in a page: SQ3R's first step, which this
+                         product had been skipping. It is a control of its own
+                         rather than a relabelled "go deeper", because it is a
+                         different offer — and it starts the same `subject.stream`
+                         call with no argument, since which turn is due is derived
+                         from state on the server and never asked for here. --}}
+                    <div id="dth-control-survey" @unless ($awaitsSurvey) hidden @endunless>
+                        <div class="flex flex-col items-center gap-3 text-center">
+                            <button type="button" data-descend-deeper
+                                    class="group/cta inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition duration-(--motion-feedback) ease-(--ease-snap) hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                                <span class="material-symbols-outlined text-[1.2rem]" aria-hidden="true">travel_explore</span>
+                                {{ __('frontend.chat.survey-cta') }}
+                            </button>
+                            <p class="max-w-sm text-xs leading-relaxed text-foreground-muted">{{ __('frontend.chat.survey-hint') }}</p>
+                        </div>
+                    </div>
+
                     {{-- Go deeper. The only place the approach can be changed:
                          between layers, where a settings decision interrupts
                          nothing, and where "the next layer" is unambiguous. --}}
@@ -379,6 +420,7 @@
          data-max-depth="{{ $maxDepth }}"
          data-autostream="{{ $autostream ? '1' : '0' }}"
          data-awaits-teaching="{{ $awaitsTeaching ? '1' : '0' }}"
+         data-awaits-survey="{{ $awaitsSurvey ? '1' : '0' }}"
          data-strings="{{ json_encode($strings) }}"></div>
 
     @push('scripts')

@@ -216,7 +216,14 @@
             return;
         }
 
-        if (sidebar && sidebar.classList.contains('is-open')) setSidebar(false);
+        if (sidebar && sidebar.classList.contains('is-open')) {
+            setSidebar(false);
+            return;
+        }
+
+        /* Last: deep-work mode. It retracts the rail, so leaving it must be
+           possible without finding the toggle it hid the way to. */
+        if (body.classList.contains('is-focus')) setFocusMode(false);
     });
 
     var initialTab = body.getAttribute('data-active-tab');

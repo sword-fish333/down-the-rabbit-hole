@@ -38,6 +38,7 @@
 
     var controls = {
         checkpoint: document.getElementById('dth-control-checkpoint'),
+        survey: document.getElementById('dth-control-survey'),
         deeper: document.getElementById('dth-control-deeper'),
         surfaced: document.getElementById('dth-control-surfaced'),
         stop: document.getElementById('dth-control-stop'),
@@ -150,6 +151,7 @@
     /* Exactly one is ever visible. */
     function reveal(state) {
         hide(controls.checkpoint);
+        hide(controls.survey);
         hide(controls.deeper);
         hide(controls.surfaced);
         hide(controls.stop);
@@ -171,6 +173,13 @@
             if (window.DTH) window.DTH.autoGrow(proofField);
             if (proofField) proofField.focus({ preventScroll: true });
             announce(text.checkpointReady || '');
+            return;
+        }
+
+        /* The ground before the first layer. Read from server state like every
+           other control: only the descent knows whether it is still owed. */
+        if (state.awaits_survey && controls.survey) {
+            show(controls.survey);
             return;
         }
 
@@ -198,6 +207,7 @@
 
         hide(errorBox);
         hide(controls.checkpoint);
+        hide(controls.survey);
         hide(controls.deeper);
         hide(verdictPanel);
         openThinking();
@@ -276,7 +286,8 @@
                 /* A layer that arrived as its checkpoint says so, or the learner
                    reads a question with no lesson above it and assumes the turn
                    broke. Only a posed layer leaves teaching still on offer. */
-                if (data.awaits_teaching) markPosed(turn);
+                if (data.phase === 'survey') markSurvey(turn);
+                else if (data.awaits_teaching) markPosed(turn);
                 paintRail(data.depth, false);
                 reveal(data);
                 return;
@@ -309,6 +320,29 @@
 
     /* Mirrors the server-rendered marker on a question-first turn, so a layer
        reloaded from the transcript and one just streamed look identical. */
+    /* A survey is not a layer, and it looks exactly like one until it says so:
+       prose about the subject, arriving where a lesson normally arrives. The
+       mark names it and links the method it comes from. */
+    function markSurvey(turn) {
+        var mark = document.createElement('p');
+        mark.className = 'dth-coord mb-3 flex flex-wrap items-center gap-x-2.5 gap-y-1';
+        mark.innerHTML = '<span class="inline-flex items-center gap-1.5">' +
+            '<span class="material-symbols-outlined text-[1rem] text-primary" aria-hidden="true">travel_explore</span>' +
+            md.escape(text.survey || '') + '</span>';
+
+        if (text.surveyUrl) {
+            var link = document.createElement('a');
+            link.href = text.surveyUrl;
+            link.target = '_blank';
+            link.rel = 'noopener';
+            link.className = 'normal-case tracking-normal text-foreground-muted/85 underline decoration-border underline-offset-4 transition duration-(--motion-feedback) hover:text-foreground hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+            link.textContent = text.surveyLink || '';
+            mark.appendChild(link);
+        }
+
+        turn.insertBefore(mark, turn.firstChild);
+    }
+
     function markPosed(turn) {
         var mark = document.createElement('p');
         mark.className = 'dth-coord mb-3 flex items-center gap-1.5';
@@ -604,6 +638,7 @@
             depth: initialDepth,
             surfaced: config.getAttribute('data-status') === 'surfaced',
             awaits_teaching: config.getAttribute('data-awaits-teaching') === '1',
+            awaits_survey: config.getAttribute('data-awaits-survey') === '1',
         });
     }
 })();

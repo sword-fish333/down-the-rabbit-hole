@@ -19,4 +19,13 @@
             ])
         @endforeach
     </div>
+
+    {{-- The reasoning, one click away and nowhere near the answer box. A new
+         tab on purpose: this sits on the composer, and following it in place
+         would throw away a typed subject. --}}
+    <a href="{{ route('methods.show', 'desirable-difficulties') }}" target="_blank" rel="noopener"
+       class="mt-2.5 inline-flex items-center gap-1.5 text-xs text-foreground-muted/85 transition duration-(--motion-feedback) hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <span class="material-symbols-outlined text-[0.95rem]" aria-hidden="true">help</span>
+        {{ __('frontend.approach.why') }}
+    </a>
 </fieldset>

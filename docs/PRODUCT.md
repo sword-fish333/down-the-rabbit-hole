@@ -239,6 +239,68 @@ trigger for it is organic non-English traffic being worth the churn through ever
 
 ---
 
+## 5bb. Survey — the step that was missing
+
+SQ3R maps almost exactly onto the descent already: **Question** is a question-first layer, **Read** is
+the teaching turn, **Recite** is answering the checkpoint in your own words, **Review** is a fumbled
+concept resurfaced in a later layer. **Survey** was the one step with nothing behind it — and it is the
+only one that needs a text, so it belongs to the source-grounded path and nowhere else.
+
+For a subject opened from a link, the first turn now maps the page instead of teaching it: its sections
+in its own words, what it assumes the reader knows, where it is thin or dated, and the two or three
+questions the page is really answering. It explains nothing — a learner must be able to read it and
+still not know the subject, because the point is to walk in holding questions rather than answers.
+
+Everything about it is derived, not asked for. `DescentService::awaitsSurvey()` is four conditions —
+a source, depth 0, no layer opened, no survey written — and `turnPhase()` picks it up the same way it
+picks up a cold question, so the browser triggers it with the same argument-less stream call. It costs
+**no depth and leaves no checkpoint**: `PHASE_SURVEY` is not in `OPENING_PHASES`, so `currentCheckpoint()`
+cannot read it and the subject stays `exploring`. That is also the fail-safe — the directive forbids a
+checkpoint line, and the phase makes it harmless if a model writes one regardless.
+
+The fourth condition is the one that matters in production: a grounded subject already past layer 00
+must never be interrupted by a map of ground it has walked, which is exactly the state every source
+subject was in when this shipped.
+
+Its marker in the transcript carries the only in-session link to `/methods/sq3r` — a step named after
+its method can explain itself.
+
+**Still missing from SQ3R:** nothing, for a linked subject. For a *named* subject there is no text to
+survey, and inventing one would be the guide teaching layer 00 early under another name.
+
+---
+
+## 5c. The reference desk — `/methods`
+
+Every screen in this product makes a pedagogical claim: prove it to descend, question me first, rate
+your confidence before you submit. A claim like that is worth nothing unless it can be checked, so each
+technique has a public entry at `/methods/{slug}` — what it is, why it works, what the evidence does
+*not* support, and where you meet it here.
+
+**The page has two authors and says so.** The prose is written by the guide, once per (method, language),
+and stored in `method_notes`; the **reading list is hand-written** and lives in `config/platform.php` →
+`methods`, beside a `here` note that grounds the entry in what the app actually does. That split is the
+whole design. A model will produce a plausible author, year and DOI for a paper that does not exist —
+on a page whose entire claim is *go and check*. The system prompt therefore forbids producing citations
+at all, and the list is rendered underneath from config. Delete a row from `method_notes` and the next
+visitor rewrites it; that is the regeneration story, and it is why there is no admin screen for it.
+
+`MethodLibrary` adds **no fourth verb** to `LlmClient` — an entry is prose from a prompt, which is what
+`streamTeachingTurn` already is, drained rather than streamed because nobody watches a reference page
+type itself. It is generated at `mid`, not `cheap`: written once, read by everyone.
+
+**Where it is linked from, and where it deliberately is not.** The footer, and one muted line under the
+approach picker on the composer. A learning mode whose slug matches a method slug (`socratic`) turns its
+chip in the workspace header into the link — no mapping table, no extra pixels, and `target="_blank"`,
+because reading about method while a checkpoint is open is the most respectable way to procrastinate
+there is. Nothing links here from inside an open checkpoint.
+
+`lang/{code}` carries each method's **name, one-line summary and a glossary of the product's own words**.
+The name and summary let the index render without touching a model at all; the glossary is prompt input
+— without it the first Romanian entry called a *coborâre* a "descentrare".
+
+---
+
 ## 6. Frontend architecture
 
 Blade + vanilla JS, no SPA framework. Server-rendered throughout, so every public page is crawlable
@@ -401,6 +463,8 @@ no test touches the network.
 | ✅ | Persistent subject rail — recents or folder tree, on every app screen |
 | ✅ | Source-grounded learning, URL half — SSRF-guarded fetch, extraction, grounded teaching |
 | ✅ | Localisation — EN + RO interface, `Accept-Language` negotiation, per-subject teaching language |
+| ✅ | The reference desk — `/methods`, entries written once per language, hand-checked reading lists |
+| ✅ | Survey — SQ3R's first step for a linked subject: the page mapped before layer 00, no depth, no checkpoint |
 | ⬜ | Locale-prefixed URLs + `hreflang`, when non-English organic traffic justifies it |
 | 🟡 | Source chunking + citations — `source_chunks`, locators, FTS retrieval, `evidence` in the schema |
 | ⬜ | Document/PDF upload |
@@ -415,6 +479,7 @@ no test touches the network.
 | ✅ | Question-first layers — `conversations.approach`, derived turn phase, lesson on demand |
 | ✅ | Behaviour-differentiated XP — depth-scaled layers, first-try, mastered concept, completed subject |
 | ✅ | Rankings — six boards × three windows over `xp_events`, opt-in, with public learner records |
+| ✅ | Rankings: `(type, created_at)` index, versioned board cache, and the distance to one place up |
 | ⬜ | Per-page OG images + sitemap for the shared pages |
 | ⬜ | Achievements on the same event stream |
 | ⬜ | Double-sided referral |

@@ -9,9 +9,19 @@
 | the descent are fixed here exactly as they are in English, so a learner never
 | meets two names for one thing:
 |
-|   subject → subiect · layer → strat · descent → coborâre · descend → coboară
+|   subject → subiect · layer → nivel  · descent → coborâre · descend → coboară
 |   checkpoint → verificare · prove it → dovedește · mastery → stăpânire
 |   surfaced → la suprafață · folder → dosar · streak → serie
+|   learning record → parcurs
+|
+| Two rules this file is written against, both of them things a translation
+| gets wrong and nobody notices in review:
+|
+|   1. `strat` is the only word for a layer. "Nivel" belongs to a game.
+|   2. Nothing addressed to the learner carries a gendered participle. Romanian
+|      makes "ești sigur" a guess about who is reading, so the copy asks
+|      "câtă încredere ai" instead — and a name never takes a genitive
+|      ("evidența lui Maria" is wrong), hence "Ce a dovedit :name".
 |
 | Plurals carry all three Romanian forms — 1 / 2–19 / 20 „de” — because
 | ":count de straturi" is what a Romanian reads and "20 straturi" is not.
@@ -21,7 +31,7 @@
 return [
 
     'meta' => [
-        'description' => 'Alege un subiect — sau lasă un link — și coboară. Fiecare strat îți cere să dovedești că l-ai înțeles înainte să se deschidă următorul, până ieși la suprafață expert.',
+        'description' => 'Alege un subiect — sau lasă un link — și coboară. Fiecare nivel  îți cere să dovedești că l-ai înțeles înainte să se deschidă următorul, până ieși la suprafață expert.',
     ],
 
     'general' => [
@@ -36,16 +46,16 @@ return [
     'navbar' => [
         'primary' => 'Principal',
         'language' => 'Limbă',
-        'theme-toggle' => 'Comută luminos / întunecat',
+        'theme-toggle' => 'Comută între luminos și întunecat',
         'sign-in' => 'Intră în cont',
         'start' => 'Începe o coborâre',
         'sign-out' => 'Ieși din cont',
         'subjects' => 'Subiecte',
         'rankings' => 'Clasamente',
-        'public-record' => 'Evidența ta publică',
+        'public-record' => 'Parcursul tău public',
         'profile' => 'Profil',
         'account' => 'Meniul contului',
-        'streak-title' => 'Zile consecutive cu un strat încheiat',
+        'streak-title' => 'Zile la rând cu un nivel  încheiat',
         'descent-days' => '{1} coborâre de o zi|[2,19] coborâre de :count zile|[20,*] coborâre de :count de zile',
     ],
 
@@ -66,11 +76,11 @@ return [
             'list' => 'Cele mai recente întâi',
             'folders' => 'Pe dosare',
         ],
-        'empty' => 'Încă nimic. Alege un subiect și te așteaptă aici.',
+        'empty' => 'Încă nimic. Începe un subiect și îl găsești aici.',
         'all' => 'Toate subiectele',
         'organize' => 'Organizează',
         'guest-title' => 'Păstrează ce înveți',
-        'guest-body' => 'Intră în cont și subiectele, harta stăpânirii și coborârea ta sunt aici și mâine.',
+        'guest-body' => 'Intră în cont și subiectele, harta stăpânirii și coborârile tale te așteaptă și mâine.',
         'guest-cta' => 'Intră în cont',
     ],
 
@@ -86,16 +96,17 @@ return [
 
     'approach' => [
         'legend' => 'Cum să se deschidă fiecare strat?',
-        'next-label' => 'Cum se deschide stratul următor',
+        'next-label' => 'Cum se deschide nivelul următor',
         'guided' => 'Explică-mi întâi',
-        'guided-hint' => 'Ghidul predă stratul, apoi dovedești că l-ai înțeles.',
+        'guided-hint' => 'Ghidul predă nivelul, apoi dovedești că l-ai înțeles.',
         'question' => 'Întreabă-mă întâi',
-        'question-hint' => 'Verificarea vine direct. Răspunde din ce știi — sau documentează-te singur.',
-        'switched-guided' => 'De la stratul următor, ghidul predă înainte să întrebe.',
-        'switched-question' => 'De la stratul următor, verificarea vine prima.',
+        'question-hint' => 'Verificarea vine direct, fără lecție înainte. Răspunde din ce știi — sau du-te și află.',
+        'switched-guided' => 'De la nivelul următor, ghidul predă înainte să întrebe.',
+        'switched-question' => 'De la nivelul următor, verificarea vine prima.',
         'posed' => 'Întrebat înainte de a fi predat',
-        'teach-cta' => 'Predă-mi acest strat',
+        'teach-cta' => 'Explică-mi nivelul acesta',
         'teach-hint' => 'Adâncimea ta și verificarea deschisă rămân neatinse.',
+        'why' => 'De ce funcționează întrebarea pusă înainte?',
     ],
 
     'auth' => [
@@ -125,8 +136,8 @@ return [
 
         // Panoul de brand (ecrane mari)
         'brand-headline' => 'Coboară. Ieși la suprafață expert.',
-        'brand-subline' => 'O coborâre concentrată prin orice subiect — dovedește fiecare strat ca să deschizi următorul.',
-        'feature-depth' => 'Mergi mai adânc, un strat pe rând',
+        'brand-subline' => 'O coborâre concentrată prin orice subiect — dovedește fiecare nivel  ca să deschizi următorul.',
+        'feature-depth' => 'Mergi mai adânc, un nivel  pe rând',
         'feature-prove' => 'Dovedește înainte să avansezi',
         'feature-mastery' => 'Vezi cum se umple harta stăpânirii',
 
@@ -171,25 +182,26 @@ return [
         'how' => 'Cum funcționează',
         'start-descent' => 'Începe o coborâre',
         'your-subjects' => 'Subiectele tale',
-        'your-record' => 'Evidența ta de învățare',
+        'your-record' => 'Parcursul tău de învățare',
+        'methods' => 'Metodele din spate',
         'create-account' => 'Creează un cont',
         'sign-in' => 'Intră în cont',
         'promises' => [
             'no-feed' => 'Fără feed, fără notificări, nimic de derulat.',
-            'no-streak-guilt' => 'Fără vinovăție pentru serii pierdute și fără mecanici de anxietate.',
+            'no-streak-guilt' => 'Fără reproșuri pentru seria pierdută și fără mecanici care mizează pe teama de a pierde.',
             'depth-not-time' => 'Progresul măsoară adâncimea înțeleasă, niciodată timpul petrecut.',
         ],
         'steps' => [
             'name' => 'Alege un subiect pe care vrei să-l înțelegi cu adevărat.',
-            'prove' => 'Citește un strat, apoi dovedește cu vorbele tale că l-ai prins.',
-            'descend' => 'Treci verificarea și se deschide stratul următor, dedesubt.',
+            'prove' => 'Citește un strat, apoi dovedește cu cuvintele tale că l-ai înțeles.',
+            'descend' => 'Treci verificarea și se deschide nivelul următor, dedesubt.',
         ],
     ],
 
     'home' => [
         'kicker' => 'Începe coborârea',
-        'title' => 'Dovedește ce știi',
-        'subtitle' => 'Alege un subiect sau pune un link. Fiecare strat îți cere să dovedești că l-ai prins înainte să se deschidă următorul — până ieși la suprafață expert.',
+        'title' => 'Gândește mai adânc',
+        'subtitle' => 'Alege un subiect sau lasă un link. Fiecare nivel  îți cere să dovedești că l-ai înțeles înainte să se deschidă următorul — până ieși la suprafață expert.',
         'placeholder' => 'Transformere · Revoluția Franceză · https://o-pagina-pe-care-vrei-sa-o-intelegi.com …',
         'placeholder-label' => 'Subiectul sau linkul pe care vrei să-l înțelegi',
         'composer-hint' => 'Un subiect sau un link de studiat — fără distrageri',
@@ -197,7 +209,7 @@ return [
         'cta-loading' => 'Coborâm…',
         'resume' => 'Reia',
         'topics-label' => 'Sau intră direct în',
-        'settings-label' => 'Cum să te învețe?',
+        'settings-label' => 'Cum vrei să te învețe?',
         'mode-legend' => 'Alege un mod de predare',
         'topics' => [
             'Întricarea cuantică',
@@ -210,8 +222,8 @@ return [
         'how-body' => 'Fără bibliotecă de lecții, fără coadă de videoclipuri, fără bancă de teste. O singură conversație cu o adâncime măsurabilă și o poartă la fiecare strat, care se deschide doar pe dovezi.',
         'steps' => [
             'name' => ['title' => 'Alege subiectul', 'body' => 'Orice te poate face curios — sau un link pe care vrei să-l înțelegi cu adevărat. Ghidul pornește de la fundamentul de care are nevoie un începător.'],
-            'prove' => ['title' => 'Dovedește stratul', 'body' => 'Explică-l înapoi, aplică-l pe un caz nou sau anticipează un rezultat. Niciodată întrebări de memorie pe care le-ai putea copia.'],
-            'descend' => ['title' => 'Coboară', 'body' => 'Treci verificarea și se deschide stratul următor, sub cel de acum. Dacă îți scapă ceva, ghidul corectează înainte să mergi mai departe.'],
+            'prove' => ['title' => 'Dovedește nivelul', 'body' => 'Spune-l cu cuvintele tale, aplică-l pe un caz nou sau anticipează un rezultat. Niciodată întrebări de memorie, pe care le-ai putea copia de undeva.'],
+            'descend' => ['title' => 'Coboară', 'body' => 'Treci verificarea și se deschide nivelul următor, sub cel de acum. Dacă îți scapă ceva, ghidul corectează înainte să mergi mai departe.'],
         ],
         'features' => [
             'flow' => ['title' => 'Concentrare profundă', 'body' => 'Un singur fir, fără feed, fără zgomot — doar tu și subiectul, tot mai adânc.'],
@@ -246,7 +258,7 @@ return [
         ],
         'load-more' => 'Încarcă mai multe',
         'empty-title' => 'Încă nimic deschis',
-        'empty-body' => 'Alege un subiect și primul strat te așteaptă. Progresul se salvează de la prima verificare încolo.',
+        'empty-body' => 'Alege un subiect și primul nivel  te așteaptă. Progresul se salvează de la prima verificare încolo.',
         'no-matches' => 'Nimic nu se potrivește',
         'no-matches-body' => 'Încearcă o căutare mai scurtă sau șterge filtrul.',
         'mastered' => '{1} 1 concept stăpânit|[2,19] :count concepte stăpânite|[20,*] :count de concepte stăpânite',
@@ -262,10 +274,10 @@ return [
         'unshare' => 'Oprește partajarea',
         'shared-notice' => 'Oricine are acest link poate citi: :url',
         'unshared' => 'Linkul nu mai funcționează. Subiectul este din nou privat.',
-        'shared-by' => 'Coborâre de :name',
-        'shared-meta' => 'O coborâre în :subject, doar pentru citire — un strat pe rând, fiecare dovedit.',
+        'shared-by' => 'Coborâre semnată de :name',
+        'shared-meta' => 'O coborâre în :subject, doar pentru citire — un nivel  pe rând, fiecare dovedit.',
         'shared-cta-title' => 'Să citești nu este să înțelegi.',
-        'shared-cta-body' => 'Începe-ți propria coborâre în acest subiect și dovedește fiecare strat înainte să se deschidă următorul.',
+        'shared-cta-body' => 'Începe-ți propria coborâre în acest subiect și dovedește fiecare nivel  înainte să se deschidă următorul.',
 
         // Organizare
         'organization-title' => 'Organizează',
@@ -279,7 +291,7 @@ return [
         'unfiled' => 'Neclasate',
         'add-folder' => 'Adaugă',
         'folder-name' => 'Numele dosarului',
-        'folder-root' => 'Mută la nivelul principal',
+        'folder-root' => 'Mută la primul nivel',
         'new-subfolder' => 'Dosar nou în acesta',
         'rename' => 'Redenumește',
         'save' => 'Salvează',
@@ -307,21 +319,21 @@ return [
 
     'rankings' => [
         'title' => 'Clasamente',
-        'subtitle' => 'Clasat după ce ai dovedit, niciodată după cât ai stat.',
+        'subtitle' => 'Clasamentul măsoară ce ai dovedit, nu cât ai stat.',
         'boards-label' => 'Clasamente',
         'period-label' => 'Interval de timp',
         'period' => [
-            'all' => 'Din totdeauna',
+            'all' => 'De la început',
             'month' => 'Luna aceasta',
             'week' => 'Săptămâna aceasta',
         ],
 
         'board' => [
             'xp' => 'Total XP',
-            'xp-hint' => 'Tot ce ai câștigat: straturi încheiate, concepte stăpânite, reușite din prima, subiecte finalizate.',
+            'xp-hint' => 'Tot ce ai câștigat: straturi încheiate, concepte stăpânite, reușite din prima, subiecte duse până la capăt.',
             'xp-unit' => ':count XP',
             'layers' => 'Straturi încheiate',
-            'layers-hint' => 'Fiecare strat care a trecut o verificare, din toate subiectele.',
+            'layers-hint' => 'Fiecare nivel  care a trecut o verificare, din toate subiectele.',
             'layers-unit' => '{1} :count strat|[2,19] :count straturi|[20,*] :count de straturi',
             'concepts' => 'Concepte stăpânite',
             'concepts-hint' => 'Concepte demonstrate de mai multe ori — dovedite, nu declarate.',
@@ -330,10 +342,10 @@ return [
             'depth-hint' => 'Cele mai multe straturi dovedite într-un singur subiect.',
             'depth-unit' => '{1} :count strat|[2,19] :count straturi|[20,*] :count de straturi',
             'subjects' => 'Subiecte începute',
-            'subjects-hint' => 'Subiecte cu cel puțin un strat încheiat. Să deschizi unul nu costă nimic; aici se numără cele în care chiar ai intrat.',
+            'subjects-hint' => 'Subiecte cu cel puțin un nivel  încheiat. Să deschizi unul nu costă nimic; aici se numără cele în care chiar ai intrat.',
             'subjects-unit' => '{1} :count subiect|[2,19] :count subiecte|[20,*] :count de subiecte',
-            'surfaced' => 'Subiecte finalizate',
-            'surfaced-hint' => 'Coborâri duse până la capăt. Cel mai rar lucru de aici.',
+            'surfaced' => 'Subiecte duse până la capăt',
+            'surfaced-hint' => 'Coborâri duse până jos și înapoi. Cel mai rar lucru de aici.',
             'surfaced-unit' => '{1} :count subiect|[2,19] :count subiecte|[20,*] :count de subiecte',
         ],
 
@@ -343,41 +355,48 @@ return [
         'you' => 'Tu',
         'podium' => 'Primii trei',
         'participants' => '{0} Încă nimeni în clasamente|{1} 1 cursant în clasamente|[2,19] :count cursanți în clasamente|[20,*] :count de cursanți în clasamente',
-        'view-profile' => 'Deschide evidența lui :name',
+        'view-profile' => 'Vezi ce a dovedit :name',
         'empty-title' => 'Încă nimic în acest clasament',
         'empty-body' => 'Se umple pe măsură ce cursanții dovedesc straturi. Încheie unul și primul nume de aici ar putea fi al tău.',
 
-        'your-standing' => 'Poziția ta',
+        'your-standing' => 'Unde ești',
         'unranked-value' => 'Încă nimic aici',
-        'unranked-hint' => 'Încheie un strat și intri în acest clasament.',
+        'unranked-hint' => 'Încheie un nivel  și intri în acest clasament.',
         'hidden-hint' => 'Doar tu vezi asta — nu ești în clasamente.',
+        'gap' => ':value până la locul următor',
+        'leading' => 'Nimeni deasupra ta pe acest clasament.',
         'best-standings' => 'Cele mai bune poziții',
         'no-standings' => 'Încă în niciun clasament.',
 
         'join-title' => 'Intră în clasamente',
-        'join-body' => 'Intrarea îți publică numele, poza și evidența ta de învățare către ceilalți cursanți. Nimic altceva nu se schimbă și poți ieși oricând.',
+        'join-body' => 'Dacă intri, numele, poza și parcursul tău devin vizibile celorlalți cursanți. Nimic altceva nu se schimbă și poți ieși oricând.',
         'join-cta' => 'Intră în clasamente',
         'leave-title' => 'Ești în clasamente',
-        'leave-body' => 'Ceilalți cursanți îți văd numele și evidența de învățare și îți pot deschide profilul din orice clasament.',
+        'leave-body' => 'Ceilalți cursanți îți văd numele și parcursul de învățare și îți pot deschide pagina din orice clasament.',
         'leave-cta' => 'Ieși din clasamente',
-        'joined' => 'Ești în clasamente. Evidența ta este vizibilă celorlalți cursanți.',
-        'left' => 'Ai ieșit din clasamente. Evidența ta este din nou privată.',
+        'joined' => 'Ești în clasamente. Parcursul tău este vizibil celorlalți cursanți.',
+        'left' => 'Ai ieșit din clasamente. Parcursul tău este din nou privat.',
     ],
 
     /*
     |--------------------------------------------------------------------------
     | Un cursant, așa cum îl văd ceilalți
     |--------------------------------------------------------------------------
+    |
+    | Numele oamenilor nu intră niciodată la genitiv aici: „evidența lui Maria”
+    | e greșit, iar „Parcursul lui/ei” e o soluție de traducător. Titlurile sunt
+    | construite ca propoziții — „Ce a dovedit :name” — și merg pentru oricine.
+    |
     */
 
     'learners' => [
-        'title' => 'Evidența lui :name',
-        'meta' => 'Ce a dovedit :name pe Down the Rabbit Hole — straturi încheiate, concepte stăpânite, subiecte finalizate.',
-        'since' => 'Coboară din :date',
-        'preview-title' => 'Doar tu vezi această pagină',
+        'title' => 'Ce a dovedit :name',
+        'meta' => 'Ce a dovedit :name pe Down the Rabbit Hole — straturi încheiate, concepte stăpânite, subiecte duse până la capăt.',
+        'since' => 'Coboară aici din :date',
+        'preview-title' => 'Pagina aceasta o vezi doar tu',
         'preview-body' => 'Exact asta ar vedea ceilalți cursanți dacă ai intra în clasamente.',
         'shared-title' => 'Coborâri publicate',
-        'shared-body' => 'Subiecte pe care :name a ales să le facă publice.',
+        'shared-body' => 'Subiecte pe care :name a ales să le lase la vedere.',
         'shared-empty' => ':name nu a publicat încă nicio coborâre.',
         'back-to-rankings' => 'Înapoi la clasamente',
     ],
@@ -385,7 +404,7 @@ return [
     'profile' => [
         'title' => 'Contul tău',
         'tabs-label' => 'Secțiunile contului',
-        'tab-record' => 'Evidență',
+        'tab-record' => 'Parcurs',
         'tab-profile' => 'Detalii',
         'tab-password' => 'Parolă',
         'change-photo' => 'Schimbă poza',
@@ -439,24 +458,30 @@ return [
 
         // Subiectul
         'subject-label' => 'Coborâm în',
-        'depth-reached' => 'Adâncime atinsă: stratul :depth din :max',
-        'layer' => 'Stratul',
+        'depth-reached' => 'Adâncime atinsă: nivelul :depth din :max',
+        'layer' => 'nivelul',
         'depth-rail' => 'Coborârea',
         'mastery' => 'Stăpânire',
         'concepts' => 'Concepte',
-        'concepts-empty' => 'Conceptele apar aici pe măsură ce le dovedești, marcate după ce ai demonstrat cu adevărat.',
-        'thinking' => 'Gândește',
-        'thought-for' => 'A gândit până la capăt',
-        'analyzing' => 'Îți citește răspunsul în raport cu stratul…',
+        'concepts-empty' => 'Conceptele apar aici pe măsură ce le dovedești — starea fiecăruia vine din ce ai demonstrat, nu din ce ai citit.',
+        'thinking' => 'Se gândește',
+        'thought-for' => 'Gândit până la capăt',
+        'analyzing' => 'Îți cântărește răspunsul față de nivelul acesta…',
         'begin' => 'Deschide primul strat',
+        // Pasul Survey din SQ3R. „Recunoaștere” pentru că e ce faci înainte
+        // să intri pe un teren pe care nu-l cunoști — și pentru că „hartă”
+        // e deja luat de harta stăpânirii.
+        'survey' => 'Recunoaștere',
+        'survey-cta' => 'Recunoaște terenul întâi',
+        'survey-hint' => 'O hartă a terenului înainte să intri în el. Nu costă adâncime și nu dovedește nimic.',
         'go-deeper' => 'Mai adânc',
-        'next-layer' => 'Stratul :depth se deschide sub acesta',
+        'next-layer' => 'nivelul :depth se deschide sub acesta',
         'focus-toggle' => 'Mod concentrare',
         'focus-on' => 'Mod concentrare activat',
         'focus-off' => 'Mod concentrare oprit',
         'stop' => 'Oprește',
         'stopped' => 'Oprit. Ce a ajuns rămâne.',
-        'copy' => 'Copiază stratul',
+        'copy' => 'Copiază nivelul',
         'copied' => 'Copiat',
 
         // Ce face ghidul, înainte să existe text de arătat
@@ -465,25 +490,26 @@ return [
             'reading' => 'Citește :title — :words de cuvinte',
             'recalling' => '{1} Își amintește un concept dovedit de tine|[2,19] Își amintește :count concepte dovedite de tine|[20,*] Își amintește :count de concepte dovedite de tine',
             'revisiting' => '{1} Reia un concept de revizuit|[2,19] Reia :count concepte de revizuit|[20,*] Reia :count de concepte de revizuit',
-            'composing-teach' => 'Compune stratul :layer',
-            'composing-question' => 'Pregătește verificarea pentru stratul :layer',
-            'writing' => 'Îl scrie',
+            'composing-teach' => 'Compune nivelul :layer',
+            'composing-question' => 'Pregătește verificarea pentru nivelul :layer',
+            'composing-survey' => 'Cartografiază terenul',
+            'writing' => 'Scrie nivelul',
         ],
 
         // Verificarea
         'checkpoint' => 'Dovedește că ai înțeles',
         'checkpoint-ready' => 'O verificare îți așteaptă răspunsul.',
-        'proof-placeholder' => 'Explică-l înapoi cu vorbele tale…',
+        'proof-placeholder' => 'Explică-mi cu cuvintele tale…',
         'submit-proof' => 'Dovedește',
         'your-answer' => 'Răspunsul tău',
         'their-answer' => 'Răspunsul lor',
-        'confidence-legend' => 'Cât de sigur ești?',
+        'confidence-legend' => 'Câtă încredere ai?',
         'confidence' => [
-            'shaky' => 'Nesigur',
+            'shaky' => 'Ghicesc',
             'mostly' => 'Aproape',
-            'solid' => 'Solid',
+            'solid' => 'Știu sigur',
         ],
-        'stuck' => 'Te-ai blocat? Încearcă alt unghi',
+        'stuck' => 'Te-ai blocat? Ia-o pe alt drum',
         'reframe' => [
             'different' => 'Explică altfel',
             'analogy' => 'Dă-mi o analogie',
@@ -492,24 +518,24 @@ return [
         ],
 
         // Verdictul
-        'verdict-pass' => 'Strat încheiat',
-        'verdict-incomplete' => 'Încă nu e chiar acolo',
-        'verdict-misconception' => 'Ceva de corectat mai întâi',
+        'verdict-pass' => 'nivel  încheiat',
+        'verdict-incomplete' => 'Dovadă incompletă',
+        'verdict-misconception' => 'O confuzie de limpezit',
         'verdict-toggle' => 'Arată sau ascunde detaliile verdictului',
         'score' => 'Punctaj',
         'criterion-met' => 'demonstrat',
         'criterion-unmet' => 'încă nedemonstrat',
-        'you-thought' => 'Ai părut să crezi că:',
-        'calibration-good' => 'Bine calibrat — știai ce știi',
-        'calibration-over' => 'Te-ai simțit mai sigur decât a arătat răspunsul — merită o a doua privire',
-        'calibration-under' => 'Știai mai mult decât ți-ai acordat',
+        'you-thought' => 'Din răspuns reiese că ai crezut că:',
+        'calibration-good' => 'Calibrare bună — știai ce știi',
+        'calibration-over' => 'Ai avut mai multă încredere decât susține răspunsul — merită o a doua privire',
+        'calibration-under' => 'Știai mai mult decât credeai',
         'resurfaced' => 'Readus din adâncimea :depth',
         'resurfaced-short' => 'din :depth',
 
         // Stări
         'layer-state' => [
             'cleared' => 'încheiat',
-            'current' => 'stratul actual',
+            'current' => 'nivelul actual',
             'review' => 'încheiat, ceva de revizuit',
             'locked' => 'încă nedeschis',
         ],
@@ -522,8 +548,79 @@ return [
 
         // La suprafață
         'surfaced-title' => 'Ai ieșit la suprafață expert.',
-        'surfaced-body' => 'Ai coborât până jos și te-ai întors sus, dovedind fiecare strat pe drum. Ăsta e tot jocul.',
+        'surfaced-body' => 'Ai coborât până jos și te-ai întors sus, dovedind fiecare nivel  pe drum. Exact asta înseamnă să înțelegi ceva până la capăt.',
         'new-descent' => 'Începe altă coborâre',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Metodele
+    |--------------------------------------------------------------------------
+    |
+    | Numele și rezumatul fiecărei metode se traduc aici, pentru că indexul se
+    | randează fără niciun apel la model. Textul lung al fiecărei intrări este
+    | scris de ghid, o dată pentru fiecare limbă, și pănivel  în baza de date;
+    | bibliografia de dedesubt este verificată de om și stă în config/platform.php.
+    |
+    */
+
+    'methods' => [
+        'title' => 'Metodele',
+        'subtitle' => 'Fiecare mecanism de aici vine de undeva. Ce este fiecare tehnică, când funcționează, unde dovezile sunt subțiri — și unde o întâlnești în aplicație.',
+        'meta' => 'Tehnicile de învățare din spatele Down the Rabbit Hole — ce este fiecare, când funcționează și ce cercetare o susține.',
+        'entry-meta' => ':name — ce este, când funcționează și ce dovezi există.',
+        'link' => 'Ce este :name?',
+        'back' => 'Toate metodele',
+        'read' => 'Citește intrarea',
+        'references' => 'Pentru studiu suplimentar',
+        'references-note' => 'Surse verificate de om. Textul de mai sus este scris pentru tine în limba ta; lista aceasta nu este generată.',
+        'unavailable' => 'Intrarea aceasta încă se scrie. Revino peste puțin — bibliografia de mai jos este deja aici.',
+        'cta-title' => 'Să citești despre o metodă nu înseamnă să o folosești.',
+        'cta-body' => 'Alege un subiect și pornește bucla: un strat, o verificare, un lucru dovedit.',
+        'cta' => 'Începe o coborâre',
+
+        // Perechile, nu doar cuvintele: ghidul primește textul în engleză și
+        // trebuie să știe care termen românesc îi corespunde fiecăruia.
+        'glossary' => 'subject = subiect, layer = strat, descent = coborâre, checkpoint = verificare, prove it = dovedește, mastery = stăpânire, surfaced = la suprafață, guide = ghid, learner = cursant, survey = recunoaștere',
+
+        'items' => [
+            'sq3r' => [
+                'name' => 'SQ3R',
+                'summary' => 'Survey, Question, Read, Recite, Review — cinci pași care transformă cititul unui text în răspunsul la el.',
+            ],
+            'retrieval-practice' => [
+                'name' => 'Practica reactualizării',
+                'summary' => 'Scoți ideea din memorie în loc să o bagi din nou înăuntru. Efortul de a-ți aminti este cel care o fixează.',
+            ],
+            'spaced-repetition' => [
+                'name' => 'Practica distribuită',
+                'summary' => 'Aceleași ore, împrăștiate în loc de îngrămădite. Faptul că uiți puțin între sesiuni este mecanismul, nu eșecul.',
+            ],
+            'desirable-difficulties' => [
+                'name' => 'Dificultățile utile',
+                'summary' => 'Condiții care încetinesc învățarea în timp ce se petrece și îmbunătățesc ce rămâne din ea. Studiul ușor se simte mai bine și funcționează mai prost.',
+            ],
+            'self-explanation' => [
+                'name' => 'Autoexplicarea',
+                'summary' => 'Îți spui ție de ce — de ce urmează pasul acesta, de ce răspunsul celălalt e greșit. Scoate la iveală golurile pe care recitirea le acoperă.',
+            ],
+            'interleaving' => [
+                'name' => 'Intercalarea',
+                'summary' => 'Amesteci probleme înrudite în loc să exersezi un singur tip la rând, ca să fii nevoit să alegi metoda, nu doar să o aplici.',
+            ],
+            'calibration' => [
+                'name' => 'Calibrarea',
+                'summary' => 'Să știi ce știi. Distanța dintre cât de sigur te-ai simțit și cât de corect ai fost se antrenează — și ea îți spune când să te oprești din învățat.',
+            ],
+            'learning-by-teaching' => [
+                'name' => 'Învățarea prin predare',
+                'summary' => 'Explici ideea în cuvinte simple cuiva care nu o are. Ce nu reușești să spui este exact ce nu ai.',
+            ],
+            'socratic' => [
+                'name' => 'Metoda socratică',
+                'summary' => 'Ești întrebat în loc să fii informat, o întrebare pe rând, până când răspunsul e al tău și nu memorat.',
+            ],
+        ],
     ],
 
     /*

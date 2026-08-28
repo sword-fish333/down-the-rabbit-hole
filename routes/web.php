@@ -5,6 +5,7 @@ use App\Http\Controllers\FrontEnd\ChatController;
 use App\Http\Controllers\FrontEnd\EmailVerificationController;
 use App\Http\Controllers\FrontEnd\HomeController;
 use App\Http\Controllers\FrontEnd\LearnerController;
+use App\Http\Controllers\FrontEnd\MethodController;
 use App\Http\Controllers\FrontEnd\ProfileController;
 use App\Http\Controllers\FrontEnd\RankingController;
 use App\Http\Controllers\FrontEnd\SubjectController;
@@ -40,6 +41,25 @@ Route::get('/language/{locale}', function (string $locale) {
 
     return back(fallback: route('home'));
 })->name('locale.switch');
+
+/*
+|--------------------------------------------------------------------------
+| The methods — the reference desk
+|--------------------------------------------------------------------------
+|
+| One entry per learning technique the product is built on. Public and ungated
+| on purpose: "why should I trust how this thing teaches" is a question asked
+| before signing up, and the honest answer is a page with a reading list on it.
+|
+| The slug is checked against the registry in config('platform.methods') by the
+| controller, so there is nothing to guess and nothing to enumerate.
+|
+*/
+
+Route::prefix('methods')->as('methods.')->group(function () {
+    Route::get('/', [MethodController::class, 'index'])->name('index');
+    Route::get('{slug}', [MethodController::class, 'show'])->name('show');
+});
 
 /*
 |--------------------------------------------------------------------------

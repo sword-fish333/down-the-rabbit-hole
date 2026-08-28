@@ -235,6 +235,48 @@ class RankingTest extends TestCase
     }
 
     /**
+     * Joining has to be visible immediately. The boards are cached for minutes,
+     * so without an invalidation the learner opts in and then reads a board
+     * they are demonstrably not on — which reads as the switch having failed,
+     * on the one feature they had to be talked into.
+     */
+    public function test_joining_the_boards_shows_up_on_them_at_once(): void
+    {
+        $waiting = $this->learner('Waiting', $this->layers(3), ranked: false);
+        $this->learner('Standing', $this->layers(1));
+
+        // Warm the cache with a board this learner is absent from.
+        $this->assertCount(1, $this->rankings()->board(RankingService::BOARD_LAYERS, RankingService::PERIOD_ALL));
+
+        $this->actingAs($waiting)->post(route('profile.update-ranking'), ['ranked' => '1'])->assertRedirect();
+
+        $board = $this->rankings()->board(RankingService::BOARD_LAYERS, RankingService::PERIOD_ALL);
+
+        $this->assertCount(2, $board);
+        $this->assertSame('Waiting', $board->first()['user']->first_name);
+        $this->assertSame(2, $this->rankings()->participants());
+    }
+
+    /**
+     * The gap is the only part of a standing that tells you what to do next, so
+     * it counts to the next *distinct* score above — not to the next row, which
+     * on a tie would be a distance of zero dressed up as a place to climb.
+     */
+    public function test_a_standing_carries_the_distance_to_the_next_place_up(): void
+    {
+        $leader = $this->learner('Leader', $this->layers(9));
+        $this->learner('Tied', $this->layers(4));
+        $chaser = $this->learner('Chaser', $this->layers(4));
+        $last = $this->learner('Last', $this->layers(1));
+
+        $all = RankingService::PERIOD_ALL;
+
+        $this->assertNull($this->rankings()->standing($leader, RankingService::BOARD_LAYERS, $all)['gap']);
+        $this->assertSame(5, $this->rankings()->standing($chaser, RankingService::BOARD_LAYERS, $all)['gap']);
+        $this->assertSame(3, $this->rankings()->standing($last, RankingService::BOARD_LAYERS, $all)['gap']);
+    }
+
+    /**
      * The public record is the same yes as the boards. Nothing else opens it,
      * and the owner can always see their own — that preview is how someone
      * decides whether to say yes at all.

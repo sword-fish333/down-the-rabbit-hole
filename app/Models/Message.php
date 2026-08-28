@@ -36,10 +36,18 @@ class Message extends Model
 
     public const string PHASE_GRADE = 'grade';
 
+    /**
+     * The ground surveyed before the descent starts — SQ3R's Survey step, for a
+     * subject grounded in a page. It teaches nothing and opens no layer, so it
+     * is deliberately absent from OPENING_PHASES: no checkpoint is read from it,
+     * and it costs no depth.
+     */
+    public const string PHASE_SURVEY = 'survey';
+
     /** The turns that open a layer, either of which leaves a checkpoint waiting. */
     public const array OPENING_PHASES = [self::PHASE_TEACH, self::PHASE_QUESTION];
 
-    public const array PHASES = [self::PHASE_TEACH, self::PHASE_QUESTION, self::PHASE_GRADE];
+    public const array PHASES = [self::PHASE_TEACH, self::PHASE_QUESTION, self::PHASE_SURVEY, self::PHASE_GRADE];
 
     public function conversation(): BelongsTo
     {

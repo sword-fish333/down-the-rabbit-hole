@@ -62,6 +62,20 @@ class RankingService
     public const array PERIODS = [self::PERIOD_ALL, self::PERIOD_MONTH, self::PERIOD_WEEK];
 
     /**
+     * Bumped whenever the *population* of the boards changes — someone joins,
+     * someone leaves. Every cached board key carries it, so one write
+     * invalidates all eighteen of them without needing tags (the file and
+     * database cache drivers have none) and without flushing anyone else's
+     * cache.
+     *
+     * Nobody needs a leaderboard to the second, so XP earned inside the window
+     * is deliberately NOT bumped here — but "I joined and I am not on it" reads
+     * as broken, and waiting five minutes to find out you are there is a bad
+     * first minute of the one feature that is opt-in.
+     */
+    private const string VERSION_KEY = 'dth:ranking:version';
+
+    /**
      * board => [aggregate over xp_events, the event type it counts (null = all)].
      *
      * The expressions are constants, never input — `$board` is checked against
@@ -94,18 +108,19 @@ class RankingService
     {
         $limit ??= (int) config('platform.ranking.per_board');
 
-        $rows = Cache::remember(
-            "dth:ranking:{$this->resolveBoard($board)}:{$this->resolvePeriod($period)}:{$limit}",
+        $rows = $this->ranked($board, $period)
+            ->orderByDesc('value')
+            // Ties go to whoever has been descending longest, then by id so
+            // the order is total — a board that reshuffles on reload reads
+            // as broken however correct the numbers are.
+            ->orderBy('first_at')
+            ->orderBy('xp_events.user_id')
+            ->limit($limit)
+            ->get();
+        cache()->remember(
+            "dth:ranking:{$this->version()}:{$this->resolveBoard($board)}:{$this->resolvePeriod($period)}:{$limit}",
             (int) config('platform.ranking.cache_ttl'),
-            fn () => $this->ranked($board, $period)
-                ->orderByDesc('value')
-                // Ties go to whoever has been descending longest, then by id so
-                // the order is total — a board that reshuffles on reload reads
-                // as broken however correct the numbers are.
-                ->orderBy('first_at')
-                ->orderBy('xp_events.user_id')
-                ->limit($limit)
-                ->get(),
+            fn () => $rows->count(),
         );
 
         return $this->withUsers($rows);
@@ -121,7 +136,7 @@ class RankingService
      * is exactly what the visible board shows. Any cleverer tie-break here would
      * put a different number under the learner's own row than beside it.
      *
-     * @return array{value: int, rank: int|null}
+     * @return array{value: int, rank: int|null, gap: int|null}
      */
     public function standing(User $user, string $board, string $period): array
     {
@@ -134,22 +149,45 @@ class RankingService
         $value = (int) ($row->value ?? 0);
 
         if ($value <= 0) {
-            return ['value' => 0, 'rank' => null];
+            return ['value' => 0, 'rank' => null, 'gap' => null];
         }
 
-        $ahead = DB::query()
+        // Count and gap in one pass: both answer "who is above me", and two
+        // queries for one question would be two chances to disagree.
+        $above = DB::query()
             ->fromSub($this->ranked($board, $period), 'boards')
             ->where('boards.value', '>', $value)
-            ->count();
+            ->selectRaw('count(*) as ahead, min(boards.value) as next_value')
+            ->first();
 
-        return ['value' => $value, 'rank' => $ahead + 1];
+        $next = $above?->next_value;
+
+        return [
+            'value' => $value,
+            'rank' => (int) ($above->ahead ?? 0) + 1,
+            // How much more is one place up — null at the top of the board, and
+            // null on an empty one. A rank on its own says where you are; this
+            // says whether the next place is one evening away or a season.
+            'gap' => $next !== null ? (int) $next - $value : null,
+        ];
+    }
+
+    /** Forget every cached board. Call it when the boards gain or lose a learner. */
+    public function forgetBoards(): void
+    {
+        Cache::forever(self::VERSION_KEY, $this->version() + 1);
+    }
+
+    private function version(): int
+    {
+        return (int) Cache::get(self::VERSION_KEY, 0);
     }
 
     /**
      * Every board this learner appears on, best rank first — the "what am I
      * actually good at" summary that makes a profile worth opening.
      *
-     * @return Collection<int, array{board: string, rank: int, value: int}>
+     * @return Collection<int, array{board: string, rank: int, value: int, gap: int|null}>
      */
     public function standings(User $user, string $period = self::PERIOD_ALL): Collection
     {
@@ -164,7 +202,7 @@ class RankingService
     public function participants(): int
     {
         return Cache::remember(
-            'dth:ranking:participants',
+            "dth:ranking:{$this->version()}:participants",
             (int) config('platform.ranking.cache_ttl'),
             fn () => User::query()->where('ranked', true)->where('enabled', true)->count(),
         );

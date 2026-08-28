@@ -87,7 +87,7 @@
              content carries only account controls — one place per job. --}}
         <x-frontend.sidebar />
 
-        <div class="flex min-h-screen min-w-0 flex-col lg:pl-[17.5rem]">
+        <div class="dth-shell flex min-h-screen min-w-0 flex-col lg:pl-[17.5rem]">
             <x-frontend.navbar shell :peripheral="$workspace" />
 
             <main id="dth-main" class="relative z-10 flex-1">

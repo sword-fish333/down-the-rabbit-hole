@@ -237,6 +237,7 @@ return [
         'phase' => [
             'teach' => 'Teaching',
             'question' => 'Question first',
+            'survey' => 'Survey',
             'grade' => 'Grading',
         ],
         'verdict' => [

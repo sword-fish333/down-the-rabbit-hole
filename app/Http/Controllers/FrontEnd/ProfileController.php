@@ -54,6 +54,11 @@ class ProfileController extends Controller
 
         auth()->user()->update(['ranked' => $ranked]);
 
+        // The boards are cached for minutes. Without this, joining is followed
+        // by a board you are visibly not on — which reads as the switch having
+        // failed, on the one feature the learner had to opt into.
+        $this->rankings->forgetBoards();
+
         return back()->with('success', __('frontend.rankings.'.($ranked ? 'joined' : 'left')));
     }
 

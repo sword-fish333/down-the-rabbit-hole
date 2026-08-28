@@ -147,11 +147,38 @@ class DescentService
      */
     public function turnPhase(Conversation $conversation, ?string $reframe = null): string
     {
-        return $reframe === null
-            && $conversation->opensWithQuestion()
+        if ($reframe !== null) {
+            return Message::PHASE_TEACH;
+        }
+
+        // Before either of the two ways a layer opens, there is the ground it
+        // opens into — but only for a subject that has a page to survey.
+        if ($this->awaitsSurvey($conversation)) {
+            return Message::PHASE_SURVEY;
+        }
+
+        return $conversation->opensWithQuestion() && ! $this->layerOpened($conversation)
+            ? Message::PHASE_QUESTION
+            : Message::PHASE_TEACH;
+    }
+
+    /**
+     * True when the next turn owed to this subject is the survey — SQ3R's first
+     * step, and the one thing this product asked its learners to do without.
+     *
+     * Four conditions, each of them load-bearing. A page to survey, because you
+     * cannot map ground that was never fetched. Depth 0, because a survey after
+     * layer 03 is a spoiler. No survey already written, because it happens once.
+     * And no layer opened yet, which is what keeps every source-backed subject
+     * that was already underway when this shipped from being handed a map of
+     * ground it has already walked.
+     */
+    public function awaitsSurvey(Conversation $conversation): bool
+    {
+        return $conversation->current_depth === 0
+            && $conversation->sources()->exists()
             && ! $this->layerOpened($conversation)
-                ? Message::PHASE_QUESTION
-                : Message::PHASE_TEACH;
+            && ! $conversation->messages()->where('phase', Message::PHASE_SURVEY)->exists();
     }
 
     /**
@@ -177,6 +204,7 @@ class DescentService
             'role' => Message::ROLE_USER,
             'content' => match (true) {
                 $reframe !== null => $this->prompt->reframeInstruction($conversation, $reframe, $resurfacing),
+                $phase === Message::PHASE_SURVEY => $this->prompt->surveyInstruction($conversation, $resurfacing),
                 $phase === Message::PHASE_QUESTION => $this->prompt->questionInstruction($conversation, $resurfacing),
                 default => $this->prompt->teachInstruction($conversation, $resurfacing),
             },
@@ -215,11 +243,17 @@ class DescentService
             usage: $stream->usage(),
         );
 
-        // Taught or merely posed, the turn always ends on a checkpoint awaiting
-        // the learner's proof.
-        $conversation->update(['status' => Conversation::STATUS_CHECKPOINT_PENDING]);
+        // Taught or merely posed, the turn ends on a checkpoint awaiting the
+        // learner's proof — a survey does not. It maps the ground and hands the
+        // subject straight back to "open the first layer".
+        $conversation->update(['status' => $phase === Message::PHASE_SURVEY
+            ? Conversation::STATUS_EXPLORING
+            : Conversation::STATUS_CHECKPOINT_PENDING]);
 
-        return $this->state($conversation->refresh());
+        // The phase rides along so the browser can label the turn it just
+        // watched arrive. It belongs to this turn, not to the subject, which is
+        // why it is not part of state().
+        return $this->state($conversation->refresh()) + ['phase' => $phase];
     }
 
     /**
@@ -331,6 +365,7 @@ class DescentService
             'passed' => $passed,
             'surfaced' => $conversation->isSurfaced(),
             'awaits_teaching' => $this->awaitsTeaching($conversation),
+            'awaits_survey' => $this->awaitsSurvey($conversation),
             'mastery' => $this->mastery->tally($conversation),
         ];
     }

@@ -84,6 +84,7 @@ return [
         'posed' => 'Asked before it was taught',
         'teach-cta' => 'Teach me this layer',
         'teach-hint' => 'Your depth and the open checkpoint are untouched.',
+        'why' => 'Why does being asked first work?',
     ],
 
     'auth' => [
@@ -160,6 +161,7 @@ return [
         'start-descent' => 'Start a descent',
         'your-subjects' => 'Your subjects',
         'your-record' => 'Your learning record',
+        'methods' => 'The methods behind it',
         'create-account' => 'Create an account',
         'sign-in' => 'Sign in',
         'promises' => [
@@ -339,6 +341,8 @@ return [
         'unranked-value' => 'Nothing here yet',
         'unranked-hint' => 'Clear a layer and you are on this board.',
         'hidden-hint' => 'Only you can see this — you are not on the boards.',
+        'gap' => ':value to the next place up',
+        'leading' => 'Nobody above you on this board.',
         'best-standings' => 'Best standings',
         'no-standings' => 'Not on any board yet.',
 
@@ -437,6 +441,12 @@ return [
         'thought-for' => 'Thought it through',
         'analyzing' => 'Reading your answer against the layer…',
         'begin' => 'Open the first layer',
+        // SQ3R's Survey step, for a subject grounded in a page. Named after
+        // the technique on purpose: the entry at /methods/sq3r is one link
+        // away, and a step named after its method explains itself.
+        'survey' => 'Survey',
+        'survey-cta' => 'Survey the page first',
+        'survey-hint' => 'A map of the ground before you go into it. It costs no depth and proves nothing.',
         'go-deeper' => 'Go deeper',
         'next-layer' => 'Layer :depth opens beneath this one',
         'focus-toggle' => 'Deep-work mode',
@@ -455,6 +465,7 @@ return [
             'revisiting' => '{1} Weaving back 1 concept to revisit|[2,*] Weaving back :count concepts to revisit',
             'composing-teach' => 'Composing Layer :layer',
             'composing-question' => 'Setting the checkpoint for Layer :layer',
+            'composing-survey' => 'Mapping the ground',
             'writing' => 'Writing it out',
         ],
 
@@ -471,7 +482,7 @@ return [
             'mostly' => 'Mostly there',
             'solid' => 'Solid',
         ],
-        'stuck' => 'Stuck? Try another angle',
+        'stuck' => 'Stuck? Think it through another way',
         'reframe' => [
             'different' => 'Explain differently',
             'analogy' => 'Give an analogy',
@@ -481,8 +492,8 @@ return [
 
         // Verdict
         'verdict-pass' => 'Layer cleared',
-        'verdict-incomplete' => 'Not quite there yet',
-        'verdict-misconception' => 'Something to correct first',
+        'verdict-incomplete' => 'Not proven yet',
+        'verdict-misconception' => 'Something to untangle first',
         'verdict-toggle' => 'Show or hide verdict details',
         'score' => 'Score',
         'criterion-met' => 'shown',
@@ -512,5 +523,78 @@ return [
         'surfaced-title' => 'You’ve surfaced an expert.',
         'surfaced-body' => 'You went all the way down and came back up, proving every layer on the way. That’s the whole game.',
         'new-descent' => 'Start another descent',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | The methods
+    |--------------------------------------------------------------------------
+    |
+    | A short reference desk for the techniques the product is built on. The body
+    | of each entry is written by the guide, once per language, and stored — the
+    | reading lists underneath are hand-checked and live in config/platform.php,
+    | because a model must never be the source of a citation.
+    |
+    */
+
+    'methods' => [
+        'title' => 'The methods',
+        'subtitle' => 'Every mechanic here comes from somewhere. This is what each technique is, when it works, where the evidence is thin — and where you meet it in the app.',
+        'meta' => 'The learning techniques behind Down the Rabbit Hole — what each one is, when it works, and the research behind it.',
+        'entry-meta' => ':name — what it is, when it works, and the evidence behind it.',
+        'link' => 'What is :name?',
+        'back' => 'All methods',
+        'read' => 'Read the entry',
+        'references' => 'Read further',
+        'references-note' => 'Hand-checked sources. The entry above is written for you in your language; this list is not.',
+        'unavailable' => 'This entry is still being written. Come back in a moment — the reading list below is already here.',
+        'cta-title' => 'Reading about a method is not using one.',
+        'cta-body' => 'Name a subject and the loop starts: one layer, one checkpoint, one thing proved.',
+        'cta' => 'Start a descent',
+
+        // Prompt input, not UI copy: the product's own vocabulary, handed to
+        // the guide so an entry describing the app uses the same words the app
+        // does. A new language supplies its own mapping here or the entry will
+        // invent one — which is how "coborâre" first came back as "descentrare".
+        'glossary' => 'subject, layer, descent, checkpoint, prove it, mastery, surfaced, guide, learner',
+
+        'items' => [
+            'sq3r' => [
+                'name' => 'SQ3R',
+                'summary' => 'Survey, Question, Read, Recite, Review — five steps that turn reading a text into answering it.',
+            ],
+            'retrieval-practice' => [
+                'name' => 'Retrieval practice',
+                'summary' => 'Pulling an idea back out of memory instead of putting it in again. The effort of recalling is what makes it hold.',
+            ],
+            'spaced-repetition' => [
+                'name' => 'Spaced practice',
+                'summary' => 'The same hours, spread out rather than massed. Forgetting a little in between is the mechanism, not the failure.',
+            ],
+            'desirable-difficulties' => [
+                'name' => 'Desirable difficulties',
+                'summary' => 'Conditions that slow learning down as it happens and improve what survives. Easy study feels better and works worse.',
+            ],
+            'self-explanation' => [
+                'name' => 'Self-explanation',
+                'summary' => 'Saying why to yourself — why this step follows, why that answer is wrong. It exposes the gaps a re-read hides.',
+            ],
+            'interleaving' => [
+                'name' => 'Interleaving',
+                'summary' => 'Mixing related problems instead of drilling one kind at a time, so you have to choose the approach and not just run it.',
+            ],
+            'calibration' => [
+                'name' => 'Calibration',
+                'summary' => 'Knowing what you know. The gap between how sure you felt and how right you were is trainable — and it is what tells you when to stop studying.',
+            ],
+            'learning-by-teaching' => [
+                'name' => 'Learning by teaching',
+                'summary' => 'Explaining an idea in plain words to someone who does not have it. The parts you cannot say are exactly the parts you do not have.',
+            ],
+            'socratic' => [
+                'name' => 'The Socratic method',
+                'summary' => 'Being asked rather than told, one question at a time, until the answer is yours instead of remembered.',
+            ],
+        ],
     ],
 ];

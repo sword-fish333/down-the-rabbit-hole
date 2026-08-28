@@ -66,6 +66,11 @@
                             </a>
                         </li>
                     @endauth
+                    <li>
+                        <a href="{{ route('methods.index') }}" class="text-foreground-muted transition duration-(--motion-feedback) hover:text-foreground">
+                            {{ __('frontend.footer.methods') }}
+                        </a>
+                    </li>
                 </ul>
             </nav>
 
