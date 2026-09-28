@@ -394,7 +394,7 @@
             <div class="sticky top-28 space-y-7 pt-6">
                 <x-frontend.depth-rail :conversation="$conversation" :concepts="$concepts" :mastery="$mastery" />
 
-                <div aria-labelledby="dth-concepts-heading">
+                <section aria-labelledby="dth-concepts-heading">
                     <h2 id="dth-concepts-heading" class="dth-coord mb-3">{{ __('frontend.chat.concepts') }}</h2>
 
                     @if ($concepts->isEmpty())
@@ -406,7 +406,7 @@
                             @endforeach
                         </div>
                     @endif
-                </div>
+                </section>
             </div>
         </aside>
     </div>

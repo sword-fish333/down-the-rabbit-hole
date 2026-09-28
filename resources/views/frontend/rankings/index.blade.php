@@ -37,7 +37,11 @@
             <p class="dth-coord mt-3">{{ trans_choice('frontend.rankings.participants', $participants, ['count' => number_format($participants)]) }}</p>
         </header>
 
-        <div class="mt-8 grid gap-6 lg:grid-cols-[13.5rem_minmax(0,1fr)] lg:gap-10">
+        {{-- `grid-cols-1` is minmax(0, 1fr): without it the implicit column
+             grows to the board strip's min-content — a row of no-wrap chips
+             about 1000px long — and the whole page scrolls sideways on a
+             phone instead of the strip scrolling inside itself. --}}
+        <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[13.5rem_minmax(0,1fr)] lg:gap-10">
             @include('frontend.rankings.partials.board-rail', compact('boards', 'board', 'period'))
 
             <div class="min-w-0 space-y-5">
@@ -56,7 +60,9 @@
                 <div role="group" aria-label="{{ __('frontend.rankings.period-label') }}"
                      class="inline-flex items-center gap-0.5 rounded-xl border border-border/70 bg-surface/40 p-0.5">
                     @foreach (RankingService::PERIODS as $key)
-                        @php($active = $period === $key)
+                        @php
+                            $active = $period === $key;
+                        @endphp
 
                         <a href="{{ route('rankings.index', ['board' => $board, 'period' => $key]) }}"
                            @if ($active) aria-current="true" @endif

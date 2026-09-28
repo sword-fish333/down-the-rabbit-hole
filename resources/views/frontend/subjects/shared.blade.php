@@ -60,7 +60,9 @@
 
         <div class="flex flex-col gap-8 py-8">
             @foreach ($messages as $message)
-                @php($isUser = $message->role === Message::ROLE_USER)
+                @php
+                    $isUser = $message->role === Message::ROLE_USER;
+                @endphp
 
                 @continue($loop->first && $isUser)
                 @continue($message->phase === Message::PHASE_GRADE)

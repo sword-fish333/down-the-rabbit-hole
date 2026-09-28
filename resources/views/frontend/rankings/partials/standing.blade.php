@@ -13,7 +13,10 @@
     <div class="flex flex-wrap items-center gap-x-4 gap-y-3">
         <x-frontend.avatar :user="$user" size="h-11 w-11" text="text-sm" />
 
-        <div class="min-w-0 flex-1">
+        {{-- A real basis, not flex-1's 0%: an item with no basis never makes a
+             wrapping row wrap, so on a phone the button kept its line and this
+             column was squeezed to a few words wide. --}}
+        <div class="min-w-0 grow basis-48">
             <p class="dth-coord">{{ __('frontend.rankings.your-standing') }}</p>
 
             @if ($standing['rank'] === null)

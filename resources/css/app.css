@@ -286,7 +286,9 @@
 
     /* Google Material Symbols (loaded in the layout heads). Size is driven by
        font-size, so any text-* utility controls it; default ~20px. Add the
-       `is-filled` class (see <x-admin.icon :filled="true" />) for the solid weight. */
+       `is-filled` class (see <x-admin.icon :filled="true" />) for the solid weight.
+       Google's own stylesheet overrides size and display from outside any
+       layer; public/css/frontend/custom.css hands both back on the frontend. */
     .material-symbols-outlined {
         font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         font-size: 1.25rem;

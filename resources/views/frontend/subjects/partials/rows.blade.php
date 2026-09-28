@@ -11,6 +11,11 @@
     // The empty state belongs on a first page, never on the tail of a scroll:
     // a cursor means "append", and appending nothing is not an empty library.
     $firstPage = ! request()->filled('cursor');
+
+    // "All" is the whole library, not a filter: an empty one reached through
+    // the All chip (or a cleared live search, which always sends it) is still
+    // an empty library, not a search that missed.
+    $narrowed = $search !== '' || $filter !== Conversation::FILTER_ALL;
 @endphp
 
 @forelse ($subjects as $subject)
@@ -80,10 +85,10 @@
         <li class="px-3 py-16 text-center">
             <span class="material-symbols-outlined text-[2rem] text-primary/70" aria-hidden="true">stairs</span>
             <p class="mt-3 font-display text-base font-semibold text-foreground">
-                {{ request()->filled('q') || request()->filled('filter') ? __('frontend.subjects.no-matches') : __('frontend.subjects.empty-title') }}
+                {{ $narrowed ? __('frontend.subjects.no-matches') : __('frontend.subjects.empty-title') }}
             </p>
             <p class="mx-auto mt-1.5 max-w-md text-sm text-foreground-muted">
-                {{ request()->filled('q') || request()->filled('filter') ? __('frontend.subjects.no-matches-body') : __('frontend.subjects.empty-body') }}
+                {{ $narrowed ? __('frontend.subjects.no-matches-body') : __('frontend.subjects.empty-body') }}
             </p>
         </li>
     @endif

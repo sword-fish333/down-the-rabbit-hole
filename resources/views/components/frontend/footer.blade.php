@@ -7,7 +7,7 @@
      is a positioning claim, so it sits in the footer as a promise, not in a
      modal as a boast. --}}
 <footer @class([
-    'relative z-10 border-t border-border/70 bg-surface/40',
+    'relative z-10 border-t border-border/70 bg-surface/40 print:hidden',
     'dth-peripheral' => $peripheral,
 ])>
     <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -94,8 +94,9 @@
             </p>
             <div class="flex items-center gap-4">
                 <p class="dth-coord">{{ __('frontend.footer.tagline') }}</p>
-                {{-- The navbar hides the switcher on the narrowest screens to keep
-                     the primary action clear; here it is, at every width. --}}
+                {{-- The top bar drops the switcher below `sm` to keep the primary
+                     action clear, so below `sm` it is here — and in the subject
+                     rail, on the app-shell pages that draw no footer. --}}
                 <x-frontend.lang-switch class="sm:hidden" />
             </div>
         </div>

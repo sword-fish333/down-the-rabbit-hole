@@ -134,6 +134,33 @@
         });
     }
 
+    /* Arrow keys, Home and End move along the tablist and select what they land
+       on — the WAI-ARIA tabs pattern. Only the selected tab is a Tab stop (the
+       rest are tabindex="-1"), so without this the keyboard could never reach
+       the other panels. Modified keys are left to the browser (Alt+← is Back). */
+    document.addEventListener('keydown', function (event) {
+        if (event.altKey || event.ctrlKey || event.metaKey) return;
+
+        var tab = event.target.closest('[role="tab"][data-tab]');
+        var list = tab && tab.closest('[role="tablist"]');
+        if (!list) return;
+
+        var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"][data-tab]'));
+        var index = tabs.indexOf(tab);
+        var next = null;
+
+        if (event.key === 'ArrowRight') next = tabs[(index + 1) % tabs.length];
+        else if (event.key === 'ArrowLeft') next = tabs[(index - 1 + tabs.length) % tabs.length];
+        else if (event.key === 'Home') next = tabs[0];
+        else if (event.key === 'End') next = tabs[tabs.length - 1];
+
+        if (!next) return;
+
+        event.preventDefault();
+        activateTab(next.getAttribute('data-tab'));
+        next.focus();
+    });
+
     /* --- Delegated clicks -------------------------------------------------- */
     document.addEventListener('click', function (event) {
         var target = event.target;

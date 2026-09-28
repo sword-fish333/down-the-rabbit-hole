@@ -67,7 +67,7 @@
                     <label class="sr-only" for="dth-rename-{{ $folder->id }}">{{ __('frontend.subjects.folder-name') }}</label>
                     <input id="dth-rename-{{ $folder->id }}" type="text" name="name" value="{{ $folder->name }}"
                            maxlength="80" required
-                           class="min-w-0 flex-1 rounded-lg border border-border-strong bg-surface/60 px-2.5 py-1.5 text-sm text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                           class="min-w-0 flex-1 rounded-lg border border-border-strong bg-surface/60 px-2.5 py-1.5 text-base/5 text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm">
                     <button type="submit"
                             class="rounded-lg bg-primary px-2.5 py-1.5 text-xs font-semibold text-primary-foreground transition hover:bg-primary/90">
                         {{ __('frontend.subjects.save') }}

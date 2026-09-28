@@ -132,7 +132,9 @@
             </p>
 
             @if ($shared->isNotEmpty())
-                <ul class="mt-4 grid gap-3 sm:grid-cols-2">
+                {{-- grid-cols-1 (minmax(0, 1fr)) so a long title truncates
+                     instead of widening the column past a 320px screen. --}}
+                <ul class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                     @foreach ($shared as $subject)
                         <li>
                             <a href="{{ route('subject.shared', $subject->share_token) }}"

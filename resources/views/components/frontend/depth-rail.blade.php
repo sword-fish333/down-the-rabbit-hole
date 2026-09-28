@@ -22,7 +22,7 @@
 {{-- The descent, as a map: depth, cleared layers, the current layer, what is
      still locked, and which layers hold something to review. Read vertically
      because that is the direction of travel. Only state CHANGES animate. --}}
-<div class="dth-peripheral" aria-labelledby="dth-rail-heading">
+<section class="dth-peripheral" aria-labelledby="dth-rail-heading">
     <h2 id="dth-rail-heading" class="dth-coord mb-3">{{ __('frontend.chat.depth-rail') }}</h2>
 
     <ol id="dth-rail" class="relative space-y-1.5">
@@ -82,4 +82,4 @@
             @endforeach
         </dl>
     @endif
-</div>
+</section>

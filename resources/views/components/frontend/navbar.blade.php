@@ -12,9 +12,9 @@
 
      On the learning workspace it carries .dth-peripheral, so deep-work mode can
      dim it without removing it: the way out of a focus mode must stay reachable,
-     just quieter. --}}
+     just quieter. It never prints: the page under it is the artefact. --}}
 <header @class([
-    'dth-glass sticky top-0 z-30 border-b border-border/70 bg-background/72 backdrop-blur-xl',
+    'dth-glass sticky top-0 z-30 border-b border-border/70 bg-background/72 backdrop-blur-xl print:hidden',
     'dth-peripheral' => $peripheral,
 ])>
     <nav @class([
@@ -32,17 +32,20 @@
                 <span class="sr-only">{{ __('frontend.sidebar.open') }}</span>
             </button>
 
-            {{-- Page title slot: the workspace fills it, everything else leaves it
-                 empty so the bar stays a bar and not a second header. --}}
-            <div class="min-w-0 flex-1">{{ $slot }}</div>
+            {{-- Spacer: the rail owns navigation here, so the bar carries nothing
+                 between the drawer trigger and the account controls. --}}
+            <div class="min-w-0 flex-1"></div>
         @else
             <a href="{{ route('home') }}"
                class="group flex shrink-0 items-center gap-2.5 rounded-xl font-display text-base font-semibold tracking-tight text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <img src="{{ loadFiles('images/logos/main_logo.png') }}"
                      alt="" width="36" height="36" loading="eager" decoding="async"
                      class="dth-logo h-9 w-9 shrink-0 rounded-full object-contain ring-1 ring-border/60">
-                <span class="hidden sm:inline">{{ config('app.name') }}</span>
-                <span class="sr-only sm:hidden">{{ config('app.name') }}</span>
+                {{-- The wordmark waits for `md`: at `sm` the switcher, Sign in and
+                     the full CTA all arrive at once, and with it the bar ran past
+                     the screen edge up to ~700px in Romanian. The mark stays. --}}
+                <span class="hidden md:inline">{{ config('app.name') }}</span>
+                <span class="sr-only md:hidden">{{ config('app.name') }}</span>
             </a>
 
             @auth
@@ -78,9 +81,16 @@
                 </a>
 
                 {{-- The descent: days in a row with a layer cleared. Shown only
-                     when it is alive — no zero-state guilt, no loss anxiety. --}}
+                     when it is alive — no zero-state guilt, no loss anxiety.
+                     Off the app shell the bar also carries the wordmark and the
+                     Subjects link, so there it waits for `xl`: from 640px it
+                     pushed a signed-in learner's bar past the screen edge. --}}
                 @if ($user->streak && $user->streak->current_count > 0)
-                    <span class="hidden items-center gap-1.5 rounded-full border border-accent/30 bg-accent/8 px-3 py-1 font-mono text-xs text-accent sm:inline-flex"
+                    <span @class([
+                              'hidden items-center gap-1.5 rounded-full border border-accent/30 bg-accent/8 px-3 py-1 font-mono text-xs text-accent',
+                              'sm:inline-flex' => $shell,
+                              'xl:inline-flex' => ! $shell,
+                          ])
                           title="{{ __('frontend.navbar.streak-title') }}">
                         <span class="material-symbols-outlined text-[1rem]" aria-hidden="true">local_fire_department</span>
                         {{ trans_choice('frontend.navbar.descent-days', $user->streak->current_count, ['count' => $user->streak->current_count]) }}
@@ -88,14 +98,20 @@
                 @endif
             @endauth
 
+            {{-- From `sm` up. Below it the bar has no room, so the switcher moves
+                 to the subject rail — or, off the app shell, to the footer. --}}
             <x-frontend.lang-switch class="hidden sm:flex" />
 
             <x-frontend.theme-switch class="shrink-0" />
 
             @auth
+                {{-- A disclosure, not an ARIA menu: the panel is plain links
+                     reached with Tab, so `aria-expanded` states it and
+                     `aria-haspopup` would promise arrow-key menu behaviour it
+                     does not have. --}}
                 <div class="relative">
                     <button type="button" data-menu-toggle aria-controls="dth-account-menu"
-                            aria-expanded="false" aria-haspopup="true"
+                            aria-expanded="false"
                             class="flex items-center gap-2 rounded-full p-1 pr-2 text-sm transition duration-(--motion-feedback) hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                         <x-frontend.avatar :user="$user" />
                         <span class="hidden max-w-28 truncate font-medium text-foreground lg:inline">{{ $user->fullName() }}</span>
@@ -150,7 +166,10 @@
                 <a href="{{ route('register') }}"
                    class="group/cta inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition duration-(--motion-feedback) ease-(--ease-snap) hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                     {{ __('frontend.navbar.start') }}
-                    <span class="dth-cta-arrow material-symbols-outlined text-[1.05rem]" aria-hidden="true">south_east</span>
+                    {{-- Decorative, and the one thing this bar can drop: at 320px
+                         the Romanian label plus the arrow overflowed the screen
+                         (WCAG 1.4.10). The arrow's hover cue is moot on touch. --}}
+                    <span class="dth-cta-arrow material-symbols-outlined hidden text-[1.05rem] sm:inline-block" aria-hidden="true">south_east</span>
                 </a>
             @endauth
         </div>

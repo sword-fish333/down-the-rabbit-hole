@@ -22,6 +22,25 @@
     --depth: 0;
 }
 
+/* Every <summary> on the frontend draws its own chevron and opts out of the
+   native marker with `list-none` — which WebKit ignores, painting its triangle
+   through this pseudo-element instead. */
+summary::-webkit-details-marker { display: none; }
+
+/* Google's Material Symbols stylesheet sets `font-size: 24px` and `display:
+   inline-block` on the icon class outside any cascade layer — and an un-layered
+   rule beats every layered one, so no `text-*` size and no `hidden` ever
+   reached an icon: all of them rendered at 24px. `revert-layer` hands both back
+   to the layers — app.css's base size for an icon with no size of its own, the
+   utilities for the rest — and the base layer keeps the inline-block box. */
+@layer base {
+    .material-symbols-outlined { display: inline-block; }
+}
+.material-symbols-outlined {
+    font-size: revert-layer;
+    display: revert-layer;
+}
+
 /* =============================================================================
    1. Atmosphere — a fixed, full-bleed rain-haze behind everything.
 
@@ -588,7 +607,10 @@ body.is-focus .dth-shell { padding-left: 0; }
     transition: transform var(--motion-state) var(--ease-out),
                 box-shadow var(--motion-state) var(--ease-out);
 }
-.theme-switch[aria-checked='true'] .theme-switch-thumb {
+/* Keyed off `.dark`, like the icons above — not off aria-checked. The class is
+   set before first paint; aria-checked only once app.js has run, so a thumb
+   keyed off it loads on the wrong side and slides across on every dark page. */
+.dark .theme-switch .theme-switch-thumb {
     transform: translate(1.9rem, -50%);
     box-shadow: 0 1px 3px color-mix(in oklch, var(--color-ink-950) 35%, transparent),
                 0 0 12px -2px color-mix(in oklch, var(--color-wave-500) 55%, transparent);
@@ -637,6 +659,20 @@ body.is-focus .dth-shell { padding-left: 0; }
    would relayout the page on every frame of the slide.
    ============================================================================= */
 .dth-sidebar.is-open { translate: 0 0; }
+
+/* Closed, the drawer is off-canvas — and it has to leave the tab order and the
+   accessibility tree with it, or every link in it sits between the skip link
+   and the page for a keyboard or screen-reader user on a phone, all of them
+   invisible. The same delayed `visibility` as deep-work mode (§10), so the
+   slide out is still seen; opening is instant, because this stops matching.
+   `width < 64rem` is the exact complement of Tailwind's `lg`. */
+@media (width < 64rem) {
+    .dth-sidebar:not(.is-open) {
+        visibility: hidden;
+        transition: translate var(--motion-panel) var(--ease-out),
+                    visibility 0s linear var(--motion-panel);
+    }
+}
 
 /* Behind an open drawer the page must not scroll under the finger. */
 body.is-rail-open { overflow: hidden; }
@@ -768,6 +804,17 @@ body.is-rail-open { overflow: hidden; }
 .dth-copy:focus-visible { opacity: 1; }
 @media (hover: none) {
     .dth-copy { opacity: 0.6; }
+
+    /* Always on screen here, so the opening lines make room for it instead of
+       running underneath: an empty float the size of the button. Only where the
+       prose opens the turn — a posed or survey mark above it takes the button's
+       row instead. Pseudo-content, so a copied layer never includes it. */
+    .group\/turn > .prose-dth:first-child::before {
+        content: '';
+        float: right;
+        width: 2.5rem;
+        height: 1.75rem;
+    }
 }
 
 /* =============================================================================
@@ -883,6 +930,11 @@ body.is-rail-open { overflow: hidden; }
        reads, it just doesn't move. */
     .dth-descent-dot::after { animation: none; top: 40%; opacity: 1; }
     .dth-block-in { animation: none; opacity: 1; transform: none; }
+    /* The reset above makes every property of every element a 1ms transition —
+       inherited `visibility` included — so the rail's links would stay hidden
+       for a frame after it opens, and app.js's focus() on the first would miss.
+       Nothing in the rail moves under reduced motion anyway. */
+    .dth-sidebar * { transition-property: none !important; }
 }
 
 @media (prefers-reduced-transparency: reduce) {
@@ -894,8 +946,10 @@ body.is-rail-open { overflow: hidden; }
     }
 }
 
-/* Print: the transcript is the artefact worth keeping. */
+/* Print: the transcript is the artefact worth keeping. The site's own top bar
+   and footer carry `print:hidden` in their markup — an element selector here
+   would also take the <header> of every article with it, title and all. */
 @media print {
-    .dth-atmosphere, header, footer, .dth-peripheral, .dth-composer { display: none !important; }
+    .dth-atmosphere, .dth-peripheral, .dth-composer { display: none !important; }
     .dth-workspace { max-width: none; }
 }

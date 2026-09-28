@@ -8,7 +8,7 @@
     $selectedApproach = old('approach', $approach);
 @endphp
 
-<x-frontend.layout :description="__('frontend.meta.description')" shell :marketing="auth()->guest()">
+<x-frontend.layout shell :marketing="auth()->guest()">
     {{-- ===================================================================
          The composer — the front door and, for a returning learner, the whole
          app's home.

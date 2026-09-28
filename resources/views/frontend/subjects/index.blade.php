@@ -41,10 +41,12 @@
             <label class="dth-composer flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-border-strong bg-surface/60 px-3 py-2">
                 <span class="material-symbols-outlined text-[1.15rem] text-foreground-muted" aria-hidden="true">search</span>
                 <span class="sr-only">{{ __('frontend.subjects.search-label') }}</span>
+                {{-- 16px on a phone: iOS zooms into any field smaller than that
+                     on focus. The /5 line keeps the box the height it was. --}}
                 <input type="search" name="q" value="{{ $search }}" maxlength="120"
                        autocomplete="off" enterkeyhint="search"
                        placeholder="{{ __('frontend.subjects.search-placeholder') }}"
-                       class="min-w-0 flex-1 border-0 bg-transparent text-sm text-foreground placeholder:text-foreground-muted/70 focus:outline-none">
+                       class="min-w-0 flex-1 border-0 bg-transparent text-base/5 text-foreground placeholder:text-foreground-muted/70 focus:outline-none sm:text-sm">
                 <input type="hidden" name="filter" value="{{ $filter }}">
             </label>
 

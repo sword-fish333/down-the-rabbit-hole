@@ -13,8 +13,11 @@
 
 @php
     $hasError = $errors->has($name);
+    // The error takes the hint's place, so the hint is only referenced while
+    // it is actually on the page — an IDREF to nothing describes nothing.
+    $showHint = $hint && ! $hasError;
     $describedBy = collect([
-        $hint ? $name.'-hint' : null,
+        $showHint ? $name.'-hint' : null,
         $hasError ? $name.'-error' : null,
     ])->filter()->implode(' ');
 @endphp
@@ -62,7 +65,7 @@
         {{ $slot }}
     </div>
 
-    @if ($hint && ! $hasError)
+    @if ($showHint)
         <p id="{{ $name }}-hint" class="mt-1.5 text-xs text-foreground-muted/80">{{ $hint }}</p>
     @endif
 

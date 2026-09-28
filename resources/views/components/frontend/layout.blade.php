@@ -58,9 +58,12 @@
 
     @stack('styles')
 </head>
+{{-- `svh`, not `vh` (min-h-screen): on a phone 100vh is the height with the
+     browser toolbar retracted, so a short page scrolls by the toolbar's height
+     while it is showing. The page sections already size themselves in svh. --}}
 <body
     @class([
-        'min-h-screen bg-background text-foreground antialiased',
+        'min-h-svh bg-background text-foreground antialiased',
         'flex flex-col' => ! $shell,
         $bodyClass,
     ])
@@ -87,7 +90,7 @@
              content carries only account controls — one place per job. --}}
         <x-frontend.sidebar />
 
-        <div class="dth-shell flex min-h-screen min-w-0 flex-col lg:pl-[17.5rem]">
+        <div class="dth-shell flex min-h-svh min-w-0 flex-col lg:pl-[17.5rem]">
             <x-frontend.navbar shell :peripheral="$workspace" />
 
             <main id="dth-main" class="relative z-10 flex-1">

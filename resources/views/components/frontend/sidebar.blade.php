@@ -3,14 +3,21 @@
 
      It exists for two jobs and nothing else: get back into an unfinished
      descent, and see what you have been curious about. So it carries one primary
-     action, one list, and two destinations. No feed, no badges, no promos.
+     action, one list, and two destinations — plus, on a phone, the language
+     switcher the top bar has no room for. No feed, no badges, no promos.
 
      Data comes from a view composer (AppServiceProvider::composeSidebar) — the
      `dth_subject_view` cookie decides whether the flat list or the folder tree
      is built at all, so the unused one costs no queries and never flashes.
 
      Off-canvas below `lg` with a scrim; static from `lg` up. Position is CSS
-     only, so it is usable before app.js runs.
+     only, so it is usable before app.js runs. Closed, it also leaves the tab
+     order and the accessibility tree (custom.css §16).
+
+     The panel itself scrolls when the viewport is too short for it (a phone
+     on its side, 400% zoom), because what sits at the bottom — the language
+     switcher, on a phone — is otherwise cut off with no way to reach it. The
+     list keeps a few rows of its own rather than collapsing to nothing.
      =========================================================================== --}}
 @php($activeId = request()->route('conversation')?->id)
 
@@ -18,7 +25,7 @@
      class="fixed inset-0 z-40 bg-[oklch(0.12_0.02_248)]/70 backdrop-blur-sm lg:hidden"></div>
 
 <aside id="dth-sidebar" data-sidebar aria-label="{{ __('frontend.sidebar.label') }}"
-       class="dth-sidebar fixed inset-y-0 left-0 z-50 flex w-[17.5rem] max-w-[86vw] -translate-x-full flex-col border-r border-border/60 bg-surface/85 backdrop-blur-xl transition-transform duration-(--motion-panel) ease-(--ease-out) lg:translate-x-0">
+       class="dth-sidebar scrollbar-slim fixed inset-y-0 left-0 z-50 flex w-[17.5rem] max-w-[86vw] -translate-x-full flex-col overflow-y-auto border-r border-border/60 bg-surface/85 backdrop-blur-xl transition-transform duration-(--motion-panel) ease-(--ease-out) max-lg:overscroll-contain lg:translate-x-0">
 
     {{-- Brand. Doubles as the way out to the landing page. --}}
     <div class="flex h-16 shrink-0 items-center gap-2 px-3">
@@ -67,7 +74,7 @@
             </div>
         </div>
 
-        <nav class="scrollbar-slim mt-2 min-h-0 flex-1 overflow-y-auto px-2 pb-2"
+        <nav class="scrollbar-slim mt-2 min-h-24 flex-1 overflow-y-auto px-2 pb-2"
              aria-labelledby="dth-sidebar-heading">
             @if ($folderView)
                 @if ($tree['folders']->isEmpty() && $tree['unfiled']->isEmpty())
@@ -99,8 +106,10 @@
         <div class="min-h-0 flex-1"></div>
     @endauth
 
-    {{-- Foot: the two destinations, then who you are — or why signing in helps. --}}
-    <div class="shrink-0 border-t border-border/60 p-2">
+    {{-- Foot: the two destinations — or, for a visitor, why signing in helps.
+         It sits on the bottom edge of a fixed panel, so it keeps clear of the
+         iPhone home indicator the same way the workspace controls do. --}}
+    <div class="shrink-0 border-t border-border/60 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         @auth
             @foreach ([
                 ['route' => 'subjects.index', 'icon' => 'history', 'key' => 'all', 'match' => 'subjects.index'],
@@ -127,5 +136,18 @@
                 </a>
             </div>
         @endauth
+
+        {{-- Below `sm` the top bar has no room for the language switcher, and
+             the app shell draws no footer to fall back on — so on a phone the
+             rail carries it, for a visitor as much as for a learner. From `sm`
+             up it is in the top bar and this row is not drawn. The label is
+             hidden from assistive tech because the control already names
+             itself "Language". --}}
+        <x-frontend.lang-switch class="mt-1 justify-between px-3 py-1.5 sm:hidden">
+            <span class="flex items-center gap-3 text-sm text-foreground-muted" aria-hidden="true">
+                <span class="material-symbols-outlined text-[1.2rem]">language</span>
+                {{ __('frontend.navbar.language') }}
+            </span>
+        </x-frontend.lang-switch>
     </div>
 </aside>

@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\Chat\DescentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Tests\Support\FakeLlmClient;
 use Tests\TestCase;
 
@@ -98,6 +99,24 @@ class LocaleTest extends TestCase
             ->assertCookie('locale', 'ro');
 
         $this->get(route('locale.switch', 'de'))->assertNotFound();
+    }
+
+    /**
+     * Below `sm` the top bar has no room for the switcher and the app shell
+     * draws no footer, so the subject rail is the only place a phone finds it.
+     * The failure is silent — every page still renders, a signed-in learner on
+     * a phone just has no way to change language — so it is pinned here, for a
+     * visitor and for a learner.
+     */
+    public function test_the_subject_rail_carries_the_language_switcher(): void
+    {
+        $switch = 'href="'.route('locale.switch', 'ro').'"';
+        $rail = fn (string $html) => Str::betweenFirst($html, 'id="dth-sidebar"', '</aside>');
+
+        $this->assertStringContainsString($switch, $rail($this->get('/')->assertOk()->getContent()));
+
+        $this->actingAs(User::factory()->create());
+        $this->assertStringContainsString($switch, $rail($this->get(route('subjects.index'))->assertOk()->getContent()));
     }
 
     /**

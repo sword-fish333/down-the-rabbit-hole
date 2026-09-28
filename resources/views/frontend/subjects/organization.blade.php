@@ -37,7 +37,7 @@
                 <span class="sr-only">{{ __('frontend.subjects.tree-search-label') }}</span>
                 <input type="search" data-tree-search autocomplete="off" maxlength="120"
                        placeholder="{{ __('frontend.subjects.tree-search-placeholder') }}"
-                       class="min-w-0 flex-1 border-0 bg-transparent text-sm text-foreground placeholder:text-foreground-muted/70 focus:outline-none">
+                       class="min-w-0 flex-1 border-0 bg-transparent text-base/5 text-foreground placeholder:text-foreground-muted/70 focus:outline-none sm:text-sm">
             </label>
 
             <form method="POST" action="{{ route('subjects.folders.store') }}"
@@ -48,7 +48,7 @@
                     <input id="dth-folder-name" type="text" name="name" required maxlength="80"
                            data-new-folder-name
                            placeholder="{{ __('frontend.subjects.folder-name') }}"
-                           class="w-44 rounded-xl border border-border-strong bg-surface/60 px-3 py-2 text-sm text-foreground placeholder:text-foreground-muted/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                           class="w-44 rounded-xl border border-border-strong bg-surface/60 px-3 py-2 text-base/5 text-foreground placeholder:text-foreground-muted/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm">
                     <input type="hidden" name="parent_id" value="" data-new-folder-parent>
                     <button type="submit"
                             class="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition duration-(--motion-feedback) ease-(--ease-snap) hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -75,8 +75,8 @@
 
         {{-- The tree. The whole panel is the root drop zone, so dragging a
              subject out of a folder has an obvious target: the empty space. --}}
-        <div class="mt-6 rounded-2xl border border-border/70 bg-surface/30 p-2 backdrop-blur-sm"
-             data-drop-root aria-label="{{ __('frontend.subjects.tree-label') }}">
+        <section class="mt-6 rounded-2xl border border-border/70 bg-surface/30 p-2 backdrop-blur-sm"
+                 data-drop-root aria-label="{{ __('frontend.subjects.tree-label') }}">
             @if ($folders->isEmpty() && $unfiled->isEmpty())
                 <div class="px-4 py-14 text-center">
                     <span class="material-symbols-outlined text-[2rem] text-accent/70" aria-hidden="true">folder_open</span>
@@ -103,7 +103,7 @@
             <p data-tree-no-matches hidden class="px-4 py-10 text-center text-sm text-foreground-muted">
                 {{ __('frontend.subjects.no-matches') }}
             </p>
-        </div>
+        </section>
 
         <p class="mt-3 flex items-start gap-1.5 text-xs leading-relaxed text-foreground-muted/80">
             <span class="material-symbols-outlined mt-px text-[1rem]" aria-hidden="true">info</span>

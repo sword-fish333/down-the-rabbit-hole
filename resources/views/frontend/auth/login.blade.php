@@ -9,12 +9,8 @@
                 <h1 class="font-display text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">{{ __('frontend.auth.login-title') }}</h1>
                 <p class="mt-2 text-sm text-foreground-muted">{{ __('frontend.auth.login-subtitle') }}</p>
 
-                @if (session('error'))
-                    <p role="alert" class="mt-5 flex items-center gap-2 rounded-xl border border-danger/40 bg-danger/10 px-4 py-2.5 text-sm text-danger">
-                        <span class="material-symbols-outlined text-[1.1rem]" aria-hidden="true">error</span>{{ session('error') }}
-                    </p>
-                @endif
-
+                {{-- A failed sign-in comes back as the `error` flash, which the
+                     layout already renders (and announces) — never here too. --}}
                 <form action="{{ route('login.submit') }}" method="POST" class="mt-7 space-y-5">
                     @csrf
 
@@ -25,9 +21,11 @@
                     <x-frontend.text-field name="password" type="password" :label="__('frontend.auth.password')"
                                            icon="lock" required autocomplete="current-password"
                                            :placeholder="__('frontend.auth.password-placeholder')">
+                        {{-- A 36px target around the 19px icon, which stays where it
+                             was: the icon alone is too small to hit (WCAG 2.5.8). --}}
                         <button type="button" data-password-toggle="#password" aria-pressed="false"
                                 aria-label="{{ __('frontend.auth.toggle-password') }}"
-                                class="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-lg text-foreground-muted/70 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                                class="absolute right-1.5 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-foreground-muted/70 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                             <span class="material-symbols-outlined text-[1.2rem]" aria-hidden="true">visibility</span>
                         </button>
                     </x-frontend.text-field>
