@@ -62,6 +62,30 @@ class WebAuthTest extends TestCase
         $this->assertFalse(Auth::guard('web')->check());
     }
 
+    /**
+     * A failed sign-in is an error on the email field, never a flash. The field
+     * is autofocused, so its aria-describedby is what a screen reader reads out,
+     * and the message sits next to the form — once, not also in a toast.
+     */
+    public function test_a_failed_sign_in_is_reported_on_the_email_field(): void
+    {
+        User::create(['name' => 'Mia', 'email' => 'mia@example.com', 'password' => 'password123']);
+        $message = __('frontend.auth.invalid-credentials');
+
+        // One flow through the redirect. A session assertion in between would
+        // start the store, and with JSON session serialization the next request
+        // then re-marshals the error bag it already holds — into an empty one.
+        $page = $this->followingRedirects()
+            ->from(route('login'))
+            ->post(route('login.submit'), ['email' => 'mia@example.com', 'password' => 'wrong-password'])
+            ->assertOk()
+            ->assertSee('aria-invalid="true"', false)
+            ->assertSee('aria-describedby="email-error"', false)
+            ->assertDontSee('data-flash', false);
+
+        $this->assertSame(1, substr_count($page->getContent(), e($message)));
+    }
+
     public function test_a_disabled_account_cannot_log_in(): void
     {
         $user = User::create(['name' => 'X', 'email' => 'x@example.com', 'password' => 'password123']);

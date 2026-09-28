@@ -32,11 +32,13 @@ summary::-webkit-details-marker { display: none; }
    rule beats every layered one, so no `text-*` size and no `hidden` ever
    reached an icon: all of them rendered at 24px. `revert-layer` hands both back
    to the layers — app.css's base size for an icon with no size of its own, the
-   utilities for the rest — and the base layer keeps the inline-block box. */
+   utilities for the rest — and the base layer keeps the inline-block box.
+   `:root` outranks Google's single class, so this holds whichever stylesheet
+   the layout happens to load last. */
 @layer base {
     .material-symbols-outlined { display: inline-block; }
 }
-.material-symbols-outlined {
+:root .material-symbols-outlined {
     font-size: revert-layer;
     display: revert-layer;
 }
@@ -553,71 +555,7 @@ body.is-focus .dth-shell { padding-left: 0; }
 }
 
 /* =============================================================================
-   14. Theme switch (markup in components/frontend/theme-switch.blade.php).
-   ============================================================================= */
-.theme-switch {
-    position: relative;
-    display: inline-grid;
-    grid-template-columns: 1fr 1fr;
-    align-items: center;
-    justify-items: center;
-    width: 4rem;
-    height: 2.1rem;
-    padding: 0 0.5rem;
-    border-radius: 9999px;
-    background: var(--color-surface-muted);
-    border: 1px solid var(--color-border);
-    box-shadow: inset 0 1px 2px color-mix(in oklch, var(--color-ink-950) 12%, transparent);
-    cursor: pointer;
-    transition: background var(--motion-state) var(--ease-out),
-                border-color var(--motion-state) var(--ease-out),
-                box-shadow var(--motion-state) var(--ease-out);
-}
-.theme-switch:hover {
-    border-color: var(--color-border-strong);
-    background: color-mix(in oklch, var(--color-surface-muted) 82%, var(--color-primary) 8%);
-}
-.theme-switch:focus-visible {
-    outline: 2px solid var(--color-ring);
-    outline-offset: 2px;
-}
-.theme-switch .theme-switch-icon {
-    display: grid;
-    place-items: center;
-    z-index: 1;
-    font-size: 1rem;
-    color: color-mix(in oklch, var(--color-foreground-muted) 55%, transparent);
-    transition: color var(--motion-state) var(--ease-out);
-}
-.theme-switch .theme-switch-icon-sun         { color: var(--color-sand-600); }
-.dark .theme-switch .theme-switch-icon-sun   { color: color-mix(in oklch, var(--color-foreground-muted) 45%, transparent); }
-.theme-switch .theme-switch-icon-moon        { color: color-mix(in oklch, var(--color-foreground-muted) 45%, transparent); }
-.dark .theme-switch .theme-switch-icon-moon  { color: var(--color-wave-400); }
-.theme-switch .theme-switch-thumb {
-    position: absolute;
-    top: 50%;
-    left: 0.3rem;
-    width: 1.5rem;
-    height: 1.5rem;
-    border-radius: 9999px;
-    background: var(--color-surface);
-    box-shadow: 0 1px 3px color-mix(in oklch, var(--color-ink-950) 35%, transparent),
-                0 0 0 1px color-mix(in oklch, var(--color-border) 60%, transparent);
-    transform: translateY(-50%);
-    transition: transform var(--motion-state) var(--ease-out),
-                box-shadow var(--motion-state) var(--ease-out);
-}
-/* Keyed off `.dark`, like the icons above — not off aria-checked. The class is
-   set before first paint; aria-checked only once app.js has run, so a thumb
-   keyed off it loads on the wrong side and slides across on every dark page. */
-.dark .theme-switch .theme-switch-thumb {
-    transform: translate(1.9rem, -50%);
-    box-shadow: 0 1px 3px color-mix(in oklch, var(--color-ink-950) 35%, transparent),
-                0 0 12px -2px color-mix(in oklch, var(--color-wave-500) 55%, transparent);
-}
-
-/* =============================================================================
-   15. Citation / source popover.
+   14. Citation / source popover.
    Native Popover API + CSS anchor positioning where supported; a centred
    fallback everywhere else, and a bottom sheet on narrow screens.
    ============================================================================= */
@@ -653,7 +591,7 @@ body.is-focus .dth-shell { padding-left: 0; }
 }
 
 /* =============================================================================
-   16. The subject rail.
+   15. The subject rail.
 
    Static from `lg` up, a drawer below it. Transform only — animating `left`
    would relayout the page on every frame of the slide.
@@ -663,9 +601,9 @@ body.is-focus .dth-shell { padding-left: 0; }
 /* Closed, the drawer is off-canvas — and it has to leave the tab order and the
    accessibility tree with it, or every link in it sits between the skip link
    and the page for a keyboard or screen-reader user on a phone, all of them
-   invisible. The same delayed `visibility` as deep-work mode (§10), so the
-   slide out is still seen; opening is instant, because this stops matching.
-   `width < 64rem` is the exact complement of Tailwind's `lg`. */
+   invisible. The same delayed `visibility` as deep-work mode ("Focus aperture"
+   above), so the slide out is still seen; opening is instant, because this
+   stops matching. `width < 64rem` is the exact complement of Tailwind's `lg`. */
 @media (width < 64rem) {
     .dth-sidebar:not(.is-open) {
         visibility: hidden;
@@ -687,7 +625,7 @@ body.is-rail-open { overflow: hidden; }
 }
 
 /* =============================================================================
-   17. SIGNATURE — the guide, thinking.
+   16. SIGNATURE — the guide, thinking.
 
    A dot descends a hairline shaft: the same gesture as the depth rail's light
    trail, at the scale of a single turn. It answers "is anything happening, and
@@ -818,7 +756,7 @@ body.is-rail-open { overflow: hidden; }
 }
 
 /* =============================================================================
-   18. The library — rows, and selecting several of them.
+   17. The library — rows, and selecting several of them.
    ============================================================================= */
 .dth-select { display: none; }
 .is-selecting .dth-select { display: block; }
@@ -832,7 +770,7 @@ body.is-rail-open { overflow: hidden; }
 [data-loading] [data-rows] { opacity: 0.65; transition: opacity var(--motion-feedback) var(--ease-out); }
 
 /* =============================================================================
-   19. The organiser — a tree you can drag things into.
+   18. The organiser — a tree you can drag things into.
 
    The drop target is drawn as an inset edge rather than a moved row: nothing
    shifts while you are aiming at it.
@@ -860,7 +798,7 @@ body.is-rail-open { overflow: hidden; }
 [data-saving] { cursor: progress; }
 
 /* =============================================================================
-   20. The boards.
+   19. The boards.
 
    A ranking is a list of people, so it is styled as one: no bars, no medals
    raining down, no animation on arrival. The only thing lit is the top three
@@ -900,7 +838,7 @@ body.is-rail-open { overflow: hidden; }
 .dth-board-row td { position: relative; }
 
 /* =============================================================================
-   21. Reduced motion & reduced transparency.
+   20. Reduced motion & reduced transparency.
 
    Motion-disabled must feel DESIGNED, not broken: every animation below has a
    meaningful static end state, so the interface still communicates the same

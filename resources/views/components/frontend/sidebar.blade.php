@@ -12,7 +12,7 @@
 
      Off-canvas below `lg` with a scrim; static from `lg` up. Position is CSS
      only, so it is usable before app.js runs. Closed, it also leaves the tab
-     order and the accessibility tree (custom.css §16).
+     order and the accessibility tree (custom.css, "The subject rail").
 
      The panel itself scrolls when the viewport is too short for it (a phone
      on its side, 400% zoom), because what sits at the bottom — the language

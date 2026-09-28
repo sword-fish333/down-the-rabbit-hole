@@ -9,8 +9,9 @@
                 <h1 class="font-display text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">{{ __('frontend.auth.login-title') }}</h1>
                 <p class="mt-2 text-sm text-foreground-muted">{{ __('frontend.auth.login-subtitle') }}</p>
 
-                {{-- A failed sign-in comes back as the `error` flash, which the
-                     layout already renders (and announces) — never here too. --}}
+                {{-- Wrong credentials come back as an error on the email field
+                     (AuthController::login); a failed Google sign-in as the
+                     `error` flash, which the layout renders. Neither repeats here. --}}
                 <form action="{{ route('login.submit') }}" method="POST" class="mt-7 space-y-5">
                     @csrf
 

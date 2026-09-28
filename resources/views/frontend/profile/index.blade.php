@@ -61,7 +61,10 @@
         </div>
 
         {{-- ---- Record: the reason to open this page ------------------- --}}
-        <div role="tabpanel" id="panel-record" data-panel="record" aria-labelledby="tab-record"
+        {{-- Each panel is a Tab stop of its own (WAI-ARIA tabs): none of them
+             opens on something focusable, so from the tablist the next Tab
+             would otherwise skip the panel's content entirely. --}}
+        <div role="tabpanel" id="panel-record" data-panel="record" aria-labelledby="tab-record" tabindex="0"
              @if ($activeTab !== 'record') hidden @endif class="pt-8">
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <x-frontend.stat :label="__('frontend.profile.record.layers')" :value="$record['layers']"
@@ -160,7 +163,7 @@
         </div>
 
         {{-- ---- Details ------------------------------------------------ --}}
-        <div role="tabpanel" id="panel-profile" data-panel="profile" aria-labelledby="tab-profile"
+        <div role="tabpanel" id="panel-profile" data-panel="profile" aria-labelledby="tab-profile" tabindex="0"
              @if ($activeTab !== 'profile') hidden @endif class="max-w-xl pt-8">
             <h2 class="font-display text-base font-semibold text-foreground">{{ __('frontend.profile.details') }}</h2>
             <p class="mt-1 text-sm text-foreground-muted">{{ __('frontend.profile.details-hint') }}</p>
@@ -189,7 +192,7 @@
         </div>
 
         {{-- ---- Password ----------------------------------------------- --}}
-        <div role="tabpanel" id="panel-password" data-panel="password" aria-labelledby="tab-password"
+        <div role="tabpanel" id="panel-password" data-panel="password" aria-labelledby="tab-password" tabindex="0"
              @if ($activeTab !== 'password') hidden @endif class="max-w-xl pt-8">
             <h2 class="font-display text-base font-semibold text-foreground">{{ __('frontend.profile.change-password') }}</h2>
             <p class="mt-1 text-sm text-foreground-muted">{{ __('frontend.profile.change-password-hint') }}</p>

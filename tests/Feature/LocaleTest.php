@@ -7,7 +7,6 @@ use App\Models\User;
 use App\Services\Chat\DescentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use Tests\Support\FakeLlmClient;
 use Tests\TestCase;
 
@@ -111,7 +110,14 @@ class LocaleTest extends TestCase
     public function test_the_subject_rail_carries_the_language_switcher(): void
     {
         $switch = 'href="'.route('locale.switch', 'ro').'"';
-        $rail = fn (string $html) => Str::betweenFirst($html, 'id="dth-sidebar"', '</aside>');
+
+        // The rail element itself, or a failure: a slice that silently fell back
+        // to the whole page would find the top bar's switcher and pass.
+        $rail = function (string $html): string {
+            $this->assertSame(1, preg_match('#<aside id="dth-sidebar".*?</aside>#s', $html, $match), 'The page has no subject rail.');
+
+            return $match[0];
+        };
 
         $this->assertStringContainsString($switch, $rail($this->get('/')->assertOk()->getContent()));
 

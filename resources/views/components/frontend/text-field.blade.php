@@ -37,8 +37,10 @@
     </label>
 
     <div class="relative">
+        {{-- z-10: the input's backdrop blur gives it a stacking context of its
+             own, and coming later in the source it painted over this icon. --}}
         @if ($icon)
-            <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[1.2rem] text-foreground-muted/70" aria-hidden="true">{{ $icon }}</span>
+            <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-[1.2rem] text-foreground-muted/70" aria-hidden="true">{{ $icon }}</span>
         @endif
 
         <input

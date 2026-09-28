@@ -22,6 +22,8 @@
          aria-label="{{ __('frontend.navbar.language') }}">
         {{ $slot }}
 
+        {{-- Taller under a finger (pointer-coarse): about 25px clears the 24px
+             minimum by a hair, about 33px is a target a thumb can find. --}}
         <div class="flex items-center gap-0.5 rounded-full border border-border bg-surface/40 p-0.5">
             @foreach ($locales as $code => $meta)
                 <a href="{{ route('locale.switch', $code) }}"
@@ -30,7 +32,7 @@
                    @if ($code === $current) aria-current="true" @endif
                    title="{{ $meta['native'] }}"
                    @class([
-                       'rounded-full px-2.5 py-1 font-mono text-[0.7rem] font-semibold uppercase tracking-wider transition duration-(--motion-feedback) ease-(--ease-snap) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                       'rounded-full px-2.5 py-1 font-mono text-[0.7rem] font-semibold uppercase tracking-wider transition duration-(--motion-feedback) ease-(--ease-snap) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:py-2',
                        'bg-primary/12 text-primary' => $code === $current,
                        'text-foreground-muted hover:text-foreground' => $code !== $current,
                    ])>

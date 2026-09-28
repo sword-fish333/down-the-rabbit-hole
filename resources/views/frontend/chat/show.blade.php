@@ -184,7 +184,7 @@
                                 <x-frontend.markdown :content="$message->content" />
                                 <button type="button" data-copy-turn
                                         title="{{ __('frontend.chat.copy') }}"
-                                        class="dth-copy absolute -top-1 right-0 grid h-8 w-8 place-items-center rounded-lg border border-border bg-surface/80 text-foreground-muted backdrop-blur-sm transition duration-(--motion-feedback) hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                                        class="dth-copy absolute -top-1 right-0 grid h-8 w-8 place-items-center rounded-lg border border-border bg-surface/80 text-foreground-muted backdrop-blur-sm transition duration-(--motion-feedback) hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring print:hidden">
                                     <span class="material-symbols-outlined text-[1rem]" aria-hidden="true">content_copy</span>
                                     <span class="sr-only">{{ __('frontend.chat.copy') }}</span>
                                 </button>

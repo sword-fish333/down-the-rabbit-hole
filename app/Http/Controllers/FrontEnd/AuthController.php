@@ -68,8 +68,11 @@ class AuthController extends Controller
             $this->guestSubjectIds($request),
         );
 
+        // On the field, not in a flash: the text-field component ties it to the
+        // (autofocused) email input with aria-invalid and aria-describedby, so it
+        // is heard where the learner already is and seen next to the form.
         if (! $result->isSuccessfulCheck()) {
-            return back()->with('error', $result->getFirstError())->withInput($request->except('password'));
+            return back()->withErrors(['email' => $result->getFirstError()])->withInput($request->except('password'));
         }
 
         $request->session()->forget(ChatController::GUEST_KEY);
